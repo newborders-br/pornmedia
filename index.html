@@ -640,6 +640,7 @@ function parseDateBR(s){const m=String(s||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{
 function monthKey(b){const d=parseDateBR(b);return d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`:'';}
 function fmtNum(n){const x=Number(n);return Number.isInteger(x)?String(x):String(x.toFixed(1)).replace('.',',');}
 function canonicalPlatform(v){const raw=cleanCell(v).replace(/\s+/g,' ');const k=raw.toLowerCase();const map={'pc off':'pc-off','pcoff':'pc-off','pc-off':'pc-off','pc on':'pc-on','pcon':'pc-on','pc-on':'pc-on','pc onr':'pc-onr','pconr':'pc-onr','pc-onr':'pc-onr','telegram':'telegram','telegram full':'telegram full','telegram-only':'telegram only','telegram only':'telegram only','tv full':'tv full','tv live':'tv live','aloha':'aloha','foto':'fotos','fotos':'fotos','photo':'fotos','photos':'fotos','twitter':'twitter','x':'twitter','pornmedia':'PornMedia'};return map[k]||raw||'—';}
+function platformGroupName(v){const p=canonicalPlatform(v);const k=String(p||'').toLowerCase();if(k==='telegram'||k==='telegram full'||k==='telegram only'||k==='telegram-only')return 'telegram';return p;}
 const LIVE_RULES={'pc-off':{kind:'secondsDivisor',value:2,label:'2s = 1 ponto',skip:true},'pc-on':{kind:'secondsDivisor',value:3,label:'3s = 1 ponto',rankBonus:true,skip:true},'telegram full':{kind:'secondsDivisor',value:3,label:'3s = 1 ponto',skip:true},'telegram only':{kind:'secondsDivisor',value:5,label:'5s = 1 ponto',skip:true},'tv full':{kind:'secondsDivisor',value:5,label:'5s = 1 ponto',skip:true},'tv live':{kind:'pointsPerMinute',value:20,label:'20 pts/min'},'pc-onr':{kind:'pointsPerMinute',value:3,label:'3 pts/min',rankBonus:true},'aloha':{kind:'pointsPerMinute',value:2,label:'2 pts/min'},'fotos':{kind:'manualPoints',value:1,label:'pontos manuais'},'twitter':{kind:'manualPoints',value:1,label:'pontos manuais'}};
 function parseLiveDuration(raw,platform){const s=cleanCell(raw).toLowerCase();if(!s)return{seconds:0,ok:false};if(/^\d{1,2}:\d{1,2}(:\d{1,2})?$/.test(s)){const p=s.split(':').map(Number);const sec=p.length===2?p[0]*60+p[1]:p[0]*3600+p[1]*60+p[2];return{seconds:sec,ok:sec>0};}const mm=s.match(/(\d+(?:[\.,]\d+)?)\s*(m|min|mins|minuto|minutos)/),sm=s.match(/(\d+(?:[\.,]\d+)?)\s*(s|seg|segs|segundo|segundos)/);if(mm||sm){const mins=mm?parseNumber(mm[1]):0,secs=sm?parseNumber(sm[1]):0;const t=mins*60+secs;return{seconds:t,ok:t>0};}const n=parseNumber(s);if(!n||n<=0)return{seconds:0,ok:false};const r=LIVE_RULES[platform];return{seconds:r?.kind==='pointsPerMinute'?n*60:n,ok:true};}
 function liveBasePoints(seconds,platform){const r=LIVE_RULES[platform];if(!r||!seconds)return 0;if(r.kind==='secondsDivisor')return seconds/r.value;if(r.kind==='pointsPerMinute')return(seconds/60)*r.value;return 0;}
@@ -996,7 +997,7 @@ function ledgerActive(){
   const today=localDay();const mk=monthKey(todayBR());const yr=new Date().getFullYear().toString();
   return LEDGER.events.filter(e=>{
     if(!showStudio&&[...HIDDEN_PLATS].some(h=>e.plataforma?.toLowerCase()===h.toLowerCase()))return false;
-    if(platFilter!=='all'&&e.plataforma!==platFilter)return false;
+    if(platFilter!=='all'&&platformGroupName(e.plataforma)!==platFilter)return false;
     const d=parseDateBR(e.dataBR);
     if(periodFilter==='today'){const ed=d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:null;return ed===today;}
     if(periodFilter==='7d'){if(!d)return false;return(new Date()-d)/(864e5)<7;}
@@ -1015,7 +1016,7 @@ function ledgerPeriodOnly(){
 function renderPlatformShare(){
   const box=$('#platformShare');if(!box)return;
   const rows=ledgerPeriodOnly();
-  const by={};rows.forEach(e=>{by[e.plataforma]=(by[e.plataforma]||0)+(Number(e.ponto)||0);});
+  const by={};rows.forEach(e=>{const p=platformGroupName(e.plataforma);by[p]=(by[p]||0)+(Number(e.ponto)||0);});
   const total=Object.values(by).reduce((a,b)=>a+b,0);
   const entries=Object.entries(by).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
   if(!entries.length||total<=0){box.style.display='none';box.innerHTML='';return;}
@@ -1024,7 +1025,7 @@ function renderPlatformShare(){
     entries.map(([p,v])=>{const pct=v/total*100;return `<div class="platform-share-row"><span class="platform-share-name">${escapeHtml(p)}</span><div class="platform-share-track"><div class="platform-share-fill ${p==='PornMedia'?'pm':''}" style="width:${Math.max(1,Math.round(pct))}%"></div></div><span class="platform-share-value"><b>${pct.toFixed(1).replace('.',',')}%</b> · ${fmtNum(v)}</span></div>`;}).join('');
 }
 function allPlatforms(){
-  return[...new Set(LEDGER.events.map(e=>e.plataforma))]
+  return[...new Set(LEDGER.events.map(e=>platformGroupName(e.plataforma)))]
     .filter(p=>showStudio||![...HIDDEN_PLATS].some(h=>p?.toLowerCase()===h.toLowerCase()))
     .sort((a,b)=>a==='PornMedia'?-1:b==='PornMedia'?1:a.localeCompare(b));
 }
@@ -1044,7 +1045,7 @@ function aggregate(){
   ledgerActive().forEach(e=>{
     if(!by[e.nome])by[e.nome]={nome:e.nome,total:0,plats:{}};
     by[e.nome].total+=Number(e.ponto)||0;
-    by[e.nome].plats[e.plataforma]=(by[e.nome].plats[e.plataforma]||0)+(Number(e.ponto)||0);
+    const p=platformGroupName(e.plataforma);by[e.nome].plats[p]=(by[e.nome].plats[p]||0)+(Number(e.ponto)||0);
   });
   return Object.values(by).sort((a,b)=>b.total-a.total);
 }
@@ -1118,7 +1119,7 @@ function hydrateMediaCards(root,rows){
   root.querySelectorAll('[data-media]').forEach(el=>{el.onclick=()=>{const id=el.dataset.media;const m=GAME.media[id];if(m)openMediaViewer([m],0);};});
 }
 function actorLedgerRows(name){return LEDGER.events.filter(e=>e.nome===name);}
-function actorTotals(name){const rows=actorLedgerRows(name),mk=monthKey(todayBR());return{total:rows.reduce((s,e)=>s+(Number(e.ponto)||0),0),month:rows.filter(e=>monthKey(e.dataBR)===mk).reduce((s,e)=>s+(Number(e.ponto)||0),0),events:rows.length,plats:rows.reduce((o,e)=>{o[e.plataforma]=(o[e.plataforma]||0)+(Number(e.ponto)||0);return o;},{})};}
+function actorTotals(name){const rows=actorLedgerRows(name),mk=monthKey(todayBR());return{total:rows.reduce((s,e)=>s+(Number(e.ponto)||0),0),month:rows.filter(e=>monthKey(e.dataBR)===mk).reduce((s,e)=>s+(Number(e.ponto)||0),0),events:rows.length,plats:rows.reduce((o,e)=>{const p=platformGroupName(e.plataforma);o[p]=(o[p]||0)+(Number(e.ponto)||0);return o;},{})};}
 function drawActorProfileChart(name){
   const cv=$('#actorProfileCanvas');if(!cv)return;
   const totalByMonth={},actorByMonth={},namesByMonth={};
