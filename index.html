@@ -136,8 +136,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
 .media-card{cursor:pointer}.media-card:active{transform:scale(.99)}
 
 /* viewer */
-.viewer{position:fixed;inset:0;z-index:60;background:rgba(13,13,11,0);visibility:hidden;opacity:0;transition:opacity .42s var(--ease),visibility .42s,background .42s}
-.viewer.on{visibility:visible;opacity:1;background:#0d0d0b}
+.viewer{position:fixed;inset:0;z-index:60;background:rgba(13,13,11,0);visibility:hidden;opacity:0;pointer-events:none;transition:opacity .42s var(--ease),background .42s}
+.viewer.on{visibility:visible;opacity:1;pointer-events:auto;background:#0d0d0b}
 .v-track{position:absolute;inset:0;display:flex;touch-action:none;will-change:transform}
 .v-slide{flex:0 0 100%;height:100%;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .v-slide .vimg{width:100%;height:100%;background-size:contain;background-repeat:no-repeat;background-position:center;transform-origin:center;transition:transform .28s var(--ease)}
@@ -364,8 +364,21 @@ async function trashFile(id){await driveJson(`https://www.googleapis.com/drive/v
 /* =====================================================================
    ESTADO: jogo (media_ranker_state.json) + ledger PONTO (ponto_state.json)
    ===================================================================== */
+function localDay(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function freshGame(){return{version:'2.0',app:'PornMedia',updatedAt:null,folderId:null,media:{},actors:{},duels:0,sessions:{current:newSession()},history:[]};}
-function newSession(){return{id:'s_'+Date.now(),date:new Date().toISOString().slice(0,10),usedMediaIds:[]};}
+function newSession(){return{id:'s_'+Date.now(),date:localDay(),usedMediaIds:[]};}
+// Sessão é por DIA (local). F5 no mesmo dia mantém; virou o dia, arquiva e abre nova.
+function ensureDailySession(){
+  if(!GAME.sessions)GAME.sessions={current:newSession()};
+  const cur=GAME.sessions.current;
+  if(!cur||!cur.date){GAME.sessions.current=newSession();return false;}
+  if(cur.date!==localDay()){
+    if((cur.usedMediaIds||[]).length){GAME.history=GAME.history||[];GAME.history.push({id:cur.id,date:cur.date,duels:(cur.usedMediaIds||[]).length});}
+    GAME.sessions.current=newSession();
+    return true; // rolou pra um novo dia
+  }
+  return false;
+}
 let GAME=freshGame();
 let LEDGER={version:'2.0',events:[]};     // eventos PONTO
 const uid=p=>p+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
@@ -374,7 +387,7 @@ async function openFolder(fid,name){
   folderId=fid;localStorage.setItem('pm2FolderId',fid);
   // jogo
   const gf=await findFile(GAME_FILE,'application/json');
-  if(gf){gameFileId=gf.id;const loaded=await driveJson(`https://www.googleapis.com/drive/v3/files/${gf.id}?alt=media`);GAME={...freshGame(),...loaded,media:{...(loaded.media||{})},actors:{...(loaded.actors||{})},history:[...(loaded.history||[])]};if(!GAME.sessions?.current)GAME.sessions={current:newSession()};log('Estado do jogo carregado.');}
+  if(gf){gameFileId=gf.id;const loaded=await driveJson(`https://www.googleapis.com/drive/v3/files/${gf.id}?alt=media`);GAME={...freshGame(),...loaded,media:{...(loaded.media||{})},actors:{...(loaded.actors||{})},history:[...(loaded.history||[])]};const rolled=ensureDailySession();log('Estado do jogo carregado.'+(rolled?' Novo dia: sessão renovada.':''));if(rolled)saveGameSoon();}
   else{gameFileId=null;GAME=freshGame();GAME.folderId=fid;log('Sem estado do jogo. Será criado ao salvar.');}
   // ledger
   const pf=await findFile(PONTO_FILE,'application/json');
@@ -559,7 +572,7 @@ function closeViewer(sil){
   if(!vOpen)return;
   resetViewerGesture(true);
   track.querySelectorAll('video').forEach(v=>{try{v.pause();v.removeAttribute('src');v.load();}catch(e){}});
-  vOpen=false;viewer.classList.remove('on','zoomed');viewerMode='duel';viewerItems=[];$('#vPick').style.display='flex';$$('.v-dots i').forEach(d=>d.style.display='');setTrack(false);
+  vOpen=false;viewer.classList.remove('on','zoomed');viewer.style.background='';viewerMode='duel';viewerItems=[];$('#vPick').style.display='flex';$$('.v-dots i').forEach(d=>d.style.display='');setTrack(false);
   if(!sil){try{if(history.state?.v)history.back();}catch(e){}}
 }
 function setTrack(a){track.style.transition=a?'transform .32s var(--ease)':'none';track.style.transform=`translate3d(${-vIdx*100}%,0,0)`;}
