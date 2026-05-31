@@ -123,6 +123,18 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
 .media-card .side .lab{color:var(--ink-3)}
 @media(max-width:460px){.media-card{grid-template-columns:70px 1fr}.media-card .side{grid-column:2;text-align:left}.media-card .cover{width:70px;height:70px}}
 
+
+.actor-profile{margin-top:18px;border-top:1px solid var(--hair);padding-top:16px}
+.profile-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.profile-head .name{font:400 34px/1 var(--serif)}
+.profile-head .meta{color:var(--ink-2);font-size:12px;margin-top:7px;line-height:1.45}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0}
+.statbox{border:1px solid var(--hair);background:rgba(255,255,255,.55);padding:12px}
+.statbox .v{font:400 26px/1 var(--serif)}
+.statbox .l{color:var(--ink-3);margin-top:6px}
+.media-section{margin-top:18px}.section-title{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--hair);padding-bottom:8px;margin-bottom:10px}.section-title .t{font:400 22px/1 var(--serif)}.section-title .c{color:var(--ink-3)}
+.media-card{cursor:pointer}.media-card:active{transform:scale(.99)}
+
 /* viewer */
 .viewer{position:fixed;inset:0;z-index:60;background:rgba(13,13,11,0);visibility:hidden;opacity:0;transition:opacity .42s var(--ease),visibility .42s,background .42s}
 .viewer.on{visibility:visible;opacity:1;background:#0d0d0b}
@@ -211,6 +223,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
     <span class="eyebrow micro">Elenco · ELO</span><div class="h2">Atores</div>
     <div class="card"><div class="card-b"><div class="two"><input id="acName" placeholder="Nome do ator"><button class="cta" id="acAdd">Adicionar</button></div></div></div>
     <div id="actorList"></div>
+    <div id="actorProfile" class="actor-profile" style="display:none"></div>
   </div></section>
 
   <!-- BIBLIOTECA -->
@@ -232,6 +245,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
       </div>
     </div></div>
     <div class="fld" style="margin-top:14px"><input id="libSearch" type="search" placeholder="Buscar mídia ou ator"></div>
+    <div class="filters" id="libTypeFilters"><button class="fbtn on" data-libtype="photo">Fotos</button><button class="fbtn" data-libtype="video">Vídeos</button></div>
     <div id="libList"></div>
   </div></section>
 
@@ -412,6 +426,12 @@ function photoPool(){return Object.values(GAME.media).filter(m=>!m.deleted&&m.ac
 function ranked(){return photoPool().sort((x,y)=>(y.elo||1500)-(x.elo||1500));}
 function pos(m){return ranked().findIndex(x=>x.id===m.id)+1;}
 function tierOf(m){const tot=photoPool().length||1;const p=pos(m)/tot;return p<=.06?'S':p<=.2?'A':p<=.45?'B':p<=.75?'C':'D';}
+function mediaKind(m){return m?.type==='video'?'video':'photo';}
+function mediaPool(kind){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&(kind==='video'?m.type==='video':m.type!=='video'));}
+function mediaRanked(kind){return mediaPool(kind).sort((x,y)=>(y.elo||1500)-(x.elo||1500));}
+function mediaPos(m){const arr=mediaRanked(mediaKind(m));return arr.findIndex(x=>x.id===m.id)+1;}
+function mediaTier(m){const tot=mediaPool(mediaKind(m)).length||1;const p=(mediaPos(m)||tot)/tot;return p<=.06?'S':p<=.2?'A':p<=.45?'B':p<=.75?'C':'D';}
+function mediaLabel(m){return mediaKind(m)==='video'?'Vídeo':'Foto';}
 function tierWeight(tg){if(tg==='C')return 1-0.72*BAL.sup;if(tg==='D')return 1-0.86*BAL.sup;return{S:1,A:.85,B:.65}[tg]||.5;}
 function cooldown(m){const gap=count-(lastSeen[m.id]??-99);return gap>=3?1:0.22+0.78*(gap/3);}
 function weightFor(m){return Math.max(0.02,tierWeight(tierOf(m))*(1+(momentum[GAME.media[m.id].actorId]||0))*cooldown(m));}
@@ -474,34 +494,56 @@ const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const touchList=e=>Array.from(e.touches||[]);
 const touchDist=ts=>Math.hypot(ts[0].clientX-ts[1].clientX,ts[0].clientY-ts[1].clientY);
 const touchCenter=ts=>({x:(ts[0].clientX+ts[1].clientX)/2,y:(ts[0].clientY+ts[1].clientY)/2});
-function activeMedia(){return vIdx===0?duel.a:duel.b;}
+let viewerMode='duel',viewerItems=[];
+function activeMedia(){return viewerMode==='duel'?(vIdx===0?duel.a:duel.b):viewerItems[vIdx];}
 function currentImg(){return slides[vIdx]?.querySelector('.vimg');}
-async function openViewer(i){
-  if(!duel.a)return;
-  vIdx=i;vOpen=true;resetZoomAll(false);gesture='none';drag=false;
+async function paintViewerSlides(){
   for(const[k,sl]of slides.entries()){
-    const m=k===0?duel.a:duel.b;const vi=sl.querySelector('.vimg');
+    const m=viewerMode==='duel'?(k===0?duel.a:duel.b):viewerItems[k];
+    const vi=sl.querySelector('.vimg');
     sl.querySelectorAll('video.vmedia').forEach(v=>v.remove());
     vi.style.transform='';vi.style.backgroundImage='';
+    if(!m){sl.style.visibility='hidden';continue;}
+    sl.style.visibility='visible';
     try{const src=await blobUrl(m);if(m.type==='video'){const v=document.createElement('video');v.className='vmedia';v.src=src;v.controls=true;v.playsInline=true;sl.appendChild(v);}else vi.style.backgroundImage=`url("${src}")`;}
     catch(e){}
   }
+}
+async function openViewer(i){
+  if(!duel.a)return;
+  viewerMode='duel';viewerItems=[duel.a,duel.b];vIdx=i;vOpen=true;resetZoomAll(false);gesture='none';drag=false;
+  await paintViewerSlides();
   viewer.classList.add('on');viewer.classList.remove('zoomed');setTrack(0);vmeta();
   try{history.pushState({v:1},'');}catch(e){}
 }
-function closeViewer(sil){if(!vOpen)return;vOpen=false;viewer.classList.remove('on','zoomed');if(!sil){try{if(history.state?.v)history.back();}catch(e){}}}
+async function openMediaViewer(items,start=0){
+  const arr=(items||[]).filter(Boolean);if(!arr.length)return;
+  viewerMode='media';viewerItems=[arr[start]||arr[0]];vIdx=0;vOpen=true;resetZoomAll(false);gesture='none';drag=false;
+  await paintViewerSlides();
+  viewer.classList.add('on');viewer.classList.remove('zoomed');setTrack(0);vmeta();
+  try{history.pushState({v:1},'');}catch(e){}
+}
+function closeViewer(sil){if(!vOpen)return;vOpen=false;viewer.classList.remove('on','zoomed');viewerMode='duel';viewerItems=[];$('#vPick').style.display='flex';$$('.v-dots i').forEach(d=>d.style.display='');if(!sil){try{if(history.state?.v)history.back();}catch(e){}}}
 function setTrack(a){track.style.transition=a?'transform .32s var(--ease)':'none';track.style.transform=`translate3d(${-vIdx*100}%,0,0)`;}
 function dragTrack(px){track.style.transition='none';track.style.transform=`translate3d(calc(${-vIdx*100}% + ${px}px),0,0)`;}
-function vmeta(){const m=activeMedia();$('#vName').textContent=m.name;$('#vSub').textContent=`${actorName(m.actorId)} · #${pos(m)} · Tier ${tierOf(m)}`;$$('.v-dots i').forEach((d,k)=>d.classList.toggle('on',k===vIdx));$('#vPick').querySelector('span').textContent=(vIdx===0?'A':'B')+' vence';}
+function vmeta(){
+  const m=activeMedia();if(!m)return;
+  $('#vName').textContent=m.name;
+  $('#vSub').textContent=`${actorName(m.actorId)} · #${mediaPos(m)||'—'} · Tier ${mediaTier(m)}`;
+  $$('.v-dots i').forEach((d,k)=>{const show=viewerMode==='duel'||k<viewerItems.length;d.style.display=show?'':'none';d.classList.toggle('on',k===vIdx);});
+  if(viewerMode==='duel'){$('#vPick').style.display='flex';$('#vPick').querySelector('span').textContent=(vIdx===0?'A':'B')+' vence';}
+  else{$('#vPick').style.display='none';}
+}
 function applyZoom(){const img=currentImg();if(!img)return;img.style.transition=gesture==='pinch'||gesture==='pan'?'none':'transform .22s var(--ease)';img.style.transform=`translate3d(${panX}px,${panY}px,0) scale(${scale})`;}
 function resetZoomAll(animated=true){zoom=false;scale=1;panX=panY=0;viewer.classList.remove('zoomed');slides.forEach(sl=>{const img=sl.querySelector('.vimg');if(img){img.style.transition=animated?'transform .22s var(--ease)':'none';img.style.transform='';}});}
 function resetZoom(){resetZoomAll(true);}
 function goSlide(i,animated=true){
-  if(i<0||i>1)return;
+  const max=viewerMode==='duel'?1:viewerItems.length-1;
+  if(i<0||i>max)return;
   if(i!==vIdx)resetZoomAll(false);
   vIdx=i;gesture='none';drag=false;dx=dy=0;viewer.style.background='';setTrack(animated);vmeta();
 }
-$('#vClose').onclick=()=>closeViewer();$('#vPick').onclick=()=>decide(vIdx===0?'a':'b');
+$('#vClose').onclick=()=>closeViewer();$('#vPick').onclick=()=>{if(viewerMode==='duel')decide(vIdx===0?'a':'b');};
 $$('.v-dots i').forEach(d=>d.onclick=()=>goSlide(+d.dataset.d,true));
 track.addEventListener('touchstart',e=>{
   if(!vOpen)return;
@@ -569,7 +611,7 @@ function renderRanking(){
     const split=Object.entries(r.plats).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`<div class="split"><span>${escapeHtml(p)}</span><b>${fmtNum(v)} pts</b></div>`).join('');
     return `<div class="rrow ${i===0?'top1':''}"><div class="pos">${i+1}</div><div class="who"><div class="nm">${escapeHtml(r.nome)}</div><div class="chips">${chips}</div></div><div class="pts"><div class="v">${fmtNum(r.total)}</div><div class="l micro">pts</div></div><div class="exp">${split}</div></div>`;
   }).join('');
-  list.querySelectorAll('.rrow').forEach(row=>row.onclick=()=>row.classList.toggle('open'));
+  list.querySelectorAll('.rrow').forEach((row,i)=>row.onclick=()=>{const name=rows[i]?.nome;if(name){$$('.tab').forEach(x=>x.classList.remove('on'));$$('.view').forEach(v=>v.classList.remove('on'));document.querySelector('[data-v=atores]')?.classList.add('on');$('#atores').classList.add('on');renderActors();openActorProfile(name);}else row.classList.toggle('open');});
 }
 $('#periodFilters').querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{periodFilter=b.dataset.period;renderRanking();});
 
@@ -609,7 +651,50 @@ $('#spotInput').addEventListener('input',e=>{const v=cleanCell(e.target.value);i
    ===================================================================== */
 function addActor(name){name=cleanCell(name);if(!name)return null;const ex=Object.values(GAME.actors).find(a=>a.name.toLowerCase()===name.toLowerCase());if(ex)return ex;const a={id:uid('a'),name,elo:1500,wins:0,losses:0,createdAt:new Date().toISOString()};GAME.actors[a.id]=a;saveGameSoon();return a;}
 $('#acAdd').onclick=()=>{const a=addActor($('#acName').value);if(a){$('#acName').value='';refreshAll();}};
-function renderActors(){const list=$('#actorList');const arr=Object.values(GAME.actors).map(a=>({...a,mc:Object.values(GAME.media).filter(m=>m.actorId===a.id&&!m.deleted).length})).sort((x,y)=>(y.elo||1500)-(x.elo||1500));list.innerHTML=arr.length?arr.map((a,i)=>`<div class="lrow"><div class="pos">${i+1}</div><div class="info"><div class="nm">${escapeHtml(a.name)}</div><div class="meta">ELO ${Math.round(a.elo||1500)} · ${a.wins||0}V/${a.losses||0}D · ${a.mc} mídia(s)</div></div></div>`).join(''):'<div class="empty">Nenhum ator. Eles também são criados ao enviar mídia.</div>';}
+function mediaCardsHTML(rows){
+  return `<div class="media-rank">${rows.map((m,i)=>`<div class="media-card" data-media="${m.id}"><div class="cover" data-cover="${m.id}"><span class="badge">#${i+1}</span></div><div class="info"><div class="nm">${escapeHtml(m.name)}</div><div class="actor">${escapeHtml(actorName(m.actorId))}</div><div class="meta"><span class="stat">Tier ${mediaTier(m)}</span><span class="stat">${m.wins||0}V/${m.losses||0}D</span><span class="stat">${mediaLabel(m)}</span></div></div><div class="side"><div class="elo">${Math.round(m.elo||1500)}</div><div class="lab micro">ELO</div></div></div>`).join('')}</div>`;
+}
+function hydrateMediaCards(root,rows){
+  rows.forEach(async m=>{try{const src=await blobUrl(m);const el=root.querySelector(`[data-cover="${m.id}"]`);if(el&&!el.querySelector('img,video')){const tag=m.type==='video'?`<video src="${src}" muted playsinline></video>`:`<img src="${src}">`;el.insertAdjacentHTML('afterbegin',tag);}}catch(e){}});
+  root.querySelectorAll('[data-media]').forEach(el=>{el.onclick=()=>{const id=el.dataset.media;const m=GAME.media[id];if(m)openMediaViewer([m],0);};});
+}
+function actorLedgerRows(name){return LEDGER.events.filter(e=>e.nome===name);}
+function actorTotals(name){const rows=actorLedgerRows(name),mk=monthKey(todayBR());return{total:rows.reduce((s,e)=>s+(Number(e.ponto)||0),0),month:rows.filter(e=>monthKey(e.dataBR)===mk).reduce((s,e)=>s+(Number(e.ponto)||0),0),events:rows.length,plats:rows.reduce((o,e)=>{o[e.plataforma]=(o[e.plataforma]||0)+(Number(e.ponto)||0);return o;},{})};}
+function drawActorProfileChart(name){
+  const cv=$('#actorProfileCanvas');if(!cv)return;
+  const totalByMonth={},actorByMonth={},namesByMonth={};
+  LEDGER.events.forEach(e=>{const k=monthKey(e.dataBR);if(!k)return;const pts=Number(e.ponto)||0;totalByMonth[k]=(totalByMonth[k]||0)+pts;(namesByMonth[k]=namesByMonth[k]||{})[e.nome]=(namesByMonth[k]?.[e.nome]||0)+pts;if(e.nome===name)actorByMonth[k]=(actorByMonth[k]||0)+pts;});
+  const allM=Object.keys(totalByMonth).sort(),actM=Object.keys(actorByMonth).sort();
+  cv.width=Math.max(320,cv.parentElement.clientWidth-28);cv.height=160;const ctx=cv.getContext('2d');ctx.clearRect(0,0,cv.width,cv.height);
+  if(!actM.length){ctx.fillStyle='rgba(22,21,15,.34)';ctx.font='12px Archivo';ctx.fillText('Sem histórico de pontos para este ator.',12,80);return;}
+  const months=buildMonthRange(actM[0],allM[allM.length-1]);const rankBy={};months.forEach(k=>{const md=namesByMonth[k]||{};const idx=Object.entries(md).sort((a,b)=>b[1]-a[1]).findIndex(([n])=>n===name);if(idx>=0)rankBy[k]=idx+1;});
+  const pcts=months.map(k=>{const a=actorByMonth[k]||0,t=totalByMonth[k]||0;return t>0?a/t*100:0;});const ranks=months.map(k=>rankBy[k]||null),maxP=Math.max(...pcts,1);
+  const W=cv.width,H=cv.height,pad={t:26,b:30,l:46,r:8},gW=W-pad.l-pad.r,gH=H-pad.t-pad.b;
+  ctx.strokeStyle='rgba(22,21,15,.12)';ctx.lineWidth=1;[0,.25,.5,.75,1].forEach(f=>{const y=pad.t+gH*(1-f);ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(W-pad.r,y);ctx.stroke();if(f>0){ctx.fillStyle='rgba(22,21,15,.34)';ctx.font='9px Archivo';ctx.textAlign='right';ctx.fillText((maxP*f).toFixed(0)+'%',pad.l-4,y+3);}});
+  const pts=months.map((k,i)=>({x:pad.l+(months.length===1?gW/2:i/(months.length-1)*gW),y:pad.t+gH*(1-pcts[i]/maxP)}));
+  const grad=ctx.createLinearGradient(0,pad.t,0,H-pad.b);grad.addColorStop(0,'rgba(22,21,15,.16)');grad.addColorStop(1,'rgba(22,21,15,0)');ctx.beginPath();ctx.moveTo(pts[0].x,H-pad.b);pts.forEach(p=>ctx.lineTo(p.x,p.y));ctx.lineTo(pts[pts.length-1].x,H-pad.b);ctx.closePath();ctx.fillStyle=grad;ctx.fill();
+  ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.strokeStyle='#16150f';ctx.lineWidth=1.5;ctx.stroke();
+  const step=Math.max(1,Math.ceil(months.length/12));pts.forEach((p,i)=>{const has=(actorByMonth[months[i]]||0)>0;ctx.beginPath();ctx.arc(p.x,p.y,has?3.5:2,0,7);ctx.fillStyle=ranks[i]===1?'#16150f':has?'rgba(22,21,15,.6)':'rgba(22,21,15,.25)';ctx.fill();if(ranks[i]){ctx.fillStyle='#16150f';ctx.font=(ranks[i]===1?'600 ':'')+'10px Archivo';ctx.textAlign='center';ctx.fillText('#'+ranks[i],p.x,p.y-8);}if(i%step===0||i===months.length-1){const[y,m]=months[i].split('-');ctx.fillStyle='rgba(22,21,15,.4)';ctx.font='9px Archivo';ctx.textAlign='center';ctx.fillText(`${MESES[+m-1]}/${String(y).slice(2)}`,p.x,H-8);}});
+}
+function openActorProfile(name){
+  const actor=Object.values(GAME.actors).find(a=>a.name===name)||{id:null,name,elo:null,wins:0,losses:0};
+  const totals=actorTotals(name);const allMedia=Object.values(GAME.media).filter(m=>!m.deleted&&actorName(m.actorId)===name);
+  const photos=allMedia.filter(m=>m.type!=='video').sort((a,b)=>(b.elo||1500)-(a.elo||1500));
+  const videos=allMedia.filter(m=>m.type==='video').sort((a,b)=>(b.elo||1500)-(a.elo||1500));
+  const platHtml=Object.entries(totals.plats).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`<span class="pchip ${p==='PornMedia'?'pm':''}">${escapeHtml(p)} ${fmtNum(v)}</span>`).join('')||'<span class="pchip">sem pontos</span>';
+  const profile=$('#actorProfile');
+  profile.style.display='block';$('#actorList').style.display='none';
+  profile.innerHTML=`<div class="profile-head"><div><div class="eyebrow micro">Página do ator</div><div class="name">${escapeHtml(name)}</div><div class="meta">ELO ${actor.elo?Math.round(actor.elo):'—'} · ${actor.wins||0}V/${actor.losses||0}D · ${allMedia.length} mídia(s)</div></div><button class="chip btn" id="actorBack">← Voltar</button></div>
+  <div class="stats-grid"><div class="statbox"><div class="v">${fmtNum(totals.total)}</div><div class="l micro">pontos totais</div></div><div class="statbox"><div class="v">${fmtNum(totals.month)}</div><div class="l micro">este mês</div></div><div class="statbox"><div class="v">${totals.events}</div><div class="l micro">entradas</div></div></div>
+  <div class="media-card" style="cursor:default"><div class="info"><div class="actor">Plataformas</div><div class="chips" style="margin-top:8px">${platHtml}</div></div></div>
+  <div class="spot-canvas-wrap" style="display:block"><div class="sn">Desempenho mensal</div><canvas id="actorProfileCanvas" height="160"></canvas></div>
+  <div class="media-section"><div class="section-title"><span class="t">Fotos</span><span class="c micro">${photos.length}</span></div><div id="actorPhotos">${photos.length?mediaCardsHTML(photos):'<div class="empty">Nenhuma foto cadastrada.</div>'}</div></div>
+  <div class="media-section"><div class="section-title"><span class="t">Vídeos</span><span class="c micro">${videos.length}</span></div><div id="actorVideos">${videos.length?mediaCardsHTML(videos):'<div class="empty">Nenhum vídeo cadastrado.</div>'}</div></div>`;
+  $('#actorBack').onclick=()=>{profile.style.display='none';$('#actorList').style.display='block';};
+  drawActorProfileChart(name);
+  hydrateMediaCards($('#actorPhotos'),photos);hydrateMediaCards($('#actorVideos'),videos);
+}
+function renderActors(){const list=$('#actorList');const arr=Object.values(GAME.actors).map(a=>({...a,mc:Object.values(GAME.media).filter(m=>m.actorId===a.id&&!m.deleted).length})).sort((x,y)=>(y.elo||1500)-(x.elo||1500));list.innerHTML=arr.length?arr.map((a,i)=>`<div class="lrow" data-actor="${escapeHtml(a.name)}"><div class="pos">${i+1}</div><div class="info"><div class="nm">${escapeHtml(a.name)}</div><div class="meta">ELO ${Math.round(a.elo||1500)} · ${a.wins||0}V/${a.losses||0}D · ${a.mc} mídia(s)</div></div></div>`).join(''):'<div class="empty">Nenhum ator. Eles também são criados ao enviar mídia.</div>';list.querySelectorAll('[data-actor]').forEach(row=>row.onclick=()=>openActorProfile(row.dataset.actor));}
 function actorNextNumber(aid){const a=GAME.actors[aid];if(!a)return 1;const nums=Object.values(GAME.media).filter(m=>m.actorId===aid).map(m=>{const t=String(m.name||'').match(/(\d{1,5})\s*$/);return t?+t[1]:0;});return(nums.length?Math.max(...nums):0)+1;}
 function fillUpActors(){
   const opts=Object.values(GAME.actors).sort((a,b)=>a.name.localeCompare(b.name)).map(a=>`<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
@@ -637,15 +722,18 @@ $('#upSend').onclick=async()=>{
   }
   upQueue=[];$('#upNewActor').value='';saveGameSoon();$('#upStatus').textContent=`✓ ${n} mídia(s) enviada(s).`;refreshAll();startGameIfReady();
 };
+let libTypeFilter='photo';
 function renderLibrary(){
   const q=($('#libSearch').value||'').toLowerCase();
-  const rows=Object.values(GAME.media).filter(m=>!m.deleted&&(m.name+' '+actorName(m.actorId)).toLowerCase().includes(q)).sort((a,b)=>(b.elo||1500)-(a.elo||1500));
+  $('#libTypeFilters')?.querySelectorAll('[data-libtype]')?.forEach(b=>b.classList.toggle('on',b.dataset.libtype===libTypeFilter));
+  const rows=mediaRanked(libTypeFilter).filter(m=>(m.name+' '+actorName(m.actorId)).toLowerCase().includes(q));
   const list=$('#libList');
-  if(!rows.length){list.innerHTML='<div class="empty">Nenhuma mídia cadastrada.</div>';return;}
-  list.innerHTML=`<div class="media-rank">${rows.slice(0,80).map((m,i)=>`<div class="media-card" data-media="${m.id}"><div class="cover" data-cover="${m.id}"><span class="badge">#${i+1}</span></div><div class="info"><div class="nm">${escapeHtml(m.name)}</div><div class="actor">${escapeHtml(actorName(m.actorId))}</div><div class="meta"><span class="stat">Tier ${tierOf(m)}</span><span class="stat">${m.wins||0}V/${m.losses||0}D</span><span class="stat">${m.type==='video'?'Vídeo':'Foto'}</span></div></div><div class="side"><div class="elo">${Math.round(m.elo||1500)}</div><div class="lab micro">ELO</div></div></div>`).join('')}</div>`;
-  rows.slice(0,80).forEach(async m=>{try{const src=await blobUrl(m);const el=list.querySelector(`[data-cover="${m.id}"]`);if(el){const tag=m.type==='video'?`<video src="${src}" muted playsinline></video>`:`<img src="${src}">`;el.insertAdjacentHTML('afterbegin',tag);}}catch(e){}});
+  if(!rows.length){list.innerHTML=`<div class="empty">Nenhuma ${libTypeFilter==='video'?'mídia de vídeo':'foto'} cadastrada.</div>`;return;}
+  list.innerHTML=mediaCardsHTML(rows.slice(0,80));
+  hydrateMediaCards(list,rows.slice(0,80));
 }
 $('#libSearch').oninput=renderLibrary;
+$('#libTypeFilters')?.querySelectorAll('[data-libtype]')?.forEach(b=>b.onclick=()=>{libTypeFilter=b.dataset.libtype;renderLibrary();});
 
 /* =====================================================================
    LANÇAR (live entry)
@@ -749,7 +837,7 @@ function fillNames(){const names=[...new Set([...LEDGER.events.map(e=>e.nome),..
 function refreshLight(){const today=todayBR();$('#livePts').textContent=fmtNum(LEDGER.events.filter(e=>e.plataforma==='PornMedia'&&e.dataBR===today).reduce((a,b)=>a+b.ponto,0))+' pts';}
 function refreshAll(){renderRanking();renderActors();fillUpActors();fillNames();fillPlats();renderLibrary();refreshLight();}
 let toastT2=null;function toast(b,t){$('#toastB').textContent=b;$('#toastT').textContent=t;const el=$('#toast');el.classList.add('on');clearTimeout(toastT2);toastT2=setTimeout(()=>el.classList.remove('on'),1700);}
-addEventListener('keydown',e=>{if(vOpen){if(e.key==='Escape')closeViewer();if(e.key==='ArrowRight'&&vIdx<1&&!zoom){vIdx++;setTrack(1);vmeta();}if(e.key==='ArrowLeft'&&vIdx>0&&!zoom){vIdx--;setTrack(1);vmeta();}return;}if($('#jogo').classList.contains('on')&&duel.a){if(e.key==='ArrowLeft')decide('a');if(e.key==='ArrowRight')decide('b');}});
+addEventListener('keydown',e=>{if(vOpen){if(e.key==='Escape')closeViewer();if(e.key==='ArrowRight'&&vIdx<(viewerMode==='duel'?1:viewerItems.length-1)&&!zoom){vIdx++;setTrack(1);vmeta();}if(e.key==='ArrowLeft'&&vIdx>0&&!zoom){vIdx--;setTrack(1);vmeta();}return;}if($('#jogo').classList.contains('on')&&duel.a){if(e.key==='ArrowLeft')decide('a');if(e.key==='ArrowRight')decide('b');}});
 
 fillPlats();lvUI();$('#lvDate').value=todayBR();
 log('PornMedia 2.0 pronto. Conecte o Drive (precisa estar no domínio autorizado).');
