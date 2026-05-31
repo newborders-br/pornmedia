@@ -632,7 +632,11 @@ track.addEventListener('touchstart',e=>{
     return;
   }
   const t=ts[0];if(!t)return;
-  // estado inicial: NÃO decide o tipo ainda (espera o dedo andar)
+  // rede de segurança: reconcilia estado caso um touchend tenha se perdido (iOS)
+  zoom = scale>1.03;
+  viewer.classList.toggle('zoomed',zoom);
+  if(!zoom && scale!==1){scale=1;panX=panY=0;const im=currentImg();if(im){im.style.transition='none';im.style.transform='';}}
+  // novo gesto de 1 dedo: NÃO decide o tipo ainda (espera o dedo andar)
   G.active=true;G.decided=false;G.moved=false;G.mode='undecided';
   G.onVideo=!!e.target.closest('video');
   G.sx=t.clientX;G.sy=t.clientY;G.dx=0;G.dy=0;G.sPanX=panX;G.sPanY=panY;
@@ -670,7 +674,11 @@ track.addEventListener('touchend',e=>{
   const endDx=G.dx, endDy=G.dy, mode=G.mode, moved=G.moved, onVideo=G.onVideo;
   const remaining=touchList(e).length;
   if(mode==='pinch'){
-    if(remaining<1){if(scale<=1.03)clearZoomState(true);else{zoom=true;viewer.classList.add('zoomed');applyZoom();}resetGesture();}
+    if(remaining<2){
+      zoom = scale>1.03;
+      if(!zoom)clearZoomState(true); else {viewer.classList.add('zoomed');applyZoom();}
+      resetGesture();
+    }
     return;
   }
   // toque sem arrasto significativo: pode ser duplo-toque (zoom) ou toque no vídeo
@@ -682,10 +690,17 @@ track.addEventListener('touchend',e=>{
     else lastTap=now;
     return;
   }
-  if(mode==='pan'){if(remaining<1)resetGesture();return;}
-  // swipe ou dismiss: decide com os valores guardados, depois reseta
+  if(mode==='pan'){
+    if(remaining<2){
+      if(scale<=1.03)clearZoomState(true);   // saiu do zoom: permanece no slide atual
+      resetGesture();
+    }
+    return;
+  }
+  // swipe ou dismiss: NUNCA fecha/troca enquanto estiver com zoom
   viewer.style.background='';
   resetGesture();
+  if(zoom){setTrack(false);return;}
   if(mode==='dismiss' && endDy>110 && Math.abs(endDx)<90){closeViewer();return;}
   if(mode==='swipe' && Math.abs(endDx)>50 && Math.abs(endDx)>Math.abs(endDy)){goSlide(vIdx+(endDx<0?1:-1),true);return;}
   setTrack(true);
@@ -695,7 +710,7 @@ track.addEventListener('touchcancel',()=>{viewer.style.background='';resetGestur
 document.addEventListener('fullscreenchange',()=>{if(vOpen){resetGesture();setTrack(false);}},false);
 document.addEventListener('webkitfullscreenchange',()=>{if(vOpen){resetGesture();setTrack(false);}},false);
 document.addEventListener('visibilitychange',()=>{if(vOpen&&!document.hidden){resetGesture();setTrack(false);}},false);
-function toggleZoom(cx,cy){const m=activeMedia();if(!m||m.type==='video')return;if(zoom){clearZoomState(true);return;}scale=2.4;const r=slides[vIdx].getBoundingClientRect();panX=(r.width/2-(cx-r.left))*(scale-1)/scale;panY=(r.height/2-(cy-r.top))*(scale-1)/scale;zoom=true;viewer.classList.add('zoomed');applyZoom();}
+function toggleZoom(cx,cy){const m=activeMedia();if(!m||m.type==='video')return;if(zoom){clearZoomState(true);resetGesture();setTrack(false);return;}scale=2.4;const r=slides[vIdx].getBoundingClientRect();panX=(r.width/2-(cx-r.left))*(scale-1)/scale;panY=(r.height/2-(cy-r.top))*(scale-1)/scale;zoom=true;viewer.classList.add('zoomed');applyZoom();}
 slides.forEach(s=>s.addEventListener('click',e=>{if(matchMedia('(hover:hover)').matches&&!e.target.closest('video'))toggleZoom(e.clientX,e.clientY);}));
 addEventListener('popstate',()=>{if(vOpen)closeViewer(true);});
 
@@ -758,7 +773,7 @@ $('#spotInput').addEventListener('input',e=>{const v=cleanCell(e.target.value);i
 function addActor(name){name=cleanCell(name);if(!name)return null;const ex=Object.values(GAME.actors).find(a=>a.name.toLowerCase()===name.toLowerCase());if(ex)return ex;const a={id:uid('a'),name,elo:1500,wins:0,losses:0,createdAt:new Date().toISOString()};GAME.actors[a.id]=a;saveGameSoon();return a;}
 $('#acAdd').onclick=()=>{const a=addActor($('#acName').value);if(a){$('#acName').value='';refreshAll();}};
 function mediaCardsHTML(rows){
-  return `<div class="media-rank">${rows.map((m,i)=>`<div class="media-card" data-media="${m.id}"><div class="cover" data-cover="${m.id}"><span class="badge">#${i+1}</span></div><div class="info"><div class="nm">${escapeHtml(m.name)}</div><div class="actor">${escapeHtml(actorName(m.actorId))}</div><div class="meta"><span class="stat">Tier ${mediaTier(m)}</span><span class="stat">${m.wins||0}V/${m.losses||0}D</span><span class="stat">${mediaLabel(m)}</span></div></div><div class="side"><div class="elo">${Math.round(m.elo||1500)}</div><div class="lab micro">ELO</div></div></div>`).join('')}</div>`;
+  return `<div class="media-rank">${rows.map(m=>`<div class="media-card" data-media="${m.id}"><div class="cover" data-cover="${m.id}"><span class="badge">#${mediaPos(m)||'—'}</span></div><div class="info"><div class="nm">${escapeHtml(m.name)}</div><div class="actor">${escapeHtml(actorName(m.actorId))}</div><div class="meta"><span class="stat">Tier ${mediaTier(m)}</span><span class="stat">${m.wins||0}V/${m.losses||0}D</span><span class="stat">${mediaLabel(m)}</span></div></div><div class="side"><div class="elo">${Math.round(m.elo||1500)}</div><div class="lab micro">ELO</div></div></div>`).join('')}</div>`;
 }
 function hydrateMediaCards(root,rows){
   rows.forEach(async m=>{try{const src=await blobUrl(m);const el=root.querySelector(`[data-cover="${m.id}"]`);if(el&&!el.querySelector('img,video')){const tag=m.type==='video'?`<video src="${src}" muted playsinline></video>`:`<img src="${src}">`;el.insertAdjacentHTML('afterbegin',tag);}}catch(e){}});
