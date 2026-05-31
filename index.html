@@ -43,7 +43,38 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .cta.ghost{background:transparent;color:var(--ink)}
 .status{font-size:11.5px;color:var(--ink-2);margin-top:10px;min-height:15px}
 
-/* BIBLIOTECA — grid navegável */
+/* ASSISTINDO */
+.wcard{border:1px solid var(--hair);background:rgba(255,255,255,.5);margin-bottom:12px;overflow:hidden}
+.wcard-head{display:flex;align-items:flex-start;gap:12px;padding:14px 14px 12px}
+.wcard-head .winfo{flex:1 1 auto;min-width:0}
+.wcard-head .wname{font:400 21px/1 var(--serif);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wcard-head .wmeta{font:500 9px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-top:6px}
+.wcard-head .wplat{font:600 10px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2);margin-top:5px}
+.wcard-score{display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.wscore-cell{padding:10px 12px;text-align:center;border-right:1px solid var(--hair)}
+.wscore-cell:last-child{border-right:0}
+.wscore-cell .v{font:400 22px/1 var(--serif)}
+.wscore-cell .l{font:500 8px/1 var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3);margin-top:4px}
+.wscore-cell .v.ok{color:var(--ok)}
+.wcard-sessions{padding:10px 14px;border-bottom:1px solid var(--hair);display:none}
+.wcard-sessions.on{display:block}
+.wsess-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px dashed var(--hair);font-size:12px;color:var(--ink-2)}
+.wsess-row:last-child{border-bottom:0}
+.wsess-row .wsdate{font:500 9px/1 var(--mono,monospace);letter-spacing:.06em}
+.wsess-row b{font-weight:600;color:var(--ink)}
+.wcard-add{padding:10px 14px;background:var(--paper-2);display:none}
+.wcard-add.on{display:block}
+.wadd-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:8px}
+.wadd-row input{flex:1}
+.wcard-actions{display:flex;gap:0;border-top:1px solid var(--hair)}
+.wact{flex:1;border:0;background:transparent;padding:13px 8px;font:600 10px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);border-right:1px solid var(--hair);display:flex;align-items:center;justify-content:center;gap:6px}
+.wact:last-child{border-right:0}
+.wact:active{background:rgba(255,255,255,.6)}
+.wact.primary{color:var(--ok)}
+.wact.danger{color:var(--danger)}
+.wact svg{width:12px;height:12px;stroke:currentColor;stroke-width:2;fill:none}
+/* ASSISTINDO fim */
+
 .lib-upload-bar{background:var(--glass);backdrop-filter:blur(14px);border-bottom:1px solid var(--hair)}
 .lib-upload-toggle{width:100%;border:0;background:none;padding:11px 16px;display:flex;align-items:center;gap:8px;font:600 10px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)}
 .lib-upload-toggle:active{background:rgba(255,255,255,.3)}
@@ -220,6 +251,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
       <button class="tab" data-v="ranking">Ranking</button>
       <button class="tab" data-v="atores">Atores</button>
       <button class="tab" data-v="biblioteca">Biblioteca</button>
+      <button class="tab" data-v="assistindo">Assistindo</button>
       <button class="tab" data-v="lancar">Lançar</button>
       <button class="tab" data-v="importar">Importar</button>
     </nav>
@@ -338,6 +370,27 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
     </div>
     <div class="lib-grid-wrap"><div class="lib-grid" id="libGrid"></div></div>
   </section>
+
+  <!-- ASSISTINDO -->
+  <section class="view" id="assistindo"><div class="wrap">
+    <span class="eyebrow micro">Vídeos em andamento</span><div class="h2">Assistindo</div>
+    <div class="sub">Registre vídeos que levam dias. Cada sessão entra no ledger com a data certa — nunca tudo em um dia só.</div>
+    <div class="card" style="margin-top:16px"><div class="card-b">
+      <div class="fld"><label class="flabel micro">Atores (separe por ;)</label><input id="wActors" placeholder="Vega; Cassel; Marlow" autocomplete="off"></div>
+      <div class="fld"><label class="flabel micro">Título do vídeo</label><input id="wTitle" placeholder="ex: Telegram 12/06 — Live completa"></div>
+      <div class="two">
+        <div class="fld"><label class="flabel micro">Plataforma</label><select id="wPlat"></select></div>
+        <div class="fld"><label class="flabel micro">Duração total (opcional)</label><input id="wTotalDur" placeholder="ex: 1:20 ou 80"></div>
+      </div>
+      <div class="fld" id="wRankWrap"><label class="flabel micro">Bônus de posição</label>
+        <select id="wRank"><option value="none">sem bônus</option><option value="second">2º lugar ×2</option><option value="first">1º lugar ×3</option></select>
+      </div>
+      <div class="preview" id="wPreview" style="margin-top:4px">Preencha ator e plataforma pra ver a régua.</div>
+      <button class="cta" id="wCreate" style="margin-top:8px">+ Iniciar registro</button>
+      <div class="status" id="wCreateStatus"></div>
+    </div></div>
+    <div id="wList" style="margin-top:18px"></div>
+  </div></section>
 
   <!-- LANÇAR -->
   <section class="view" id="lancar"><div class="wrap">
@@ -475,12 +528,12 @@ async function openFolder(fid,name){
   folderId=fid;localStorage.setItem('pm2FolderId',fid);
   // jogo
   const gf=await findFile(GAME_FILE,'application/json');
-  if(gf){gameFileId=gf.id;const loaded=await driveJson(`https://www.googleapis.com/drive/v3/files/${gf.id}?alt=media`);GAME={...freshGame(),...loaded,media:{...(loaded.media||{})},actors:{...(loaded.actors||{})},history:[...(loaded.history||[])]};const rolled=ensureDailySession();log('Estado do jogo carregado.'+(rolled?' Novo dia: sessão renovada.':''));if(rolled)saveGameSoon();}
+  if(gf){gameFileId=gf.id;const loaded=await driveJson(`https://www.googleapis.com/drive/v3/files/${gf.id}?alt=media`);GAME={...freshGame(),...loaded,media:{...(loaded.media||{})},actors:{...(loaded.actors||{})},history:[...(loaded.history||[])]};const rolled=ensureDailySession();mergeUsed();log('Estado do jogo carregado.'+(rolled?' Novo dia: sessão renovada.':''));if(rolled)saveGameSoon();}
   else{gameFileId=null;GAME=freshGame();GAME.folderId=fid;log('Sem estado do jogo. Será criado ao salvar.');}
   // ledger
   const pf=await findFile(PONTO_FILE,'application/json');
-  if(pf){pontoFileId=pf.id;const lj=await driveJson(`https://www.googleapis.com/drive/v3/files/${pf.id}?alt=media`);LEDGER={version:'2.0',events:Array.isArray(lj.events)?lj.events:[]};log(`Ledger carregado: ${LEDGER.events.length} evento(s).`);}
-  else{pontoFileId=null;LEDGER={version:'2.0',events:[]};log('Sem ledger. Será criado ao salvar.');}
+  if(pf){pontoFileId=pf.id;const lj=await driveJson(`https://www.googleapis.com/drive/v3/files/${pf.id}?alt=media`);LEDGER={version:'2.0',events:Array.isArray(lj.events)?lj.events:[],watches:Array.isArray(lj.watches)?lj.watches:[]};log(`Ledger carregado: ${LEDGER.events.length} evento(s), ${LEDGER.watches.length} em andamento.`);}
+  else{pontoFileId=null;LEDGER={version:'2.0',events:[],watches:[]};log('Sem ledger. Será criado ao salvar.');}
   setSave('ok','salvo');
   refreshAll(); await startGameIfReady();
 }
@@ -1032,7 +1085,202 @@ $('#libUploadToggle').onclick=()=>{const inner=$('#libUploadInner');inner.style.
    LANÇAR (live entry)
    ===================================================================== */
 function fillPlats(){$('#lvPlat').innerHTML=Object.keys(LIVE_RULES).map(p=>`<option value="${p}">${p}</option>`).join('');}
-function lvRule(){return LIVE_RULES[$('#lvPlat').value];}
+/* =====================================================================
+   ASSISTINDO — vídeos em andamento com múltiplos atores e pontuação por dia
+   ===================================================================== */
+const W_PLATS=['pc-onr','pc-on','pc-off','telegram full','telegram only','twitter'];
+
+function wFillPlats(){
+  const sel=$('#wPlat');if(!sel)return;
+  sel.innerHTML=W_PLATS.map(p=>`<option value="${p}">${p}</option>`).join('');
+  wUpdPreview();
+}
+function wRule(){return LIVE_RULES[$('#wPlat')?.value||'pc-onr']||LIVE_RULES['pc-onr'];}
+function wUpdPreview(){
+  const actors=($('#wActors')?.value||'').split(';').map(s=>cleanCell(s)).filter(Boolean);
+  const rule=wRule();const mult=$('#wRank')?.value==='first'?3:$('#wRank')?.value==='second'?2:1;
+  const totalRaw=cleanCell($('#wTotalDur')?.value||'');
+  const totalSec=totalRaw?parseLiveDuration(totalRaw,$('#wPlat')?.value).seconds:0;
+  let txt=`${$('#wPlat')?.value} · ${rule.label}`;
+  if(mult>1)txt+=` · ×${mult} bônus`;
+  if(totalSec>0)txt+=` · duração total ${fmtSec(totalSec)}`;
+  if(actors.length>1)txt+=` · ${actors.length} atores`;
+  $('#wPreview').textContent=actors.length?txt:'Preencha ator e plataforma pra ver a régua.';
+}
+['#wPlat','#wRank'].forEach(s=>$(s)?.addEventListener('change',wUpdPreview));
+['#wActors','#wTotalDur'].forEach(s=>$(s)?.addEventListener('input',wUpdPreview));
+
+// estrutura de uma entrada: {id, actors:[], platform, rankMult, title, totalSec, sessions:[{date,seconds,skip}], createdAt}
+// LEDGER guarda os watches em LEDGER.watches (array)
+function ensureWatches(){if(!Array.isArray(LEDGER.watches))LEDGER.watches=[];}
+
+function wBasePoints(seconds,platform,mult=1){
+  const r=LIVE_RULES[platform];if(!r)return 0;
+  let base=0;
+  if(r.kind==='secondsDivisor')base=seconds/r.value;
+  else if(r.kind==='pointsPerMinute')base=(seconds/60)*r.value;
+  else base=seconds; // manual — não deve entrar aqui
+  return Math.round(base*mult);
+}
+function wTotalWatched(w){return(w.sessions||[]).reduce((s,x)=>s+(x.seconds||0),0);}
+function wCompletionMult(w){
+  if(!w.totalSec||w.totalSec<=0)return 1;
+  const ratio=wTotalWatched(w)/w.totalSec;
+  if(ratio>=0.8)return 1.2;   // completo +20%
+  if(ratio<=0.3)return 0.8;   // muito incompleto -20%
+  return 1;
+}
+function wTotalPts(w){
+  // soma pontos por sessão (cada sessão usa a data certa)
+  return(w.sessions||[]).reduce((s,x)=>{
+    const net=Math.max(0,(x.seconds||0)-(x.skip||0));
+    return s+wBasePoints(net,w.platform,w.rankMult||1);
+  },0);
+}
+function wScoreDisplay(w){
+  const pts=wTotalPts(w);
+  const cMult=wCompletionMult(w);
+  const final=Math.round(pts*cMult);
+  return{pts,cMult,final};
+}
+
+$('#wCreate').onclick=()=>{
+  const actors=($('#wActors').value||'').split(';').map(s=>cleanCell(s)).filter(Boolean);
+  if(!actors.length){$('#wCreateStatus').textContent='Digite pelo menos um ator.';return;}
+  ensureWatches();
+  const platform=$('#wPlat').value;
+  const rankVal=$('#wRank').value;
+  const rankMult=rankVal==='first'?3:rankVal==='second'?2:1;
+  const title=cleanCell($('#wTitle').value);
+  const totalRaw=cleanCell($('#wTotalDur').value);
+  const totalSec=totalRaw?Math.max(0,parseLiveDuration(totalRaw,platform).seconds):0;
+  const w={id:uid('w'),actors,platform,rankMult,title,totalSec,sessions:[],createdAt:new Date().toISOString()};
+  LEDGER.watches.push(w);
+  savePontoSoon();
+  $('#wActors').value='';$('#wTitle').value='';$('#wTotalDur').value='';$('#wCreateStatus').textContent='';
+  renderWatches();
+};
+
+function renderWatches(){
+  ensureWatches();
+  const list=$('#wList');if(!list)return;
+  if(!LEDGER.watches.length){list.innerHTML='<div class="empty">Nenhum vídeo em andamento.</div>';return;}
+  list.innerHTML=LEDGER.watches.map(w=>wCardHTML(w)).join('');
+  LEDGER.watches.forEach(w=>{
+    list.querySelector(`[data-w="${w.id}"] .wact-add`)?.addEventListener('click',()=>wToggleAdd(w.id));
+    list.querySelector(`[data-w="${w.id}"] .wact-sess`)?.addEventListener('click',()=>wToggleSessions(w.id));
+    list.querySelector(`[data-w="${w.id}"] .wact-finish`)?.addEventListener('click',()=>wFinish(w.id));
+    list.querySelector(`[data-w="${w.id}"] .wact-delete`)?.addEventListener('click',()=>wDelete(w.id));
+    list.querySelector(`[data-w="${w.id}"] .wadd-submit`)?.addEventListener('click',()=>wAddTime(w.id));
+  });
+}
+
+function wCardHTML(w){
+  const sc=wScoreDisplay(w);
+  const totalW=wTotalWatched(w);
+  const pct=w.totalSec>0?Math.min(100,Math.round(totalW/w.totalSec*100)):null;
+  const cLabel=sc.cMult>=1.15?'+20% completo':sc.cMult<=0.85?'-20% incompleto':'neutro';
+  const sessRows=(w.sessions||[]).slice().reverse().map(s=>{
+    const net=Math.max(0,(s.seconds||0)-(s.skip||0));
+    const pts=wBasePoints(net,w.platform,w.rankMult||1);
+    return `<div class="wsess-row"><span class="wsdate">${s.date}</span><span>${fmtSec(s.seconds||0)}${s.skip?` · skip ${fmtSec(s.skip)}`:''}${s.skip?` · líq. ${fmtSec(net)}`:''}</span><b>+${pts} pts</b></div>`;
+  }).join('');
+  return `<div class="wcard" data-w="${w.id}">
+    <div class="wcard-head">
+      <div class="winfo">
+        <div class="wname">${escapeHtml(w.title||w.actors.join(', '))}</div>
+        <div class="wplat">${w.platform}${w.rankMult>1?` · ×${w.rankMult}`:''}</div>
+        <div class="wmeta">${w.actors.map(escapeHtml).join(' · ')}${pct!==null?` · ${pct}% assistido`:''}</div>
+      </div>
+    </div>
+    <div class="wcard-score">
+      <div class="wscore-cell"><div class="v">${fmtSec(totalW)}</div><div class="l">assistido</div></div>
+      <div class="wscore-cell"><div class="v ok">${sc.final}</div><div class="l">pts previstos</div></div>
+      <div class="wscore-cell"><div class="v" style="font-size:13px;padding-top:4px">${cLabel}</div><div class="l">completion</div></div>
+    </div>
+    ${w.sessions.length?`<div class="wcard-sessions" id="wsess-${w.id}">${sessRows}</div>`:''}
+    <div class="wcard-add" id="wadd-${w.id}">
+      <div class="wadd-row">
+        <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Assistido hoje</label><input class="wadd-sec" placeholder="ex: 40 ou 01:20" autocomplete="off"></div>
+        <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Skip (opcional)</label><input class="wadd-skip" placeholder="0 ou 00:30" autocomplete="off"></div>
+      </div>
+      <button class="cta wadd-submit">+ Adicionar sessão</button>
+    </div>
+    <div class="wcard-actions">
+      <button class="wact wact-add"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8" stroke-linecap="round"/></svg>Sessão</button>
+      ${w.sessions.length?`<button class="wact wact-sess"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke-linecap="round"/></svg>Histórico</button>`:''}
+      <button class="wact wact-finish primary"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>Finalizar</button>
+      <button class="wact wact-delete danger"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+    </div>
+  </div>`;
+}
+
+function wToggleAdd(id){const el=$(`#wadd-${id}`);el.classList.toggle('on');if(el.classList.contains('on'))el.querySelector('.wadd-sec')?.focus();}
+function wToggleSessions(id){$(`#wsess-${id}`)?.classList.toggle('on');}
+
+function wAddTime(id){
+  ensureWatches();
+  const w=LEDGER.watches.find(x=>x.id===id);if(!w)return;
+  const card=document.querySelector(`[data-w="${id}"]`);
+  const secRaw=cleanCell(card.querySelector('.wadd-sec').value);
+  const skipRaw=cleanCell(card.querySelector('.wadd-skip').value);
+  const parsed=parseLiveDuration(secRaw,w.platform);
+  if(!parsed.ok||parsed.seconds<=0){alert('Digite uma duração válida.');return;}
+  const skipParsed=skipRaw&&skipRaw!=='0'?parseLiveDuration(skipRaw,w.platform):{seconds:0,ok:true};
+  w.sessions.push({date:todayBR(),seconds:parsed.seconds,skip:skipParsed.seconds||0});
+  savePontoSoon();renderWatches();
+}
+
+function wFinish(id){
+  ensureWatches();
+  const w=LEDGER.watches.find(x=>x.id===id);if(!w||!w.sessions.length){alert('Adicione pelo menos uma sessão antes de finalizar.');return;}
+  const sc=wScoreDisplay(w);
+  const cMult=sc.cMult;
+  // um evento por dia, por ator — pontos proporcionais ao mult de completion
+  const byDate={};
+  w.sessions.forEach(s=>{
+    const net=Math.max(0,(s.seconds||0)-(s.skip||0));
+    const pts=Math.round(wBasePoints(net,w.platform,w.rankMult||1)*cMult);
+    byDate[s.date]=(byDate[s.date]||0)+pts;
+  });
+  w.actors.forEach(actor=>{
+    Object.entries(byDate).forEach(([dataBR,ptsDay])=>{
+      if(ptsDay<=0)return;
+      LEDGER.events.push({id:uid('wa'),nome:actor,tipo:'Ator',ponto:ptsDay,dataBR,plataforma:w.platform,score:null,titulo:w.title||'',modo:'assistindo',source:'watch'});
+    });
+  });
+  // remove da fila
+  LEDGER.watches=LEDGER.watches.filter(x=>x.id!==id);
+  savePontoSoon();renderWatches();renderRanking();
+  toast(`✓ ${w.actors.join(', ')} finalizado · ${sc.final} pts distribuídos em ${Object.keys(byDate).length} dia(s)`);
+}
+
+function wDelete(id){
+  if(!confirm('Apagar este registro sem lançar pontos?'))return;
+  ensureWatches();LEDGER.watches=LEDGER.watches.filter(x=>x.id!==id);savePontoSoon();renderWatches();
+}
+
+/* =====================================================================
+   F5 FIX — localStorage como backup imediato de usedMediaIds
+   (garante que mídia não repete mesmo se Drive save não completou)
+   ===================================================================== */
+const LS_USED='pm2_usedMedia_'+localDay();
+function lsSaveUsed(){try{localStorage.setItem(LS_USED,JSON.stringify(GAME.sessions.current.usedMediaIds||[]));}catch(e){}}
+function lsLoadUsed(){try{const v=localStorage.getItem(LS_USED);return v?JSON.parse(v):[];}catch(e){return[];}}
+function mergeUsed(){
+  const fromLS=lsLoadUsed();
+  const fromDrive=GAME.sessions.current.usedMediaIds||[];
+  const merged=[...new Set([...fromLS,...fromDrive])];
+  GAME.sessions.current.usedMediaIds=merged;
+  lsSaveUsed();
+}
+// chama mergeUsed logo após carregar o Drive state (no openFolder já existente)
+// hookado via patch em saveSessionNow para também gravar no LS
+const _origSaveSessionNow=saveSessionNow;
+// redefinir saveSessionNow pra incluir LS
+window.saveSessionNow=async function(){lsSaveUsed();await _origSaveSessionNow();}
+
+
 function lvCompute(){const plat=$('#lvPlat').value,rule=LIVE_RULES[plat];if(rule.kind==='manualPoints'){const p=Math.round(parseNumber($('#lvDur').value));return{ok:!!p&&isFinite(p),points:p,text:p?`${plat} · manual = ${fmtNum(p)} pts`:'Digite uma pontuação.',modo:'manual'};}const dur=parseLiveDuration($('#lvDur').value,plat);if(!dur.ok)return{ok:false,points:0,text:'Digite uma duração válida.'};let skipSec=0,prov=false;if(rule.skip){const sv=cleanCell($('#lvSkip').value);if(sv&&sv!=='-'){if(sv==='0'){skipSec=0;prov=true;}else{const sp=parseLiveDuration(sv,plat);if(sp.ok){skipSec=sp.seconds;prov=true;}}}}const net=Math.max(0,dur.seconds-skipSec);let mult=1;if(rule.rankBonus){const r=$('#lvRank').value;mult=r==='first'?3:r==='second'?2:1;}const pts=Math.round(liveBasePoints(net,plat)*mult);const skTxt=rule.skip?(prov?` · líquido ${net}s`:' · skip não informado'):'';return{ok:pts!==0,points:pts,text:`${plat} · ${dur.seconds}s${skTxt} · ${rule.label}${mult!==1?` · ×${mult}`:''} = ${fmtNum(pts)} pts`,modo:'round:'+plat};}
 function lvUI(){const r=lvRule(),man=r.kind==='manualPoints';$('#lvDurLabel').textContent=man?'Pontos':(r.kind==='pointsPerMinute'?'Minutos assistidos':'Segundos assistidos');$('#lvDur').placeholder=man?'Ex.: 10':(r.kind==='pointsPerMinute'?'5 ou 01:20':'42 ou 01:20');$('#lvSkipWrap').style.display=r.skip?'block':'none';$('#lvRankWrap').style.display=r.rankBonus?'block':'none';lvPrev();}
 function lvPrev(){const name=cleanCell($('#lvName').value),c=lvCompute();$('#lvPreview').innerHTML=c.text+(c.ok?`<br><b>${fmtNum(c.points)} pts</b>`:'');const ok=!!name&&c.ok;$('#lvAdd').disabled=!ok;$('#lvAdd').textContent=ok?`+ Adicionar ${fmtNum(c.points)} pts`:'+ Adicionar';}
@@ -1125,10 +1373,10 @@ $('#impAdd').onclick=()=>importDo('add');$('#impReplace').onclick=()=>importDo('
 /* =====================================================================
    NAV / refresh / toast / init
    ===================================================================== */
-$$('.tab').forEach(t=>t.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('on'));$$('.view').forEach(v=>v.classList.remove('on'));t.classList.add('on');$('#'+t.dataset.v).classList.add('on');const v=t.dataset.v;if(v==='ranking')renderRanking();if(v==='spotlight'){fillNames();}if(v==='atores')renderActors();if(v==='biblioteca'){fillUpActors();fillLibActorFilter();renderLibrary();}if(v==='lancar'){fillNames();lvUI();}});
+$$('.tab').forEach(t=>t.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('on'));$$('.view').forEach(v=>v.classList.remove('on'));t.classList.add('on');$('#'+t.dataset.v).classList.add('on');const v=t.dataset.v;if(v==='ranking')renderRanking();if(v==='spotlight'){fillNames();}if(v==='atores')renderActors();if(v==='biblioteca'){fillUpActors();fillLibActorFilter();renderLibrary();}if(v==='assistindo'){wFillPlats();renderWatches();}if(v==='lancar'){fillNames();lvUI();}});
 function fillNames(){const names=[...new Set([...LEDGER.events.map(e=>e.nome),...Object.values(GAME.actors).map(a=>a.name)])].sort();const html=names.map(n=>`<option value="${escapeHtml(n)}">`).join('');$('#spotNames').innerHTML=html;$('#lvNames').innerHTML=html;}
 function refreshLight(){const today=todayBR();$('#livePts').textContent=fmtNum(LEDGER.events.filter(e=>e.plataforma==='PornMedia'&&e.dataBR===today).reduce((a,b)=>a+b.ponto,0))+' pts';}
-function refreshAll(){renderRanking();renderActors();fillUpActors();fillLibActorFilter();fillNames();fillPlats();renderLibrary();refreshLight();}
+function refreshAll(){renderRanking();renderActors();fillUpActors();fillLibActorFilter();fillNames();fillPlats();renderLibrary();refreshLight();wFillPlats();renderWatches();}
 let toastT2=null;function toast(b,t){$('#toastB').textContent=b;$('#toastT').textContent=t;const el=$('#toast');el.classList.add('on');clearTimeout(toastT2);toastT2=setTimeout(()=>el.classList.remove('on'),1700);}
 addEventListener('keydown',e=>{if(vOpen){if(e.key==='Escape')closeViewer();if(e.key==='ArrowRight'&&vIdx<(viewerMode==='duel'?1:viewerItems.length-1)&&!zoom){vIdx++;setTrack(1);vmeta();}if(e.key==='ArrowLeft'&&vIdx>0&&!zoom){vIdx--;setTrack(1);vmeta();}return;}if($('#jogo').classList.contains('on')&&duel.a){if(e.key==='ArrowLeft')decide('a');if(e.key==='ArrowRight')decide('b');}});
 
