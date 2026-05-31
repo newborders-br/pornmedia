@@ -495,7 +495,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
       </div>
       <div class="card wformbox" id="wFormBox" style="margin-top:12px"><div class="card-b">
         <div class="fld"><label class="flabel micro">Atores (separe por ;)</label><input id="wActors" placeholder="Vega; Cassel; Marlow" autocomplete="off"></div>
-        <div class="fld"><label class="flabel micro">Título / link / nome da pasta</label><input id="wTitle" placeholder="ex: Telegram 12/06 · pasta full ou link PC-ON"></div>
+        <div class="fld"><label class="flabel micro">Título / nome da pasta</label><input id="wTitle" placeholder="ex: Intense anal action ou Telegram 12/06 · pasta full"></div>
+        <div class="fld" id="wLinkWrap" style="display:none"><label class="flabel micro">Link temporário</label><input id="wLink" placeholder="https://... só para abrir enquanto está em andamento"></div>
         <div class="two">
           <div class="fld"><label class="flabel micro">Plataforma</label><select id="wPlat"></select></div>
           <div class="fld"><label class="flabel micro">Total de itens (opcional)</label><input id="wTotalDur" placeholder="ex: 360"></div>
@@ -1437,12 +1438,15 @@ function fillPlats(){$('#lvPlat').innerHTML=Object.keys(LIVE_RULES).map(p=>`<opt
 const W_PLATS=['pc-onr','pc-on','pc-off','telegram full','telegram only','twitter'];
 let wPlatformFilter='all';
 const W_LABELS={'all':'todos','pc-on':'pc-on','pc-onr':'pc-onr','pc-off':'pc-off','telegram full':'telegram full','telegram only':'telegram only','twitter':'twitter'};
-function wExtractUrl(w){const txt=String(w?.title||'');const m=txt.match(/https?:\/\/[^\s]+/i);return m?m[0]:'';}
+function wExtractUrl(w){const direct=cleanCell(w?.link||'');if(direct)return direct;const txt=String(w?.title||'');const m=txt.match(/https?:\/\/[^\s]+/i);return m?m[0]:'';}
+function wDisplayTitle(w){const stripped=String(w?.title||'').replace(/https?:\/\/[^\s]+/ig,'').replace(/\s+/g,' ').trim();return stripped||w?.actors?.join(', ')||'—';}
+function wLinkUI(){const wrap=$('#wLinkWrap');if(!wrap)return;const show=$('#wPlat')?.value==='pc-on';wrap.style.display=show?'block':'none';if(!show){const input=$('#wLink');if(input)input.value='';}}
 function wOpenLink(id){const w=(LEDGER.watches||[]).find(x=>x.id===id);const url=wExtractUrl(w);if(url)window.open(url,'_blank','noopener');}
 
 function wFillPlats(){
   const sel=$('#wPlat');if(!sel)return;
   sel.innerHTML=W_PLATS.map(p=>`<option value="${p}">${p}</option>`).join('');
+  wLinkUI();
   wUpdPreview();
 }
 function wRule(){return LIVE_RULES[$('#wPlat')?.value||'pc-onr']||LIVE_RULES['pc-onr'];}
@@ -1457,10 +1461,11 @@ function wUpdPreview(){
   if(actors.length>1)txt+=` · ${actors.length} atores`;
   $('#wPreview').textContent=actors.length?txt:'Preencha ator e plataforma pra ver a régua.';
 }
-['#wPlat','#wRank'].forEach(s=>$(s)?.addEventListener('change',wUpdPreview));
+$('#wPlat')?.addEventListener('change',()=>{wLinkUI();wUpdPreview();});
+$('#wRank')?.addEventListener('change',wUpdPreview);
 ['#wActors','#wTotalDur'].forEach(s=>$(s)?.addEventListener('input',wUpdPreview));
 
-// estrutura: {id, actors[], platform, rankMult, title, totalItems, sessions:[{date, pts, position}], createdAt}
+// estrutura: {id, actors[], platform, rankMult, title, link, totalItems, sessions:[{date, pts, position}], createdAt}
 function ensureWatches(){if(!Array.isArray(LEDGER.watches))LEDGER.watches=[];}
 
 function wTotalPts(w){
@@ -1493,10 +1498,11 @@ $('#wCreate').onclick=()=>{
   const platform=$('#wPlat').value;
   const rankMult=$('#wRank').value==='first'?3:$('#wRank').value==='second'?2:1;
   const title=cleanCell($('#wTitle').value);
+  const link=platform==='pc-on'?cleanCell($('#wLink')?.value||''):'';
   const totalItems=parseInt($('#wTotalDur').value)||0;
-  const w={id:uid('w'),actors,platform,rankMult,title,totalItems,sessions:[],createdAt:new Date().toISOString()};
+  const w={id:uid('w'),actors,platform,rankMult,title,link,totalItems,sessions:[],createdAt:new Date().toISOString()};
   LEDGER.watches.push(w);savePontoSoon();
-  $('#wActors').value='';$('#wTitle').value='';$('#wTotalDur').value='';$('#wCreateStatus').textContent='';
+  $('#wActors').value='';$('#wTitle').value='';if($('#wLink'))$('#wLink').value='';$('#wTotalDur').value='';$('#wCreateStatus').textContent='';
   const box=$('#wFormBox'); if(box) box.classList.remove('on');
   wPlatformFilter=platform;
   renderWatches();
@@ -1563,7 +1569,7 @@ function wCardHTML(w){
     </div>`:'';
   return `<div class="wcard" data-w="${w.id}">
     <div class="wcard-head"><div class="winfo">
-      <div class="wname">${escapeHtml(w.title||w.actors.join(', '))}</div>
+      <div class="wname">${escapeHtml(wDisplayTitle(w))}</div>
       <div class="wplat">${w.platform}${w.rankMult>1?` · ×${w.rankMult}`:''} · ${ruleHint}</div>
       <div class="wmeta">${w.actors.map(escapeHtml).join(' · ')}${lastPos?` · #${lastPos}${w.totalItems?'/'+w.totalItems:''}`:''}</div>
     </div></div>
