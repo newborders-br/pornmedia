@@ -617,8 +617,7 @@ function closeViewer(sil){
   setTimeout(()=>{viewerClosing=false;},60);
 }
 function slideW(){return window.innerWidth||viewer.clientWidth||document.documentElement.clientWidth||360;}
-function syncActiveSlide(){slides.forEach((sl,k)=>{sl.style.pointerEvents=(k===vIdx)?'auto':'none';});}
-function setTrack(a){track.style.transition=a?'transform .32s var(--ease)':'none';track.style.transform=`translate3d(${-vIdx*slideW()}px,0,0)`;if(!a){void track.offsetWidth;}syncActiveSlide();}
+function setTrack(a){track.style.transition=a?'transform .32s var(--ease)':'none';track.style.transform=`translate3d(${-vIdx*slideW()}px,0,0)`;if(!a){void track.offsetWidth;}}
 function dragTrack(px){track.style.transition='none';track.style.transform=`translate3d(${(-vIdx*slideW())+px}px,0,0)`;}
 window.addEventListener('resize',()=>{if(vOpen)setTrack(false);},{passive:true});
 function vmeta(){
@@ -640,8 +639,10 @@ $('#vClose').onclick=()=>closeViewer();
 $('#vPick').onclick=()=>{if(viewerMode==='duel')decide(vIdx===0?'a':'b');};
 $$('.v-dots i').forEach(d=>d.onclick=()=>goSlide(+d.dataset.d,true));
 
-track.addEventListener('touchstart',e=>{
+viewer.addEventListener('touchstart',e=>{
   if(!vOpen)return;
+  // não sequestra toques nos controles de UI
+  if(e.target.closest('#vClose,#vPick,.v-dots,.v-top,button')){G.mode='ui';G.active=false;return;}
   const n=(e.touches||[]).length;
   const ts=touchList(e);
   if(n>=2){
@@ -663,7 +664,7 @@ track.addEventListener('touchstart',e=>{
 },{passive:false});
 
 const MOVE_THRESH=10;
-track.addEventListener('touchmove',e=>{
+viewer.addEventListener('touchmove',e=>{
   if(!vOpen)return;
   const n=(e.touches||[]).length;
   const ts=touchList(e);
@@ -693,7 +694,7 @@ track.addEventListener('touchmove',e=>{
   if(G.mode==='dismiss'){if(G.dy>0){viewer.style.background=`rgba(13,13,11,${Math.max(.35,1-G.dy/500)})`;}return;}
 },{passive:false});
 
-track.addEventListener('touchend',e=>{
+viewer.addEventListener('touchend',e=>{
   if(!vOpen){fullReset();return;}
   const left=(e.touches||[]).length;   // dedos AINDA na tela
   const endDx=G.dx, endDy=G.dy, mode=G.mode, moved=G.moved, onVideo=G.onVideo;
@@ -722,17 +723,18 @@ track.addEventListener('touchend',e=>{
   }
   viewer.style.background='';
   const wasZoom=zoom;
+  HUD('decide swipe endDx='+Math.round(endDx)+' endDy='+Math.round(endDy));
   fullReset();
   if(wasZoom){setTrack(false);return;}
   if(mode==='dismiss' && endDy>110 && Math.abs(endDx)<90){closeViewer();return;}
-  if(mode==='swipe' && Math.abs(endDx)>50 && Math.abs(endDx)>Math.abs(endDy)){goSlide(vIdx+(endDx<0?1:-1),true);return;}
+  if(mode==='swipe' && Math.abs(endDx)>35){goSlide(vIdx+(endDx<0?1:-1),true);return;}
   setTrack(true);
 },{passive:false});
 
 // zera 100% o estado de gesto (não mexe no zoom/scale; isso é decidido por quem chama)
 function fullReset(){G.mode='none';G.active=false;G.decided=false;G.moved=false;G.onVideo=false;G.dx=0;G.dy=0;G.pStartDist=0;}
 
-track.addEventListener('touchcancel',e=>{const left=(e.touches||[]).length;if(left>0)return;viewer.style.background='';zoom=scale>1.03;if(!zoom)clearZoomState(false);fullReset();setTrack(false);HUD('cancel');},{passive:false});
+viewer.addEventListener('touchcancel',e=>{const left=(e.touches||[]).length;if(left>0)return;viewer.style.background='';zoom=scale>1.03;if(!zoom)clearZoomState(false);fullReset();setTrack(false);HUD('cancel');},{passive:false});
 document.addEventListener('fullscreenchange',()=>{if(vOpen){fullReset();setTrack(false);}},false);
 document.addEventListener('webkitfullscreenchange',()=>{if(vOpen){fullReset();setTrack(false);}},false);
 document.addEventListener('visibilitychange',()=>{if(vOpen&&!document.hidden){fullReset();setTrack(false);}},false);
