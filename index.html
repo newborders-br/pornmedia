@@ -542,16 +542,22 @@ let viewerMode='duel',viewerItems=[];
 function activeMedia(){return viewerMode==='duel'?(vIdx===0?duel.a:duel.b):viewerItems[vIdx];}
 function currentImg(){return slides[vIdx]?.querySelector('.vimg');}
 async function paintViewerSlides(){
-  for(const[k,sl]of slides.entries()){
+  // pinta primeiro o slide ATIVO (o que foi aberto), depois o outro — em paralelo, sem bloquear um no outro
+  const tasks=slides.map((sl,k)=>({k,sl}));
+  tasks.sort((a,b)=>(a.k===vIdx?-1:b.k===vIdx?1:0));
+  await Promise.all(tasks.map(async ({k,sl})=>{
     const m=viewerMode==='duel'?(k===0?duel.a:duel.b):viewerItems[k];
     const vi=sl.querySelector('.vimg');
     sl.querySelectorAll('video.vmedia').forEach(v=>v.remove());
     vi.style.transform='';vi.style.backgroundImage='';
-    if(!m){sl.style.visibility='hidden';continue;}
+    if(!m){sl.style.visibility='hidden';return;}
     sl.style.visibility='visible';
-    try{const src=await blobUrl(m);if(m.type==='video'){const v=document.createElement('video');v.className='vmedia';v.src=src;v.controls=true;v.playsInline=true;v.addEventListener('webkitendfullscreen',()=>{resetViewerGesture(true);setTrack(false);},{passive:true});v.addEventListener('fullscreenchange',()=>{resetViewerGesture(true);setTrack(false);},{passive:true});sl.appendChild(v);}else vi.style.backgroundImage=`url("${src}")`;}
-    catch(e){}
-  }
+    try{
+      const src=await blobUrl(m);
+      if(m.type==='video'){const v=document.createElement('video');v.className='vmedia';v.src=src;v.controls=true;v.playsInline=true;v.addEventListener('webkitendfullscreen',()=>{resetViewerGesture(true);setTrack(false);},{passive:true});v.addEventListener('fullscreenchange',()=>{resetViewerGesture(true);setTrack(false);},{passive:true});sl.appendChild(v);}
+      else vi.style.backgroundImage=`url("${src}")`;
+    }catch(e){}
+  }));
 }
 /* ---------------------------------------------------------------
    VIEWER — refatorado limpo.
