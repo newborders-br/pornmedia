@@ -486,6 +486,8 @@ async function openFolder(fid,name){
 }
 let gT=null,pT=null;
 function saveGameSoon(){setSave('saving','salvando jogo…');clearTimeout(gT);gT=setTimeout(async()=>{try{GAME.updatedAt=new Date().toISOString();GAME.folderId=folderId;gameFileId=await saveJsonFile(GAME_FILE,GAME,gameFileId);setSave('ok','salvo '+nowHM());}catch(e){setSave('','erro: '+e.message);log('Erro salvar jogo: '+e.message);}},700);}
+async function saveSessionNow(){// salva imediatamente — sem debounce — pra sessão sobreviver ao F5
+  try{clearTimeout(gT);GAME.updatedAt=new Date().toISOString();GAME.folderId=folderId;gameFileId=await saveJsonFile(GAME_FILE,GAME,gameFileId);setSave('ok','salvo '+nowHM());}catch(e){log('Erro salvar sessão: '+e.message);}}
 function savePontoSoon(){setSave('saving','salvando ledger…');clearTimeout(pT);pT=setTimeout(async()=>{try{LEDGER.updatedAt=new Date().toISOString();pontoFileId=await saveJsonFile(PONTO_FILE,LEDGER,pontoFileId);setSave('ok','salvo '+nowHM());}catch(e){setSave('','erro: '+e.message);log('Erro salvar ledger: '+e.message);}},700);}
 function nowHM(){return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
 function setConn(on){const c=$('#connBtn');c.classList.toggle('ok',on);$('#connTxt').textContent=on?'Drive conectado':'Conectar Drive';$('#savePill').style.display=on?'flex':'none';}
@@ -591,8 +593,17 @@ async function setStage(side,m){
   el.querySelector('.fav').style.display=gameMode==='video'?'none':'grid';
   el.querySelector('.fav').classList.toggle('on',!!m.favorite);
   const img=el.querySelector('.img');img.style.backgroundImage='';el.querySelectorAll('video.media').forEach(v=>v.remove());
-  try{const src=await blobUrl(m);if(m.type==='video'){const v=document.createElement('video');v.className='media';v.src=src;v.muted=true;v.controls=true;v.playsInline=true;v.preload='metadata';v.onloadedmetadata=()=>{if(isFinite(v.duration)&&v.duration>0){m.durationSec=v.duration;saveGameSoon();}};el.insertBefore(v,el.querySelector('.veil'));}else img.style.backgroundImage=`url("${src}")`;}
-  catch(e){}
+  try{
+    const src=await blobUrl(m);
+    if(m.type==='video'){
+      const v=document.createElement('video');v.className='media';v.src=src;v.muted=true;v.controls=true;v.playsInline=true;v.preload='metadata';
+      v.onloadedmetadata=()=>{
+        if(isFinite(v.duration)&&v.duration>0){m.durationSec=v.duration;saveGameSoon();}
+        updateVidInfo(side,m);  // atualiza o chip assim que a duração chega
+      };
+      el.insertBefore(v,el.querySelector('.veil'));
+    }else img.style.backgroundImage=`url("${src}")`;
+  }catch(e){}
 }
 async function renderDuel(){$('#counter').textContent=String(count).padStart(3,'0');await setStage('a',duel.a);await setStage('b',duel.b);const lbl=gameMode==='video'?'Duelo · Vídeos':'Duelo · Fotos';$('#gamebarLabel').textContent=lbl;updateVidInfo('a',duel.a);updateVidInfo('b',duel.b);}
 async function nextDuel(preferActorId=null){
@@ -612,7 +623,7 @@ async function decide(side){
   momentum[w.actorId]=(momentum[w.actorId]||0)+BAL.boost;Object.keys(momentum).forEach(k=>{momentum[k]*=BAL.decay;if(momentum[k]<.03)delete momentum[k];});
   const pts=gameMode==='video'?videoWinPoints(w,side):1;
   creditPonto(actorName(w.actorId),pts);
-  saveGameSoon();
+  saveSessionNow();  // imediato — garante que F5 não repete a mídia
   const stg=$('#stage');stg.classList.add('deciding');$('#cA').classList.add(side==='a'?'win':'lose');$('#cB').classList.add(side==='b'?'win':'lose');
   closeViewer(true);
   setTimeout(async()=>{stg.classList.remove('deciding');$('#cA').classList.remove('win','lose');$('#cB').classList.remove('win','lose');deciding=false;if(gameMode==='video')showVideoChoice(w.actorId);else{await nextDuel();refreshLight();}},520);
@@ -620,7 +631,7 @@ async function decide(side){
 $('[data-pick="a"]').onclick=e=>{e.stopPropagation();decide('a');};
 $('[data-pick="b"]').onclick=e=>{e.stopPropagation();decide('b');};
 $$('[data-fav]').forEach(b=>b.onclick=e=>{e.stopPropagation();const m=duel[b.dataset.fav];if(!m)return;m.favorite=!m.favorite;b.classList.toggle('on',m.favorite);saveGameSoon();});
-$('#skip').onclick=()=>{if(!duel.a)return;GAME.sessions.current.usedMediaIds=[...new Set([...(GAME.sessions.current.usedMediaIds||[]),duel.a.id,duel.b.id])];[duel.a,duel.b].forEach(m=>m.elo=Math.max(0,(m.elo||1500)-4));saveGameSoon();nextDuel();};
+$('#skip').onclick=()=>{if(!duel.a)return;GAME.sessions.current.usedMediaIds=[...new Set([...(GAME.sessions.current.usedMediaIds||[]),duel.a.id,duel.b.id])];[duel.a,duel.b].forEach(m=>m.elo=Math.max(0,(m.elo||1500)-4));saveSessionNow();nextDuel();};
 $('#newRound').onclick=()=>{GAME.sessions.current.usedMediaIds=[];hideVideoChoice();saveGameSoon();nextDuel();};
 $('#nextNormal').onclick=()=>nextDuel();
 $('#continueActor').onclick=()=>nextDuel(pendingWinnerActorId);
