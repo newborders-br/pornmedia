@@ -171,6 +171,36 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .gamebar .ct{text-align:center}.gamebar .ct .l{color:var(--ink-3)}.gamebar .ct .n{font:400 18px/1 var(--serif)}
 .jogo-empty{flex:1 1 auto;display:grid;place-items:center;padding:24px;text-align:center}
 
+
+/* DESKTOP / PC — duelo lado a lado */
+@media (min-width: 900px){
+  #jogo{height:calc(100dvh - 106px - var(--st));}
+  .stage{
+    flex-direction:row;
+    gap:8px;
+    padding:8px;
+  }
+  .cont{
+    flex:1 1 50%;
+    min-width:0;
+    min-height:0;
+  }
+  .cont.win{flex-basis:58%;}
+  .cont.lose{flex-basis:42%;}
+  .cont .foot{padding:16px;}
+  .cont .nm{max-width:32vw;font-size:24px;}
+  .cont .ac{font-size:10px;}
+  .pick{height:44px;padding:0 18px;}
+  .fav{width:44px;height:44px;}
+  .divider{
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+  }
+  .vs{width:54px;height:54px;font-size:23px;}
+  .gamebar{padding:10px 22px;}
+}
+
 /* RANKING */
 .filters{display:flex;gap:8px;margin:16px 0 4px;flex-wrap:wrap}
 .fbtn{border:1px solid var(--hair);background:rgba(255,255,255,.45);padding:9px 12px;font:600 10px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-2)}.fbtn.on{border-color:var(--ink);color:var(--ink);background:#fff}
@@ -1424,29 +1454,39 @@ function wAddVideoTime(id){
   const parsed=parseLiveDuration(secRaw,w.platform);
   if(!parsed.ok||parsed.seconds<=0){alert('Digite uma duração válida.');return;}
   const skipSec=skipRaw&&skipRaw!=='0'?parseLiveDuration(skipRaw,w.platform).seconds:0;
-  w.openVideo.sessions.push({date:todayBR(),seconds:parsed.seconds,skip:skipSec||0});
+  const net=Math.max(0,parsed.seconds-(skipSec||0));
+  const pts=wBasePoints(net,w.platform,w.rankMult||1);
+  const sess={date:todayBR(),seconds:parsed.seconds,skip:skipSec||0,pts,released:true};
+  w.openVideo.sessions.push(sess);
+
+  // Vídeo longo agora libera no ledger a cada nova entrada,
+  // em vez de acumular tudo para o fechamento/finalização.
+  w.actors.forEach(actor=>{
+    LEDGER.events.push({
+      id:uid('wv'),nome:actor,tipo:'Ator',ponto:pts,dataBR:sess.date,
+      plataforma:w.platform,score:null,titulo:w.title||'',modo:'assistindo-video',source:'watch-video'
+    });
+  });
+
   card.querySelector('.wvid-sec').value='';if(card.querySelector('.wvid-skip'))card.querySelector('.wvid-skip').value='';
-  savePontoSoon();renderWatches();
+  savePontoSoon();renderWatches();renderRanking();
+  toast(`+${fmtNum(pts)}`,`${w.actors.join(', ')} · ${w.platform}`);
 }
 function wCloseVideo(id){
   ensureWatches();
   const w=LEDGER.watches.find(x=>x.id===id);if(!w||!w.openVideo)return;
-  // calcular pontos por dia do vídeo
-  const byDate={};
+  const nextPos=w.openVideo.position!=null?w.openVideo.position+1:null;
+
+  // As entradas de vídeo longo já foram lançadas no ledger em wAddVideoTime.
+  // Ao fechar, apenas transferimos o histórico para o card e avançamos a posição,
+  // sem liberar pontos de novo.
   (w.openVideo.sessions||[]).forEach(s=>{
     const net=Math.max(0,(s.seconds||0)-(s.skip||0));
-    const pts=wBasePoints(net,w.platform,w.rankMult||1);
-    byDate[s.date]=(byDate[s.date]||0)+pts;
+    const pts=s.pts!=null?s.pts:wBasePoints(net,w.platform,w.rankMult||1);
+    w.sessions.push({date:s.date,pts,position:null,video:true,released:true,seconds:s.seconds||0,skip:s.skip||0});
   });
-  // mergiar nas sessões simples por data
-  Object.entries(byDate).forEach(([date,pts])=>{
-    const existing=w.sessions.find(s=>s.date===date);
-    if(existing)existing.pts+=pts;
-    else w.sessions.push({date,pts,position:null});
-  });
-  const nextPos=w.openVideo.position!=null?w.openVideo.position+1:null;
+
   delete w.openVideo;
-  // avança posição se disponível
   if(nextPos&&w.sessions.length){const last=w.sessions[w.sessions.length-1];if(!last.position)last.position=nextPos;}
   savePontoSoon();renderWatches();
 }
@@ -1469,8 +1509,8 @@ function wFinish(id){
   if(!w||!w.sessions.length){alert('Adicione pelo menos uma sessão antes de finalizar.');return;}
   if(w.openVideo){alert('Feche o vídeo em aberto antes de finalizar.');return;}
   const byDate={};
-  w.sessions.forEach(s=>{byDate[s.date]=(byDate[s.date]||0)+(Number(s.pts)||0);});
-  const totalPts=wTotalPts(w);const days=Object.keys(byDate).length;
+  w.sessions.filter(s=>!s.released).forEach(s=>{byDate[s.date]=(byDate[s.date]||0)+(Number(s.pts)||0);});
+  const totalPts=wTotalPts(w);const days=new Set((w.sessions||[]).map(s=>s.date)).size;
   w.actors.forEach(actor=>{
     Object.entries(byDate).forEach(([dataBR,ptsDay])=>{
       if(ptsDay<=0)return;
