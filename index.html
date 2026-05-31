@@ -560,6 +560,9 @@ async function paintViewerSlides(){
    1 dedo s/ zoom = swipe A/B ou fechar pra baixo · 1 dedo c/ zoom = pan · 2 dedos = pinch.
    --------------------------------------------------------------- */
 let viewerClosing=false;
+const DEBUG=/[?&]debug/.test(location.search);
+let _hudEl=null,_hudLog=[];
+function HUD(msg){if(!DEBUG)return;if(!_hudEl){_hudEl=document.createElement('div');_hudEl.style.cssText='position:fixed;left:8px;bottom:8px;z-index:9999;background:rgba(0,0,0,.82);color:#0f0;font:11px/1.35 monospace;padding:8px 10px;max-width:70vw;border-radius:8px;pointer-events:none;white-space:pre-wrap';document.body.appendChild(_hudEl);}_hudLog.unshift(`${msg} | z=${zoom?1:0} s=${scale.toFixed(2)} m=${G.mode}`);_hudLog=_hudLog.slice(0,7);_hudEl.textContent=_hudLog.join('\n');}
 const G={mode:'none',active:false,decided:false,onVideo:false,moved:false,sx:0,sy:0,dx:0,dy:0,sPanX:0,sPanY:0,pStartDist:0,pStartScale:1,pCX:0,pCY:0,pPanX:0,pPanY:0};
 function resetGesture(){G.mode='none';G.active=false;G.decided=false;G.onVideo=false;G.moved=false;G.dx=0;G.dy=0;G.pStartDist=0;}
 
@@ -623,46 +626,51 @@ $$('.v-dots i').forEach(d=>d.onclick=()=>goSlide(+d.dataset.d,true));
 
 track.addEventListener('touchstart',e=>{
   if(!vOpen)return;
+  const n=(e.touches||[]).length;
   const ts=touchList(e);
-  if(ts.length===2){
+  if(n>=2){
+    // dois (ou mais) dedos = pinça. Trava qualquer gesto de 1 dedo.
     e.preventDefault();
     G.mode='pinch';G.active=true;G.decided=true;
     const c=touchCenter(ts);
     G.pStartDist=touchDist(ts)||1;G.pStartScale=scale;G.pPanX=panX;G.pPanY=panY;G.pCX=c.x;G.pCY=c.y;
+    HUD('start pinch');
     return;
   }
+  // chegou 1 dedo. Se já estávamos em pinça (dedo restante após soltar 1), NÃO começa gesto de 1 dedo.
+  if(G.mode==='pinch'){HUD('start ignorado (pinça ativa)');return;}
   const t=ts[0];if(!t)return;
-  // rede de segurança: reconcilia estado caso um touchend tenha se perdido (iOS)
-  zoom = scale>1.03;
-  viewer.classList.toggle('zoomed',zoom);
-  if(!zoom && scale!==1){scale=1;panX=panY=0;const im=currentImg();if(im){im.style.transition='none';im.style.transform='';}}
-  // novo gesto de 1 dedo: NÃO decide o tipo ainda (espera o dedo andar)
   G.active=true;G.decided=false;G.moved=false;G.mode='undecided';
   G.onVideo=!!e.target.closest('video');
   G.sx=t.clientX;G.sy=t.clientY;G.dx=0;G.dy=0;G.sPanX=panX;G.sPanY=panY;
+  HUD('start 1-dedo');
 },{passive:false});
 
 const MOVE_THRESH=10;
 track.addEventListener('touchmove',e=>{
-  if(!vOpen||!G.active)return;
+  if(!vOpen)return;
+  const n=(e.touches||[]).length;
   const ts=touchList(e);
-  // 2 dedos vira pinch a qualquer momento
-  if(ts.length===2){
+  if(n>=2){
     e.preventDefault();
-    if(G.mode!=='pinch'){const c0=touchCenter(ts);G.mode='pinch';G.decided=true;G.pStartDist=touchDist(ts)||1;G.pStartScale=scale;G.pPanX=panX;G.pPanY=panY;G.pCX=c0.x;G.pCY=c0.y;}
+    if(G.mode!=='pinch'){const c0=touchCenter(ts);G.mode='pinch';G.active=true;G.decided=true;G.pStartDist=touchDist(ts)||1;G.pStartScale=scale;G.pPanX=panX;G.pPanY=panY;G.pCX=c0.x;G.pCY=c0.y;}
     const c=touchCenter(ts),dist=touchDist(ts)||G.pStartDist;
     scale=clamp(G.pStartScale*(dist/(G.pStartDist||1)),1,5);
     panX=G.pPanX+(c.x-G.pCX);panY=G.pPanY+(c.y-G.pCY);
     zoom=scale>1.02;viewer.classList.toggle('zoomed',zoom);applyZoom();
+    HUD('pinch s='+scale.toFixed(2));
     return;
   }
+  // só processa 1 dedo se REALMENTE há 1 dedo e não estamos no meio de uma pinça
+  if(n!==1||G.mode==='pinch'||!G.active)return;
   const t=ts[0];if(!t)return;
   G.dx=t.clientX-G.sx;G.dy=t.clientY-G.sy;
   const dist=Math.abs(G.dx)+Math.abs(G.dy);
   if(!G.decided){
-    if(dist<MOVE_THRESH)return;           // ainda é "toque", não commit
+    if(dist<MOVE_THRESH)return;
     G.moved=true;G.decided=true;
     G.mode = zoom ? 'pan' : (Math.abs(G.dx)>Math.abs(G.dy) ? 'swipe' : 'dismiss');
+    HUD('commit '+G.mode);
   }
   if(G.mode==='pan'){e.preventDefault();panX=G.sPanX+G.dx;panY=G.sPanY+G.dy;applyZoom();return;}
   if(G.mode==='swipe'){e.preventDefault();dragTrack(G.dx);return;}
@@ -670,46 +678,48 @@ track.addEventListener('touchmove',e=>{
 },{passive:false});
 
 track.addEventListener('touchend',e=>{
-  if(!vOpen){resetGesture();return;}
+  if(!vOpen){fullReset();return;}
+  const left=(e.touches||[]).length;   // dedos AINDA na tela
   const endDx=G.dx, endDy=G.dy, mode=G.mode, moved=G.moved, onVideo=G.onVideo;
-  const remaining=touchList(e).length;
+  HUD('end mode='+mode+' left='+left);
+
+  // Enquanto ainda houver QUALQUER dedo na tela, não finaliza nada.
+  if(left>0)return;
+
+  // A partir daqui a tela está LIVRE: decide o gesto e zera o estado por completo.
   if(mode==='pinch'){
-    if(remaining<2){
-      zoom = scale>1.03;
-      if(!zoom)clearZoomState(true); else {viewer.classList.add('zoomed');applyZoom();}
-      resetGesture();
-    }
+    zoom = scale>1.03;
+    if(zoom){viewer.classList.add('zoomed');applyZoom();} else clearZoomState(true);
+    fullReset();HUD('fim pinça zoom='+zoom);
     return;
   }
-  // toque sem arrasto significativo: pode ser duplo-toque (zoom) ou toque no vídeo
   if(!moved && mode==='undecided'){
-    resetGesture();
-    if(onVideo && !zoom){lastTap=0;return;}   // deixa o controle do vídeo agir
+    if(onVideo && !zoom){fullReset();lastTap=0;return;}
     const now=Date.now();
-    if(now-lastTap<300){lastTap=0;const t=(e.changedTouches&&e.changedTouches[0]);if(t)toggleZoom(t.clientX,t.clientY);}
-    else lastTap=now;
+    if(now-lastTap<300){lastTap=0;const t=(e.changedTouches&&e.changedTouches[0]);fullReset();if(t)toggleZoom(t.clientX,t.clientY);}
+    else{lastTap=now;fullReset();}
     return;
   }
   if(mode==='pan'){
-    if(remaining<2){
-      if(scale<=1.03)clearZoomState(true);   // saiu do zoom: permanece no slide atual
-      resetGesture();
-    }
-    return;
+    if(scale<=1.03)clearZoomState(true);
+    fullReset();return;
   }
-  // swipe ou dismiss: NUNCA fecha/troca enquanto estiver com zoom
   viewer.style.background='';
-  resetGesture();
-  if(zoom){setTrack(false);return;}
+  const wasZoom=zoom;
+  fullReset();
+  if(wasZoom){setTrack(false);return;}
   if(mode==='dismiss' && endDy>110 && Math.abs(endDx)<90){closeViewer();return;}
   if(mode==='swipe' && Math.abs(endDx)>50 && Math.abs(endDx)>Math.abs(endDy)){goSlide(vIdx+(endDx<0?1:-1),true);return;}
   setTrack(true);
 },{passive:false});
 
-track.addEventListener('touchcancel',()=>{viewer.style.background='';resetGesture();setTrack(true);},{passive:false});
-document.addEventListener('fullscreenchange',()=>{if(vOpen){resetGesture();setTrack(false);}},false);
-document.addEventListener('webkitfullscreenchange',()=>{if(vOpen){resetGesture();setTrack(false);}},false);
-document.addEventListener('visibilitychange',()=>{if(vOpen&&!document.hidden){resetGesture();setTrack(false);}},false);
+// zera 100% o estado de gesto (não mexe no zoom/scale; isso é decidido por quem chama)
+function fullReset(){G.mode='none';G.active=false;G.decided=false;G.moved=false;G.onVideo=false;G.dx=0;G.dy=0;G.pStartDist=0;}
+
+track.addEventListener('touchcancel',e=>{const left=(e.touches||[]).length;if(left>0)return;viewer.style.background='';zoom=scale>1.03;if(!zoom)clearZoomState(false);fullReset();setTrack(false);HUD('cancel');},{passive:false});
+document.addEventListener('fullscreenchange',()=>{if(vOpen){fullReset();setTrack(false);}},false);
+document.addEventListener('webkitfullscreenchange',()=>{if(vOpen){fullReset();setTrack(false);}},false);
+document.addEventListener('visibilitychange',()=>{if(vOpen&&!document.hidden){fullReset();setTrack(false);}},false);
 function toggleZoom(cx,cy){const m=activeMedia();if(!m||m.type==='video')return;if(zoom){clearZoomState(true);resetGesture();setTrack(false);return;}scale=2.4;const r=slides[vIdx].getBoundingClientRect();panX=(r.width/2-(cx-r.left))*(scale-1)/scale;panY=(r.height/2-(cy-r.top))*(scale-1)/scale;zoom=true;viewer.classList.add('zoomed');applyZoom();}
 slides.forEach(s=>s.addEventListener('click',e=>{if(matchMedia('(hover:hover)').matches&&!e.target.closest('video'))toggleZoom(e.clientX,e.clientY);}));
 addEventListener('popstate',()=>{if(vOpen)closeViewer(true);});
