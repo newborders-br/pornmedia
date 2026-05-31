@@ -87,6 +87,12 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .wact.primary{color:var(--ok)}
 .wact.danger{color:var(--danger)}
 .wact svg{width:12px;height:12px;stroke:currentColor;stroke-width:2;fill:none}
+/* vídeo em aberto */
+.wvid-open{border-top:2px solid var(--warn);background:rgba(154,123,62,.06);padding:12px 14px}
+.wvid-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:6px}
+.wvid-label{font:600 10px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--warn)}
+.wvid-pts{font:500 11px/1 var(--sans);color:var(--ink-2)}
+.wvid-form{}
 /* ASSISTINDO fim */
 
 .lib-upload-bar{background:var(--glass);backdrop-filter:blur(14px);border-bottom:1px solid var(--hair)}
@@ -316,9 +322,22 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
   <!-- RANKING -->
   <section class="view" id="ranking"><div class="wrap">
     <span class="eyebrow micro">Pontuação consolidada</span><div class="h2">Ranking</div>
-    <div class="sub">Soma de todas as plataformas. PornMedia entra ao vivo; as outras pelo Lançar/Importar.</div>
-    <div class="filters" id="periodFilters"><button class="fbtn on" data-period="all">Tudo</button><button class="fbtn" data-period="month">Este mês</button></div>
-    <div class="filters" id="platFilters"></div>
+    <div class="sub">Soma de todas as plataformas. PornMedia entra ao vivo; as outras pelo Registrar/Importar.</div>
+    <div class="filters" id="periodFilters" style="flex-wrap:wrap;gap:6px">
+      <button class="fbtn" data-period="today">Hoje</button>
+      <button class="fbtn" data-period="7d">7 dias</button>
+      <button class="fbtn on" data-period="month">Este mês</button>
+      <button class="fbtn" data-period="year">Este ano</button>
+      <button class="fbtn" data-period="all">Tudo</button>
+      <button class="fbtn" data-period="pick" id="periodPickBtn">Mês ▾</button>
+    </div>
+    <div id="periodPickWrap" style="display:none;margin-top:6px;display:none">
+      <div class="two" style="gap:6px">
+        <select id="pickMonth" style="background:#fff;border:1px solid var(--hair-2);padding:9px;font:500 13px var(--sans)"></select>
+        <select id="pickYear" style="background:#fff;border:1px solid var(--hair-2);padding:9px;font:500 13px var(--sans)"></select>
+      </div>
+    </div>
+    <div class="filters" id="platFilters" style="flex-wrap:wrap;gap:6px;margin-top:2px"></div>
     <div class="rank-list" id="rankList"></div>
   </div></section>
 
@@ -927,16 +946,62 @@ addEventListener('popstate',()=>{if(vOpen)closeViewer(true);});
 /* =====================================================================
    RANKING (agrega ledger)
    ===================================================================== */
-let periodFilter='all',platFilter='all';
-function ledgerActive(){const mk=monthKey(todayBR());return LEDGER.events.filter(e=>{if(periodFilter==='month'&&monthKey(e.dataBR)!==mk)return false;if(platFilter!=='all'&&e.plataforma!==platFilter)return false;return true;});}
-function aggregate(){const by={};ledgerActive().forEach(e=>{if(!by[e.nome])by[e.nome]={nome:e.nome,total:0,plats:{}};by[e.nome].total+=Number(e.ponto)||0;by[e.nome].plats[e.plataforma]=(by[e.nome].plats[e.plataforma]||0)+(Number(e.ponto)||0);});return Object.values(by).sort((a,b)=>b.total-a.total);}
-function allPlatforms(){return[...new Set(LEDGER.events.map(e=>e.plataforma))].sort((a,b)=>a==='PornMedia'?-1:b==='PornMedia'?1:a.localeCompare(b));}
+let periodFilter='month',platFilter='all',pickMonthVal='',pickYearVal='',showStudio=false;
+const HIDDEN_PLATS=new Set(['Studio','studio']);
+
+function ledgerActive(){
+  const today=localDay();const mk=monthKey(todayBR());const yr=new Date().getFullYear().toString();
+  return LEDGER.events.filter(e=>{
+    if(!showStudio&&[...HIDDEN_PLATS].some(h=>e.plataforma?.toLowerCase()===h.toLowerCase()))return false;
+    if(platFilter!=='all'&&e.plataforma!==platFilter)return false;
+    const d=parseDateBR(e.dataBR);
+    if(periodFilter==='today'){const ed=d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:null;return ed===today;}
+    if(periodFilter==='7d'){if(!d)return false;return(new Date()-d)/(864e5)<7;}
+    if(periodFilter==='month')return monthKey(e.dataBR)===mk;
+    if(periodFilter==='year')return d&&d.getFullYear().toString()===yr;
+    if(periodFilter==='pick'&&pickMonthVal&&pickYearVal)return monthKey(e.dataBR)===`${pickYearVal}-${pickMonthVal}`;
+    return true;
+  });
+}
+function allPlatforms(){
+  return[...new Set(LEDGER.events.map(e=>e.plataforma))]
+    .filter(p=>showStudio||![...HIDDEN_PLATS].some(h=>p?.toLowerCase()===h.toLowerCase()))
+    .sort((a,b)=>a==='PornMedia'?-1:b==='PornMedia'?1:a.localeCompare(b));
+}
+function fillPickSelects(){
+  const months=[...new Set(LEDGER.events.map(e=>monthKey(e.dataBR)).filter(Boolean))].sort().reverse();
+  const years=[...new Set(months.map(m=>m.split('-')[0]))];
+  const mNames=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const mSel=$('#pickMonth'),ySel=$('#pickYear');if(!mSel||!ySel)return;
+  mSel.innerHTML=mNames.map((n,i)=>`<option value="${String(i+1).padStart(2,'0')}">${n}</option>`).join('');
+  ySel.innerHTML=(years.length?years:[new Date().getFullYear().toString()]).map(y=>`<option value="${y}">${y}</option>`).join('');
+  if(!pickMonthVal)pickMonthVal=String(new Date().getMonth()+1).padStart(2,'0');
+  if(!pickYearVal)pickYearVal=new Date().getFullYear().toString();
+  mSel.value=pickMonthVal;ySel.value=pickYearVal;
+}
+function aggregate(){
+  const by={};
+  ledgerActive().forEach(e=>{
+    if(!by[e.nome])by[e.nome]={nome:e.nome,total:0,plats:{}};
+    by[e.nome].total+=Number(e.ponto)||0;
+    by[e.nome].plats[e.plataforma]=(by[e.nome].plats[e.plataforma]||0)+(Number(e.ponto)||0);
+  });
+  return Object.values(by).sort((a,b)=>b.total-a.total);
+}
 function renderRanking(){
-  $('#periodFilters').querySelectorAll('[data-period]').forEach(b=>b.classList.toggle('on',b.dataset.period===periodFilter));
-  $('#platFilters').innerHTML=`<button class="fbtn ${platFilter==='all'?'on':''}" data-plat="all">Todas</button>`+allPlatforms().map(p=>`<button class="fbtn ${platFilter===p?'on':''}" data-plat="${escapeHtml(p)}">${escapeHtml(p)}</button>`).join('');
+  $$('#periodFilters [data-period]').forEach(b=>b.classList.toggle('on',b.dataset.period===periodFilter));
+  const pw=$('#periodPickWrap');if(pw)pw.style.display=periodFilter==='pick'?'block':'none';
+  if(periodFilter==='pick')fillPickSelects();
+  const plats=allPlatforms();
+  const hasStudio=LEDGER.events.some(e=>[...HIDDEN_PLATS].some(h=>e.plataforma?.toLowerCase()===h.toLowerCase()));
+  const studioBtn=hasStudio?`<button class="fbtn ${showStudio?'on':''}" id="studioToggle">${showStudio?'Ocultar Studio':'↩ Studio (legado)'}</button>`:'';
+  $('#platFilters').innerHTML=
+    `<button class="fbtn ${platFilter==='all'?'on':''}" data-plat="all">Todas</button>`+
+    plats.map(p=>`<button class="fbtn ${platFilter===p?'on':''}" data-plat="${escapeHtml(p)}">${escapeHtml(p)}</button>`).join('')+studioBtn;
   $('#platFilters').querySelectorAll('[data-plat]').forEach(b=>b.onclick=()=>{platFilter=b.dataset.plat;renderRanking();});
+  $('#studioToggle')?.addEventListener('click',()=>{showStudio=!showStudio;if(!showStudio&&[...HIDDEN_PLATS].some(h=>platFilter?.toLowerCase()===h.toLowerCase()))platFilter='all';renderRanking();});
   const rows=aggregate(),list=$('#rankList');
-  if(!rows.length){list.innerHTML='<div class="empty">Nenhum ponto ainda. Jogue um duelo ou lance pontos.</div>';return;}
+  if(!rows.length){list.innerHTML='<div class="empty">Nenhum ponto neste período.</div>';return;}
   list.innerHTML=rows.map((r,i)=>{
     const chips=Object.entries(r.plats).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`<span class="pchip ${p==='PornMedia'?'pm':''}">${escapeHtml(p)} ${fmtNum(v)}</span>`).join('');
     const split=Object.entries(r.plats).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`<div class="split"><span>${escapeHtml(p)}</span><b>${fmtNum(v)} pts</b></div>`).join('');
@@ -944,7 +1009,9 @@ function renderRanking(){
   }).join('');
   list.querySelectorAll('.rrow').forEach((row,i)=>row.onclick=()=>{const name=rows[i]?.nome;if(name){$$('.tab').forEach(x=>x.classList.remove('on'));$$('.view').forEach(v=>v.classList.remove('on'));document.querySelector('[data-v=atores]')?.classList.add('on');$('#atores').classList.add('on');renderActors();openActorProfile(name);}else row.classList.toggle('open');});
 }
-$('#periodFilters').querySelectorAll('[data-period]').forEach(b=>b.onclick=()=>{periodFilter=b.dataset.period;renderRanking();});
+$$('#periodFilters [data-period]').forEach(b=>b.onclick=()=>{periodFilter=b.dataset.period;renderRanking();});
+$('#pickMonth')?.addEventListener('change',e=>{pickMonthVal=e.target.value;renderRanking();});
+$('#pickYear')?.addEventListener('change',e=>{pickYearVal=e.target.value;renderRanking();});
 
 /* =====================================================================
    SPOTLIGHT (desempenho por tempo) — canvas portado, cor luxe
@@ -1222,8 +1289,26 @@ function wUpdPreview(){
 // estrutura: {id, actors[], platform, rankMult, title, totalItems, sessions:[{date, pts, position}], createdAt}
 function ensureWatches(){if(!Array.isArray(LEDGER.watches))LEDGER.watches=[];}
 
-function wTotalPts(w){return(w.sessions||[]).reduce((s,x)=>s+(Number(x.pts)||0),0);}
-function wLastPos(w){const s=w.sessions||[];return s.length?s[s.length-1].position:null;}
+function wTotalPts(w){
+  const sessPts=(w.sessions||[]).reduce((s,x)=>s+(Number(x.pts)||0),0);
+  const vidPts=w.openVideo?(w.openVideo.sessions||[]).reduce((s,x)=>{
+    const net=Math.max(0,(x.seconds||0)-(x.skip||0));
+    return s+wBasePoints(net,w.platform,w.rankMult||1);
+  },0):0;
+  return sessPts+vidPts;
+}
+function wBasePoints(seconds,platform,mult=1){
+  const r=LIVE_RULES[platform];if(!r)return 0;
+  let base=0;
+  if(r.kind==='secondsDivisor')base=seconds/r.value;
+  else if(r.kind==='pointsPerMinute')base=(seconds/60)*r.value;
+  else base=seconds;
+  return Math.round(base*mult);
+}
+function wLastPos(w){
+  if(w.openVideo)return w.openVideo.position;
+  const s=w.sessions||[];return s.length?s[s.length-1].position:null;
+}
 
 $('#wCreate').onclick=()=>{
   const actors=($('#wActors').value||'').split(';').map(s=>cleanCell(s)).filter(Boolean);
@@ -1242,7 +1327,7 @@ $('#wCreate').onclick=()=>{
 function renderWatches(){
   ensureWatches();
   const list=$('#wList');if(!list)return;
-  if(!LEDGER.watches.length){list.innerHTML='<div class="empty">Nenhum registro em andamento.<br>Use "Em andamento" pra vídeos ou pastas que levam dias.</div>';return;}
+  if(!LEDGER.watches.length){list.innerHTML='<div class="empty">Nenhum registro em andamento.</div>';return;}
   list.innerHTML=LEDGER.watches.map(w=>wCardHTML(w)).join('');
   LEDGER.watches.forEach(w=>{
     list.querySelector(`[data-w="${w.id}"] .wact-add`)?.addEventListener('click',()=>wToggleAdd(w.id));
@@ -1250,6 +1335,9 @@ function renderWatches(){
     list.querySelector(`[data-w="${w.id}"] .wact-finish`)?.addEventListener('click',()=>wFinish(w.id));
     list.querySelector(`[data-w="${w.id}"] .wact-delete`)?.addEventListener('click',()=>wDelete(w.id));
     list.querySelector(`[data-w="${w.id}"] .wadd-submit`)?.addEventListener('click',()=>wAddSession(w.id));
+    list.querySelector(`[data-w="${w.id}"] .wact-openvid`)?.addEventListener('click',()=>wOpenVideo(w.id));
+    list.querySelector(`[data-w="${w.id}"] .wvid-submit`)?.addEventListener('click',()=>wAddVideoTime(w.id));
+    list.querySelector(`[data-w="${w.id}"] .wvid-close`)?.addEventListener('click',()=>wCloseVideo(w.id));
   });
 }
 
@@ -1259,43 +1347,109 @@ function wCardHTML(w){
   const pct=w.totalItems>0&&lastPos?Math.min(100,Math.round(lastPos/w.totalItems*100)):null;
   const rule=LIVE_RULES[w.platform];
   const ruleHint=rule?rule.label:'pontos manuais';
+  const hasVideo=!!w.openVideo;
+  const vidSessions=hasVideo?(w.openVideo.sessions||[]).reduce((s,x)=>s+(x.seconds||0),0):0;
+  const vidPts=hasVideo?(w.openVideo.sessions||[]).reduce((s,x)=>{const net=Math.max(0,(x.seconds||0)-(x.skip||0));return s+wBasePoints(net,w.platform,w.rankMult||1);},0):0;
   const sessRows=(w.sessions||[]).slice().reverse().map(s=>
-    `<div class="wsess-row"><span class="wsdate">${s.date}</span><span>${s.position?`#${s.position}${w.totalItems?'/'+w.totalItems:''}`:'—'}</span><b>+${s.pts} pts</b></div>`
+    `<div class="wsess-row"><span class="wsdate">${s.date}</span><span>${s.position?`#${s.position}${w.totalItems?'/'+w.totalItems:''}`:''}</span><b>+${s.pts} pts</b></div>`
   ).join('');
-  const progress=pct!==null?`<div style="height:3px;background:var(--hair);margin:0 14px 12px"><div style="height:100%;width:${pct}%;background:var(--ink);transition:width .4s"></div></div>`:'';
-  return `<div class="wcard" data-w="${w.id}">
-    <div class="wcard-head">
-      <div class="winfo">
-        <div class="wname">${escapeHtml(w.title||w.actors.join(', '))}</div>
-        <div class="wplat">${w.platform}${w.rankMult>1?` · ×${w.rankMult}`:''} · ${ruleHint}</div>
-        <div class="wmeta">${w.actors.map(escapeHtml).join(' · ')}${lastPos?` · parou no #${lastPos}${w.totalItems?'/'+w.totalItems:''}`:''}</div>
+  const progress=pct!==null?`<div style="height:3px;background:var(--hair);margin:0 14px 10px"><div style="height:100%;width:${pct}%;background:var(--ink);transition:width .4s"></div></div>`:'';
+  const openVidHTML=hasVideo?`
+    <div class="wvid-open">
+      <div class="wvid-head">
+        <span class="wvid-label">Vídeo em aberto — item #${w.openVideo.position||'?'}</span>
+        <span class="wvid-pts">${fmtSec(vidSessions)} · ${vidPts} pts parciais</span>
       </div>
-    </div>
+      <div class="wvid-form">
+        <div class="wadd-row">
+          <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Assistido hoje</label><input class="wvid-sec" placeholder="ex: 40 ou 01:20" autocomplete="off"></div>
+          <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Skip (opcional)</label><input class="wvid-skip" placeholder="0 ou 00:30" autocomplete="off"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="cta wvid-submit" style="flex:2">+ Adicionar tempo</button>
+          <button class="cta ghost wvid-close" style="flex:1">✓ Fechar (+${vidPts}pts)</button>
+        </div>
+      </div>
+    </div>`:'';
+  return `<div class="wcard" data-w="${w.id}">
+    <div class="wcard-head"><div class="winfo">
+      <div class="wname">${escapeHtml(w.title||w.actors.join(', '))}</div>
+      <div class="wplat">${w.platform}${w.rankMult>1?` · ×${w.rankMult}`:''} · ${ruleHint}</div>
+      <div class="wmeta">${w.actors.map(escapeHtml).join(' · ')}${lastPos?` · #${lastPos}${w.totalItems?'/'+w.totalItems:''}`:''}</div>
+    </div></div>
     ${progress}
     <div class="wcard-score">
-      <div class="wscore-cell"><div class="v ok">${total}</div><div class="l">pts acumulados</div></div>
+      <div class="wscore-cell"><div class="v ok">${total}</div><div class="l">pts acum.</div></div>
       <div class="wscore-cell"><div class="v">${w.sessions.length}</div><div class="l">sessões</div></div>
       <div class="wscore-cell"><div class="v">${pct!==null?pct+'%':'—'}</div><div class="l">progresso</div></div>
     </div>
+    ${openVidHTML}
     ${w.sessions.length?`<div class="wcard-sessions" id="wsess-${w.id}">${sessRows}</div>`:''}
-    <div class="wcard-add" id="wadd-${w.id}">
+    <div class="wcard-add" id="wadd-${w.id}" ${hasVideo?'style="display:none"':''}>
       <div class="wadd-row">
         <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Pontos hoje</label><input class="wadd-pts" type="number" min="0" placeholder="ex: 14" autocomplete="off"></div>
-        <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Parei no item #</label><input class="wadd-pos" type="number" min="0" placeholder="${w.totalItems?'ex: '+Math.round((lastPos||0)+10):'ex: 42'}" autocomplete="off"></div>
+        <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Item # parado</label><input class="wadd-pos" type="number" min="0" placeholder="${w.totalItems?'ex: '+(Math.round((lastPos||0)+10)):'ex: 42'}" autocomplete="off"></div>
       </div>
       <button class="cta wadd-submit">+ Adicionar sessão</button>
     </div>
     <div class="wcard-actions">
-      <button class="wact wact-add"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8" stroke-linecap="round"/></svg>Sessão</button>
-      ${w.sessions.length?`<button class="wact wact-sess"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke-linecap="round"/></svg>Histórico</button>`:''}
-      <button class="wact wact-finish primary"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>Finalizar</button>
-      <button class="wact wact-delete danger"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+      <button class="wact wact-add" ${hasVideo?'disabled style="opacity:.4"':''}><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8" stroke-linecap="round"/></svg>Sessão</button>
+      <button class="wact wact-openvid" style="${hasVideo?'color:var(--warn)':''}"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>${hasVideo?'Vídeo aberto':'Vídeo longo'}</button>
+      ${w.sessions.length?`<button class="wact wact-sess"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13" stroke-linecap="round"/></svg>Hist.</button>`:''}
+      <button class="wact wact-finish primary" ${hasVideo?'disabled style="opacity:.4"':''}><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>Finalizar</button>
+      <button class="wact wact-delete danger"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
     </div>
   </div>`;
 }
 
-function wToggleAdd(id){const el=$(`#wadd-${id}`);el.classList.toggle('on');if(el.classList.contains('on'))el.querySelector('.wadd-pts')?.focus();}
-function wToggleSessions(id){const el=$(`#wsess-${id}`);if(el){el.classList.toggle('on');}}
+function wToggleAdd(id){if($(`[data-w="${id}"]`)?.querySelector('.wact-add')?.disabled)return;const el=$(`#wadd-${id}`);el.classList.toggle('on');if(el.classList.contains('on'))el.querySelector('.wadd-pts')?.focus();}
+function wToggleSessions(id){const el=$(`#wsess-${id}`);if(el)el.classList.toggle('on');}
+
+function wOpenVideo(id){
+  ensureWatches();
+  const w=LEDGER.watches.find(x=>x.id===id);if(!w)return;
+  if(w.openVideo){// already open — scroll to it
+    document.querySelector(`[data-w="${id}"] .wvid-sec`)?.focus();return;
+  }
+  const lastPos=wLastPos(w);
+  w.openVideo={position:lastPos,sessions:[]};
+  savePontoSoon();renderWatches();
+}
+function wAddVideoTime(id){
+  ensureWatches();
+  const w=LEDGER.watches.find(x=>x.id===id);if(!w||!w.openVideo)return;
+  const card=document.querySelector(`[data-w="${id}"]`);
+  const secRaw=cleanCell(card.querySelector('.wvid-sec')?.value||'');
+  const skipRaw=cleanCell(card.querySelector('.wvid-skip')?.value||'');
+  const parsed=parseLiveDuration(secRaw,w.platform);
+  if(!parsed.ok||parsed.seconds<=0){alert('Digite uma duração válida.');return;}
+  const skipSec=skipRaw&&skipRaw!=='0'?parseLiveDuration(skipRaw,w.platform).seconds:0;
+  w.openVideo.sessions.push({date:todayBR(),seconds:parsed.seconds,skip:skipSec||0});
+  card.querySelector('.wvid-sec').value='';if(card.querySelector('.wvid-skip'))card.querySelector('.wvid-skip').value='';
+  savePontoSoon();renderWatches();
+}
+function wCloseVideo(id){
+  ensureWatches();
+  const w=LEDGER.watches.find(x=>x.id===id);if(!w||!w.openVideo)return;
+  // calcular pontos por dia do vídeo
+  const byDate={};
+  (w.openVideo.sessions||[]).forEach(s=>{
+    const net=Math.max(0,(s.seconds||0)-(s.skip||0));
+    const pts=wBasePoints(net,w.platform,w.rankMult||1);
+    byDate[s.date]=(byDate[s.date]||0)+pts;
+  });
+  // mergiar nas sessões simples por data
+  Object.entries(byDate).forEach(([date,pts])=>{
+    const existing=w.sessions.find(s=>s.date===date);
+    if(existing)existing.pts+=pts;
+    else w.sessions.push({date,pts,position:null});
+  });
+  const nextPos=w.openVideo.position!=null?w.openVideo.position+1:null;
+  delete w.openVideo;
+  // avança posição se disponível
+  if(nextPos&&w.sessions.length){const last=w.sessions[w.sessions.length-1];if(!last.position)last.position=nextPos;}
+  savePontoSoon();renderWatches();
+}
 
 function wAddSession(id){
   ensureWatches();
@@ -1313,11 +1467,10 @@ function wFinish(id){
   ensureWatches();
   const w=LEDGER.watches.find(x=>x.id===id);
   if(!w||!w.sessions.length){alert('Adicione pelo menos uma sessão antes de finalizar.');return;}
-  // agrupa pontos por dia
+  if(w.openVideo){alert('Feche o vídeo em aberto antes de finalizar.');return;}
   const byDate={};
   w.sessions.forEach(s=>{byDate[s.date]=(byDate[s.date]||0)+(Number(s.pts)||0);});
-  const days=Object.keys(byDate).length;
-  // lança um evento por dia por ator
+  const totalPts=wTotalPts(w);const days=Object.keys(byDate).length;
   w.actors.forEach(actor=>{
     Object.entries(byDate).forEach(([dataBR,ptsDay])=>{
       if(ptsDay<=0)return;
@@ -1326,7 +1479,7 @@ function wFinish(id){
   });
   LEDGER.watches=LEDGER.watches.filter(x=>x.id!==id);
   savePontoSoon();renderWatches();renderRanking();
-  toast(`✓ ${w.actors.join(', ')} · ${wTotalPts(w)} pts em ${days} dia(s)`);
+  toast(`✓ ${w.actors.join(', ')} · ${totalPts} pts em ${days} dia(s)`);
 }
 
 function wDelete(id){
