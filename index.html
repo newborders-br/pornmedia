@@ -1024,7 +1024,7 @@ function ledgerPeriodOnly(){
 }
 
 function currentMonthKey(){return monthKey(todayBR());}
-function previousMonthKey(){const d=new Date();d.setMonth(d.getMonth()-1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+function previousMonthKey(){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
 function keyLabel(k){if(!k)return '—';const [y,m]=k.split('-');return `${MESES[(+m||1)-1]}/${String(y).slice(2)}`;}
 function importantPlatformName(p){const g=platformGroupName(p);const k=String(g||'').toLowerCase();if(k==='telegram'||k==='telegram full'||k==='telegram only')return 'telegram';if(k==='pc-on'||k==='pc-onr'||k==='pc-off')return k;if(k==='pornmedia')return 'PornMedia';return null;}
 function rankMonthData(k){
@@ -1052,6 +1052,7 @@ function importantPlatformsForMonth(name,k){
 }
 function fallAnalysis(name){
   const curK=currentMonthKey(),prevK=previousMonthKey();
+  if(!prevK||prevK===curK)return null;
   const prev=rankMonthData(prevK),cur=rankMonthData(curK);
   const pr=prev.map[name];
   if(!pr||pr.rank>20)return null;
