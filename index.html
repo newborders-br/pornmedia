@@ -616,8 +616,11 @@ function closeViewer(sil){
   if(!sil){try{if(history.state?.v)history.back();}catch(e){}}
   setTimeout(()=>{viewerClosing=false;},60);
 }
-function setTrack(a){track.style.transition=a?'transform .32s var(--ease)':'none';track.style.transform=`translate3d(${-vIdx*100}%,0,0)`;if(!a){void track.offsetWidth;}}
-function dragTrack(px){track.style.transition='none';track.style.transform=`translate3d(calc(${-vIdx*100}% + ${px}px),0,0)`;}
+function slideW(){return window.innerWidth||viewer.clientWidth||document.documentElement.clientWidth||360;}
+function syncActiveSlide(){slides.forEach((sl,k)=>{sl.style.pointerEvents=(k===vIdx)?'auto':'none';});}
+function setTrack(a){track.style.transition=a?'transform .32s var(--ease)':'none';track.style.transform=`translate3d(${-vIdx*slideW()}px,0,0)`;if(!a){void track.offsetWidth;}syncActiveSlide();}
+function dragTrack(px){track.style.transition='none';track.style.transform=`translate3d(${(-vIdx*slideW())+px}px,0,0)`;}
+window.addEventListener('resize',()=>{if(vOpen)setTrack(false);},{passive:true});
 function vmeta(){
   const m=activeMedia();if(!m)return;
   $('#vName').textContent=m.name;
