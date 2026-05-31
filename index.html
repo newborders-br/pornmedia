@@ -49,7 +49,7 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .plat-track{flex:1;height:8px;background:var(--paper-3);overflow:hidden}
 .plat-fill{height:100%;background:var(--ink-3);transition:width .5s var(--ease)}
 .plat-fill.pm{background:var(--ink)}
-.plat-val{font:500 11px/1 var(--sans);color:var(--ink-2);min-width:32px;text-align:right}
+.plat-val{font:500 11px/1 var(--sans);color:var(--ink-2);min-width:76px;text-align:right;white-space:nowrap}
 /* histórico */
 .hist-list{border-top:1px solid var(--hair)}
 .hist-row{display:flex;align-items:center;gap:8px;padding:10px 4px;border-bottom:1px solid var(--hair);flex-wrap:wrap}
@@ -213,6 +213,18 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .rrow .pts{text-align:right}.rrow .pts .v{font:400 25px/1 var(--serif)}.rrow .pts .l{color:var(--ink-3);margin-top:3px}
 .rrow .exp{margin-top:12px;display:none;flex-basis:100%;border-top:1px dashed var(--hair);padding-top:10px}.rrow.open{flex-wrap:wrap}.rrow.open .exp{display:block}
 .split{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-2);padding:5px 0}.split b{font-weight:600;color:var(--ink)}
+.platform-share{border:1px solid var(--hair);background:rgba(255,255,255,.48);margin-top:12px;padding:12px;display:flex;flex-direction:column;gap:9px}
+.platform-share-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px}
+.platform-share-title{font:600 9px/1 var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3)}
+.platform-share-total{font:500 10px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.platform-share-row{display:grid;grid-template-columns:minmax(70px,112px) 1fr minmax(78px,auto);gap:8px;align-items:center}
+.platform-share-name{font:600 9px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.platform-share-track{height:7px;background:var(--paper-3);overflow:hidden}
+.platform-share-fill{height:100%;background:var(--ink-3);transition:width .45s var(--ease)}
+.platform-share-fill.pm{background:var(--ink)}
+.platform-share-value{text-align:right;font:500 10px/1 var(--sans);color:var(--ink-2);white-space:nowrap}
+.platform-share-value b{font-weight:700;color:var(--ink)}
+
 
 /* SPOTLIGHT */
 .spot-search{position:relative;margin-top:16px}
@@ -368,6 +380,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
       </div>
     </div>
     <div class="filters" id="platFilters" style="flex-wrap:wrap;gap:6px;margin-top:2px"></div>
+    <div class="platform-share" id="platformShare" style="display:none"></div>
     <div class="rank-list" id="rankList"></div>
   </div></section>
 
@@ -626,7 +639,7 @@ function todayBR(){const d=new Date();return `${String(d.getDate()).padStart(2,'
 function parseDateBR(s){const m=String(s||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);if(!m)return null;let[,d,mo,y]=m;if(y.length===2)y='20'+y;return new Date(+y,+mo-1,+d);}
 function monthKey(b){const d=parseDateBR(b);return d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`:'';}
 function fmtNum(n){const x=Number(n);return Number.isInteger(x)?String(x):String(x.toFixed(1)).replace('.',',');}
-function canonicalPlatform(v){const raw=cleanCell(v).replace(/\s+/g,' ');const k=raw.toLowerCase();const map={'pc off':'pc-off','pcoff':'pc-off','pc-off':'pc-off','pc on':'pc-on','pcon':'pc-on','pc-on':'pc-on','pc onr':'pc-onr','pconr':'pc-onr','pc-onr':'pc-onr','telegram':'telegram','telegram full':'telegram','telegram only':'telegram','tv full':'tv full','tv live':'tv live','aloha':'aloha','foto':'fotos','fotos':'fotos','photo':'fotos','photos':'fotos','twitter':'twitter','x':'twitter','pornmedia':'PornMedia'};return map[k]||raw||'—';}
+function canonicalPlatform(v){const raw=cleanCell(v).replace(/\s+/g,' ');const k=raw.toLowerCase();const map={'pc off':'pc-off','pcoff':'pc-off','pc-off':'pc-off','pc on':'pc-on','pcon':'pc-on','pc-on':'pc-on','pc onr':'pc-onr','pconr':'pc-onr','pc-onr':'pc-onr','telegram':'telegram','telegram full':'telegram full','telegram-only':'telegram only','telegram only':'telegram only','tv full':'tv full','tv live':'tv live','aloha':'aloha','foto':'fotos','fotos':'fotos','photo':'fotos','photos':'fotos','twitter':'twitter','x':'twitter','pornmedia':'PornMedia'};return map[k]||raw||'—';}
 const LIVE_RULES={'pc-off':{kind:'secondsDivisor',value:2,label:'2s = 1 ponto',skip:true},'pc-on':{kind:'secondsDivisor',value:3,label:'3s = 1 ponto',rankBonus:true,skip:true},'telegram full':{kind:'secondsDivisor',value:3,label:'3s = 1 ponto',skip:true},'telegram only':{kind:'secondsDivisor',value:5,label:'5s = 1 ponto',skip:true},'tv full':{kind:'secondsDivisor',value:5,label:'5s = 1 ponto',skip:true},'tv live':{kind:'pointsPerMinute',value:20,label:'20 pts/min'},'pc-onr':{kind:'pointsPerMinute',value:3,label:'3 pts/min',rankBonus:true},'aloha':{kind:'pointsPerMinute',value:2,label:'2 pts/min'},'fotos':{kind:'manualPoints',value:1,label:'pontos manuais'},'twitter':{kind:'manualPoints',value:1,label:'pontos manuais'}};
 function parseLiveDuration(raw,platform){const s=cleanCell(raw).toLowerCase();if(!s)return{seconds:0,ok:false};if(/^\d{1,2}:\d{1,2}(:\d{1,2})?$/.test(s)){const p=s.split(':').map(Number);const sec=p.length===2?p[0]*60+p[1]:p[0]*3600+p[1]*60+p[2];return{seconds:sec,ok:sec>0};}const mm=s.match(/(\d+(?:[\.,]\d+)?)\s*(m|min|mins|minuto|minutos)/),sm=s.match(/(\d+(?:[\.,]\d+)?)\s*(s|seg|segs|segundo|segundos)/);if(mm||sm){const mins=mm?parseNumber(mm[1]):0,secs=sm?parseNumber(sm[1]):0;const t=mins*60+secs;return{seconds:t,ok:t>0};}const n=parseNumber(s);if(!n||n<=0)return{seconds:0,ok:false};const r=LIVE_RULES[platform];return{seconds:r?.kind==='pointsPerMinute'?n*60:n,ok:true};}
 function liveBasePoints(seconds,platform){const r=LIVE_RULES[platform];if(!r||!seconds)return 0;if(r.kind==='secondsDivisor')return seconds/r.value;if(r.kind==='pointsPerMinute')return(seconds/60)*r.value;return 0;}
@@ -993,6 +1006,23 @@ function ledgerActive(){
     return true;
   });
 }
+function ledgerPeriodOnly(){
+  const old=platFilter;platFilter='all';
+  const rows=ledgerActive();
+  platFilter=old;
+  return rows;
+}
+function renderPlatformShare(){
+  const box=$('#platformShare');if(!box)return;
+  const rows=ledgerPeriodOnly();
+  const by={};rows.forEach(e=>{by[e.plataforma]=(by[e.plataforma]||0)+(Number(e.ponto)||0);});
+  const total=Object.values(by).reduce((a,b)=>a+b,0);
+  const entries=Object.entries(by).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length||total<=0){box.style.display='none';box.innerHTML='';return;}
+  box.style.display='flex';
+  box.innerHTML=`<div class="platform-share-head"><span class="platform-share-title">% por plataforma</span><span class="platform-share-total">${fmtNum(total)} pts no período</span></div>`+
+    entries.map(([p,v])=>{const pct=v/total*100;return `<div class="platform-share-row"><span class="platform-share-name">${escapeHtml(p)}</span><div class="platform-share-track"><div class="platform-share-fill ${p==='PornMedia'?'pm':''}" style="width:${Math.max(1,Math.round(pct))}%"></div></div><span class="platform-share-value"><b>${pct.toFixed(1).replace('.',',')}%</b> · ${fmtNum(v)}</span></div>`;}).join('');
+}
 function allPlatforms(){
   return[...new Set(LEDGER.events.map(e=>e.plataforma))]
     .filter(p=>showStudio||![...HIDDEN_PLATS].some(h=>p?.toLowerCase()===h.toLowerCase()))
@@ -1022,6 +1052,7 @@ function renderRanking(){
   $$('#periodFilters [data-period]').forEach(b=>b.classList.toggle('on',b.dataset.period===periodFilter));
   const pw=$('#periodPickWrap');if(pw)pw.style.display=periodFilter==='pick'?'block':'none';
   if(periodFilter==='pick')fillPickSelects();
+  renderPlatformShare();
   const plats=allPlatforms();
   const hasStudio=LEDGER.events.some(e=>[...HIDDEN_PLATS].some(h=>e.plataforma?.toLowerCase()===h.toLowerCase()));
   const studioBtn=hasStudio?`<button class="fbtn ${showStudio?'on':''}" id="studioToggle">${showStudio?'Ocultar Studio':'↩ Studio (legado)'}</button>`:'';
@@ -1138,12 +1169,13 @@ function openActorProfile(name){
   // plataformas (barras)
   const platEntries=Object.entries(totals.plats).sort((a,b)=>b[1]-a[1]);
   const maxPlat=platEntries[0]?platEntries[0][1]:1;
-  const platBars=platEntries.map(([p,v])=>`
+  const platTotal=platEntries.reduce((s,[,v])=>s+v,0)||1;
+  const platBars=platEntries.map(([p,v])=>{const pct=v/platTotal*100;return `
     <div class="plat-row">
       <span class="plat-name">${escapeHtml(p)}</span>
       <div class="plat-track"><div class="plat-fill ${p==='PornMedia'?'pm':''}" style="width:${Math.round(v/maxPlat*100)}%"></div></div>
-      <span class="plat-val">${fmtNum(v)}</span>
-    </div>`).join('');
+      <span class="plat-val">${pct.toFixed(1).replace('.',',')}% · ${fmtNum(v)}</span>
+    </div>`}).join('');
   // histórico de entradas (últimas 20)
   const recentEvents=[...events].sort((a,b)=>parseDateBR(b.dataBR)-parseDateBR(a.dataBR)).slice(0,20);
   const histRows=recentEvents.map(e=>`
