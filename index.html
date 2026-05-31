@@ -87,6 +87,12 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .wact.primary{color:var(--ok)}
 .wact.danger{color:var(--danger)}
 .wact svg{width:12px;height:12px;stroke:currentColor;stroke-width:2;fill:none}
+.wnewbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+.wnewbar .mini-new{width:auto;min-width:130px;padding:11px 14px}
+.wformbox{display:none}.wformbox.on{display:block}
+.wplatbar{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px}
+.wplatbar .fbtn{padding:8px 10px}
+.wlink{color:var(--warn)!important} 
 /* vídeo em aberto */
 .wvid-open{border-top:2px solid var(--warn);background:rgba(154,123,62,.06);padding:12px 14px}
 .wvid-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;flex-wrap:wrap;gap:6px}
@@ -483,9 +489,13 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
     <!-- MODO EM ANDAMENTO -->
     <div id="regAndamento" style="display:none">
       <div class="sub" style="margin-top:10px">Vídeos ou pastas que levam dias. Pontos entram no ledger com a data certa de cada sessão.</div>
-      <div class="card" style="margin-top:12px"><div class="card-b">
+      <div class="wnewbar">
+        <button class="cta ghost mini-new" id="wNewToggle" type="button">+ Novo</button>
+        <span class="lib-count" id="wFilterCount">—</span>
+      </div>
+      <div class="card wformbox" id="wFormBox" style="margin-top:12px"><div class="card-b">
         <div class="fld"><label class="flabel micro">Atores (separe por ;)</label><input id="wActors" placeholder="Vega; Cassel; Marlow" autocomplete="off"></div>
-        <div class="fld"><label class="flabel micro">Título / nome da pasta</label><input id="wTitle" placeholder="ex: Telegram 12/06 · pasta full"></div>
+        <div class="fld"><label class="flabel micro">Título / link / nome da pasta</label><input id="wTitle" placeholder="ex: Telegram 12/06 · pasta full ou link PC-ON"></div>
         <div class="two">
           <div class="fld"><label class="flabel micro">Plataforma</label><select id="wPlat"></select></div>
           <div class="fld"><label class="flabel micro">Total de itens (opcional)</label><input id="wTotalDur" placeholder="ex: 360"></div>
@@ -497,7 +507,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
         <button class="cta" id="wCreate" style="margin-top:8px">+ Iniciar</button>
         <div class="status" id="wCreateStatus"></div>
       </div></div>
-      <div id="wList" style="margin-top:18px"></div>
+      <div class="wplatbar" id="wPlatformFilters"></div>
+      <div id="wList" style="margin-top:10px"></div>
     </div>
   </div></section>
 
@@ -1424,6 +1435,10 @@ function fillPlats(){$('#lvPlat').innerHTML=Object.keys(LIVE_RULES).map(p=>`<opt
    ASSISTINDO — vídeos em andamento com múltiplos atores e pontuação por dia
    ===================================================================== */
 const W_PLATS=['pc-onr','pc-on','pc-off','telegram full','telegram only','twitter'];
+let wPlatformFilter='all';
+const W_LABELS={'all':'todos','pc-on':'pc-on','pc-onr':'pc-onr','pc-off':'pc-off','telegram full':'telegram full','telegram only':'telegram only','twitter':'twitter'};
+function wExtractUrl(w){const txt=String(w?.title||'');const m=txt.match(/https?:\/\/[^\s]+/i);return m?m[0]:'';}
+function wOpenLink(id){const w=(LEDGER.watches||[]).find(x=>x.id===id);const url=wExtractUrl(w);if(url)window.open(url,'_blank','noopener');}
 
 function wFillPlats(){
   const sel=$('#wPlat');if(!sel)return;
@@ -1469,6 +1484,8 @@ function wLastPos(w){
   const s=w.sessions||[];return s.length?s[s.length-1].position:null;
 }
 
+$('#wNewToggle')?.addEventListener('click',()=>{const box=$('#wFormBox');box?.classList.toggle('on');if(box?.classList.contains('on'))$('#wActors')?.focus();});
+
 $('#wCreate').onclick=()=>{
   const actors=($('#wActors').value||'').split(';').map(s=>cleanCell(s)).filter(Boolean);
   if(!actors.length){$('#wCreateStatus').textContent='Digite pelo menos um ator.';return;}
@@ -1480,15 +1497,27 @@ $('#wCreate').onclick=()=>{
   const w={id:uid('w'),actors,platform,rankMult,title,totalItems,sessions:[],createdAt:new Date().toISOString()};
   LEDGER.watches.push(w);savePontoSoon();
   $('#wActors').value='';$('#wTitle').value='';$('#wTotalDur').value='';$('#wCreateStatus').textContent='';
+  const box=$('#wFormBox'); if(box) box.classList.remove('on');
+  wPlatformFilter=platform;
   renderWatches();
 };
 
 function renderWatches(){
   ensureWatches();
   const list=$('#wList');if(!list)return;
+  const bar=$('#wPlatformFilters');
+  if(bar){
+    const counts=LEDGER.watches.reduce((o,w)=>{o[w.platform]=(o[w.platform]||0)+1;o.all=(o.all||0)+1;return o;},{all:LEDGER.watches.length});
+    const plats=['all',...W_PLATS.filter(p=>counts[p])];
+    bar.innerHTML=plats.map(p=>`<button class="fbtn ${wPlatformFilter===p?'on':''}" data-wpf="${p}">${W_LABELS[p]||p}${counts[p]?` · ${counts[p]}`:''}</button>`).join('');
+    bar.querySelectorAll('[data-wpf]').forEach(b=>b.onclick=()=>{wPlatformFilter=b.dataset.wpf;renderWatches();});
+  }
+  const rows=wPlatformFilter==='all'?LEDGER.watches:LEDGER.watches.filter(w=>w.platform===wPlatformFilter);
+  const cnt=$('#wFilterCount');if(cnt)cnt.textContent=rows.length?`${rows.length} em andamento`:'nenhum em andamento';
   if(!LEDGER.watches.length){list.innerHTML='<div class="empty">Nenhum registro em andamento.</div>';return;}
-  list.innerHTML=LEDGER.watches.map(w=>wCardHTML(w)).join('');
-  LEDGER.watches.forEach(w=>{
+  if(!rows.length){list.innerHTML='<div class="empty">Nenhum registro nesta plataforma.</div>';return;}
+  list.innerHTML=rows.map(w=>wCardHTML(w)).join('');
+  rows.forEach(w=>{
     list.querySelector(`[data-w="${w.id}"] .wact-add`)?.addEventListener('click',()=>wToggleAdd(w.id));
     list.querySelector(`[data-w="${w.id}"] .wact-sess`)?.addEventListener('click',()=>wToggleSessions(w.id));
     list.querySelector(`[data-w="${w.id}"] .wact-finish`)?.addEventListener('click',()=>wFinish(w.id));
@@ -1497,6 +1526,7 @@ function renderWatches(){
     list.querySelector(`[data-w="${w.id}"] .wact-openvid`)?.addEventListener('click',()=>wOpenVideo(w.id));
     list.querySelector(`[data-w="${w.id}"] .wvid-submit`)?.addEventListener('click',()=>wAddVideoTime(w.id));
     list.querySelector(`[data-w="${w.id}"] .wvid-close`)?.addEventListener('click',()=>wCloseVideo(w.id));
+    list.querySelector(`[data-w="${w.id}"] .wact-link`)?.addEventListener('click',()=>wOpenLink(w.id));
   });
 }
 
@@ -1507,6 +1537,7 @@ function wCardHTML(w){
   const rule=LIVE_RULES[w.platform];
   const ruleHint=rule?rule.label:'pontos manuais';
   const hasVideo=!!w.openVideo;
+  const linkUrl=w.platform==='pc-on'?wExtractUrl(w):'';
   const vidSessions=hasVideo?(w.openVideo.sessions||[]).reduce((s,x)=>s+(x.seconds||0),0):0;
   const vidPts=hasVideo?(w.openVideo.sessions||[]).reduce((s,x)=>{const net=Math.max(0,(x.seconds||0)-(x.skip||0));return s+wBasePoints(net,w.platform,w.rankMult||1);},0):0;
   const sessRows=(w.sessions||[]).slice().reverse().map(s=>
@@ -1553,6 +1584,7 @@ function wCardHTML(w){
     </div>
     <div class="wcard-actions">
       <button class="wact wact-add" ${hasVideo?'disabled style="opacity:.4"':''}><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8" stroke-linecap="round"/></svg>Sessão</button>
+      ${linkUrl?`<button class="wact wact-link wlink"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"/></svg>Link</button>`:''}
       <button class="wact wact-openvid" style="${hasVideo?'color:var(--warn)':''}"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>${hasVideo?'Vídeo aberto':'Vídeo longo'}</button>
       ${w.sessions.length?`<button class="wact wact-sess"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13" stroke-linecap="round"/></svg>Hist.</button>`:''}
       <button class="wact wact-finish primary" ${hasVideo?'disabled style="opacity:.4"':''}><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>Finalizar</button>
