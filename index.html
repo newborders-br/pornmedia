@@ -212,6 +212,15 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .pchip{font:500 9px/1 var(--sans);letter-spacing:.04em;border:1px solid var(--hair);padding:4px 6px;color:var(--ink-2);text-transform:uppercase}.pchip.pm{border-color:var(--ink);color:var(--ink)}
 .rrow .pts{text-align:right}.rrow .pts .v{font:400 25px/1 var(--serif)}.rrow .pts .l{color:var(--ink-3);margin-top:3px}
 .rrow .exp{margin-top:12px;display:none;flex-basis:100%;border-top:1px dashed var(--hair);padding-top:10px}.rrow.open{flex-wrap:wrap}.rrow.open .exp{display:block}
+.rrow.flag-fall{position:relative}
+.rrow.flag-fall::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--danger);position:absolute;left:-2px;top:18px;box-shadow:0 0 0 3px rgba(168,90,62,.12)}
+.fall-mark{display:inline-flex;align-items:center;gap:5px;border:1px solid rgba(168,90,62,.38);color:var(--danger);padding:4px 6px;font:700 8px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;background:rgba(168,90,62,.07)}
+.fall-card{border-color:rgba(168,90,62,.32)!important;background:rgba(168,90,62,.045)!important}
+.fall-row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--hair);padding:8px 0;font-size:12px;color:var(--ink-2)}
+.fall-row:last-child{border-bottom:0}
+.fall-row b{font-weight:600;color:var(--ink)}
+.fall-pill{display:inline-flex;border:1px solid var(--hair);background:#fff;padding:4px 6px;margin:0 4px 4px 0;font:600 9px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
+.fall-pill.lost{border-color:rgba(168,90,62,.35);color:var(--danger);background:rgba(168,90,62,.055)}
 .split{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-2);padding:5px 0}.split b{font-weight:600;color:var(--ink)}
 .platform-share{border:1px solid var(--hair);background:rgba(255,255,255,.48);margin-top:12px;padding:12px;display:flex;flex-direction:column;gap:9px}
 .platform-share-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px}
@@ -1013,6 +1022,64 @@ function ledgerPeriodOnly(){
   platFilter=old;
   return rows;
 }
+
+function currentMonthKey(){return monthKey(todayBR());}
+function previousMonthKey(){const d=new Date();d.setMonth(d.getMonth()-1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+function keyLabel(k){if(!k)return '—';const [y,m]=k.split('-');return `${MESES[(+m||1)-1]}/${String(y).slice(2)}`;}
+function importantPlatformName(p){const g=platformGroupName(p);const k=String(g||'').toLowerCase();if(k==='telegram'||k==='telegram full'||k==='telegram only')return 'telegram';if(k==='pc-on'||k==='pc-onr'||k==='pc-off')return k;if(k==='pornmedia')return 'PornMedia';return null;}
+function rankMonthData(k){
+  const by={};
+  LEDGER.events.forEach(e=>{
+    if(monthKey(e.dataBR)!==k)return;
+    if(!showStudio&&[...HIDDEN_PLATS].some(h=>e.plataforma?.toLowerCase()===h.toLowerCase()))return;
+    by[e.nome]=(by[e.nome]||0)+(Number(e.ponto)||0);
+  });
+  const rows=Object.entries(by).map(([nome,total])=>({nome,total})).sort((a,b)=>b.total-a.total);
+  const map={};rows.forEach((r,i)=>map[r.nome]={rank:i+1,total:r.total});
+  return {rows,map};
+}
+function importantPlatformsForMonth(name,k){
+  const by={};
+  LEDGER.events.forEach(e=>{
+    if(e.nome!==name||monthKey(e.dataBR)!==k)return;
+    const p=importantPlatformName(e.plataforma);if(!p)return;
+    by[p]=(by[p]||0)+(Number(e.ponto)||0);
+  });
+  return Object.entries(by)
+    .filter(([p,v])=>p==='PornMedia'?v>10:v>0)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([name,pts])=>({name,pts}));
+}
+function fallAnalysis(name){
+  const curK=currentMonthKey(),prevK=previousMonthKey();
+  const prev=rankMonthData(prevK),cur=rankMonthData(curK);
+  const pr=prev.map[name];
+  if(!pr||pr.rank>20)return null;
+  const cr=cur.map[name]||{rank:(cur.rows.length||0)+1,total:0};
+  const drop=cr.rank-pr.rank;
+  const prevPlats=importantPlatformsForMonth(name,prevK);
+  const curPlats=importantPlatformsForMonth(name,curK);
+  const curSet=new Set(curPlats.map(x=>x.name));
+  const lost=prevPlats.filter(x=>!curSet.has(x.name));
+  const flag=(drop>=5||cr.rank>20)&&lost.length>0;
+  return {flag,prevKey:prevK,curKey:curK,prevRank:pr.rank,curRank:cr.rank,drop,prevPts:pr.total,curPts:cr.total,prevPlats,curPlats,lost};
+}
+function platformPills(items,cls=''){
+  return (items||[]).length?items.map(x=>`<span class="fall-pill ${cls}">${escapeHtml(x.name)} ${fmtNum(x.pts)}</span>`).join(''):'<span style="color:var(--ink-3)">—</span>';
+}
+function fallProfileHTML(name){
+  const f=fallAnalysis(name);if(!f)return '';
+  const title=f.flag?'queda por perda de plataforma':'comparativo mensal';
+  return `<div class="card fall-card" style="margin-top:14px"><div class="card-b" style="padding:14px">
+    <div class="flabel micro" style="margin-bottom:10px">${title}</div>
+    <div class="fall-row"><span>ranking</span><b>#${f.prevRank} ${keyLabel(f.prevKey)} → #${f.curRank} ${keyLabel(f.curKey)}${f.drop>0?` · queda ${f.drop}`:''}</b></div>
+    <div class="fall-row"><span>pontos</span><b>${fmtNum(f.prevPts)} → ${fmtNum(f.curPts)}</b></div>
+    <div class="fall-row"><span>antes</span><div>${platformPills(f.prevPlats)}</div></div>
+    <div class="fall-row"><span>agora</span><div>${platformPills(f.curPlats)}</div></div>
+    ${f.lost.length?`<div class="fall-row"><span>perdeu</span><div>${platformPills(f.lost,'lost')}</div></div>`:''}
+  </div></div>`;
+}
+
 function renderPlatformShare(){
   const box=$('#platformShare');if(!box)return;
   const rows=ledgerPeriodOnly();
@@ -1067,7 +1134,9 @@ function renderRanking(){
   list.innerHTML=rows.map((r,i)=>{
     const chips=Object.entries(r.plats).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`<span class="pchip ${p==='PornMedia'?'pm':''}">${escapeHtml(p)} ${fmtNum(v)}</span>`).join('');
     const split=Object.entries(r.plats).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`<div class="split"><span>${escapeHtml(p)}</span><b>${fmtNum(v)} pts</b></div>`).join('');
-    return `<div class="rrow ${i===0?'top1':''}"><div class="pos">${i+1}</div><div class="who"><div class="nm">${escapeHtml(r.nome)}</div><div class="chips">${chips}</div></div><div class="pts"><div class="v">${fmtNum(r.total)}</div><div class="l micro">pts</div></div><div class="exp">${split}</div></div>`;
+    const fall=fallAnalysis(r.nome);
+    const fallBadge=fall?.flag?`<span class="fall-mark">queda</span>`:'';
+    return `<div class="rrow ${i===0?'top1':''} ${fall?.flag?'flag-fall':''}"><div class="pos">${i+1}</div><div class="who"><div class="nm">${escapeHtml(r.nome)} ${fallBadge}</div><div class="chips">${chips}</div></div><div class="pts"><div class="v">${fmtNum(r.total)}</div><div class="l micro">pts</div></div><div class="exp">${split}</div></div>`;
   }).join('');
   list.querySelectorAll('.rrow').forEach((row,i)=>row.onclick=()=>{const name=rows[i]?.nome;if(name){$$('.tab').forEach(x=>x.classList.remove('on'));$$('.view').forEach(v=>v.classList.remove('on'));document.querySelector('[data-v=atores]')?.classList.add('on');$('#atores').classList.add('on');renderActors();openActorProfile(name);}else row.classList.toggle('open');});
 }
@@ -1182,10 +1251,11 @@ function openActorProfile(name){
   const histRows=recentEvents.map(e=>`
     <div class="hist-row">
       <span class="hist-date">${e.dataBR}</span>
-      <span class="hist-plat">${escapeHtml(e.plataforma)}</span>
+      <span class="hist-plat">${escapeHtml(platformGroupName(e.plataforma))}</span>
       ${e.titulo?`<span class="hist-title">${escapeHtml(e.titulo)}</span>`:''}
       <b class="hist-pts">+${fmtNum(e.ponto)}</b>
     </div>`).join('');
+  const fallProfile=fallProfileHTML(name);
 
   const profile=$('#actorProfile');
   profile.style.display='block';$('#actorList').style.display='none';
@@ -1209,6 +1279,8 @@ function openActorProfile(name){
     <div class="statbox"><div class="v">${top10count}</div><div class="l micro">meses top 10</div></div>
     <div class="statbox"><div class="v">${top20count}</div><div class="l micro">meses top 20</div></div>
   </div>
+
+  ${fallProfile}
 
   <!-- plataformas -->
   ${platBars?`<div class="card" style="margin-top:14px"><div class="card-b" style="padding:14px">
