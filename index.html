@@ -135,6 +135,16 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
 .media-section{margin-top:18px}.section-title{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--hair);padding-bottom:8px;margin-bottom:10px}.section-title .t{font:400 22px/1 var(--serif)}.section-title .c{color:var(--ink-3)}
 .media-card{cursor:pointer}.media-card:active{transform:scale(.99)}
 
+
+.archive-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.archive-controls .fld{margin-bottom:0}
+.archive-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:18px 0 10px;border-bottom:1px solid var(--hair);padding-bottom:9px}
+.archive-head .title{font:400 24px/1 var(--serif)}
+.archive-head .hint{color:var(--ink-3);text-align:right}
+.media-card.video .cover::after{content:"▶";position:absolute;right:6px;bottom:5px;background:rgba(255,255,255,.86);border:1px solid var(--hair);width:24px;height:24px;display:grid;place-items:center;font:600 10px/1 var(--sans);color:var(--ink)}
+.media-card .date{font-size:10.5px;color:var(--ink-3);margin-top:7px}
+.video-choice{display:flex;gap:8px;align-items:center;justify-content:center}
+
 /* viewer */
 .viewer{position:fixed;inset:0;z-index:60;background:rgba(13,13,11,0);visibility:hidden;opacity:0;pointer-events:none;transition:opacity .42s var(--ease),background .42s}
 .viewer.on{visibility:visible;opacity:1;pointer-events:auto;background:#0d0d0b}
@@ -248,6 +258,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
     </div></div>
     <div class="fld" style="margin-top:14px"><input id="libSearch" type="search" placeholder="Buscar mídia ou ator"></div>
     <div class="filters" id="libTypeFilters"><button class="fbtn on" data-libtype="photo">Fotos</button><button class="fbtn" data-libtype="video">Vídeos</button></div>
+    <div class="archive-controls">
+      <div class="fld"><label class="flabel micro">Ator</label><select id="libActorFilter"><option value="all">Todos os atores</option></select></div>
+      <div class="fld"><label class="flabel micro">Ordenar</label><select id="libSort"><option value="elo">Ranking / ELO</option><option value="date">Mais recentes</option><option value="name">Nome</option><option value="actor">Ator</option></select></div>
+      <div class="fld"><label class="flabel micro">Data</label><select id="libDateFilter"><option value="all">Todas</option><option value="today">Hoje</option><option value="week">Últimos 7 dias</option><option value="month">Este mês</option></select></div>
+    </div>
     <div id="libList"></div>
   </div></section>
 
@@ -460,16 +475,22 @@ function pickDuel(preferActorId=null){
   const used=new Set(GAME.sessions.current.usedMediaIds||[]);
   const pool=activePool().filter(m=>!used.has(m.id));
   if(pool.length<2)return null;
-  let a=null;
+  let a=null,b=null;
   if(gameMode==='video'&&preferActorId){
     const preferred=pool.filter(m=>m.actorId===preferActorId);
-    if(preferred.length)a=wpick(preferred);
+    if(preferred.length>=2){
+      a=wpick(preferred);
+      b=wpick(preferred.filter(m=>m.id!==a.id));
+      if(a&&b)return {a,b};
+    }else if(preferred.length===1){
+      a=preferred[0];
+    }
   }
   if(!a)a=wpick(pool);
   let elig=pool.filter(m=>m.id!==a.id&&m.actorId!==a.actorId);
   if(!elig.length)elig=pool.filter(m=>m.id!==a.id);
   if(gameMode==='video'){
-    const b=wpick(elig);return b?{a,b}:null;
+    b=wpick(elig);return b?{a,b}:null;
   }
   const order=['S','A','B','C','D'],ai=order.indexOf(mediaTier(a));
   const same=elig.filter(m=>mediaTier(m)===mediaTier(a)),adj=elig.filter(m=>Math.abs(order.indexOf(mediaTier(m))-ai)===1);
@@ -486,11 +507,12 @@ function videoDurationSec(m,side){
   if(isFinite(d)&&d>0){m.durationSec=d;saveGameSoon();return d;}
   return 0;
 }
-function videoWinPoints(m,side){const d=videoDurationSec(m,side);return Math.max(1,Math.round((d||10)/10));}
+function videoWinPoints(m,side){const d=videoDurationSec(m,side);return d>0?Math.max(1,Math.round(d/10)):1;}
+function videoPointsLabel(m,side){const d=videoDurationSec(m,side);return d>0?`~${videoWinPoints(m,side)} pts`:'~pts';}
 async function setStage(side,m){
   const el=side==='a'?$('#cA'):$('#cB');el.className='cont '+side;
   el.querySelector('.nm').textContent=m.name;el.querySelector('.ac').textContent=actorName(m.actorId);
-  el.querySelector('.rk').textContent='#'+(mediaPos(m)||'—');el.querySelector('.tier').textContent='Tier '+mediaTier(m);
+  el.querySelector('.rk').textContent='#'+(mediaPos(m)||'—');el.querySelector('.tier').textContent=m.type==='video'?videoPointsLabel(m,side):'Tier '+mediaTier(m);
   el.querySelector('.fav').style.display=gameMode==='video'?'none':'grid';
   el.querySelector('.fav').classList.toggle('on',!!m.favorite);
   const img=el.querySelector('.img');img.style.backgroundImage='';el.querySelectorAll('video.media').forEach(v=>v.remove());
@@ -800,8 +822,13 @@ $('#spotInput').addEventListener('input',e=>{const v=cleanCell(e.target.value);i
    ===================================================================== */
 function addActor(name){name=cleanCell(name);if(!name)return null;const ex=Object.values(GAME.actors).find(a=>a.name.toLowerCase()===name.toLowerCase());if(ex)return ex;const a={id:uid('a'),name,elo:1500,wins:0,losses:0,createdAt:new Date().toISOString()};GAME.actors[a.id]=a;saveGameSoon();return a;}
 $('#acAdd').onclick=()=>{const a=addActor($('#acName').value);if(a){$('#acName').value='';refreshAll();}};
+function mediaDateLabel(m){
+  if(!m?.createdAt)return '';
+  const d=new Date(m.createdAt); if(isNaN(d))return '';
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+}
 function mediaCardsHTML(rows){
-  return `<div class="media-rank">${rows.map(m=>`<div class="media-card" data-media="${m.id}"><div class="cover" data-cover="${m.id}"><span class="badge">#${mediaPos(m)||'—'}</span></div><div class="info"><div class="nm">${escapeHtml(m.name)}</div><div class="actor">${escapeHtml(actorName(m.actorId))}</div><div class="meta"><span class="stat">Tier ${mediaTier(m)}</span><span class="stat">${m.wins||0}V/${m.losses||0}D</span><span class="stat">${mediaLabel(m)}</span></div></div><div class="side"><div class="elo">${Math.round(m.elo||1500)}</div><div class="lab micro">ELO</div></div></div>`).join('')}</div>`;
+  return `<div class="media-rank">${rows.map(m=>`<div class="media-card ${m.type==='video'?'video':'photo'}" data-media="${m.id}"><div class="cover" data-cover="${m.id}"><span class="badge">#${mediaPos(m)||'—'}</span></div><div class="info"><div class="nm">${escapeHtml(m.name)}</div><div class="actor">${escapeHtml(actorName(m.actorId))}</div><div class="meta"><span class="stat">${m.type==='video'?videoPointsLabel(m):'Tier '+mediaTier(m)}</span><span class="stat">${m.wins||0}V/${m.losses||0}D</span><span class="stat">${mediaLabel(m)}</span></div><div class="date">${mediaDateLabel(m)}</div></div><div class="side"><div class="elo">${Math.round(m.elo||1500)}</div><div class="lab micro">ELO</div></div></div>`).join('')}</div>`;
 }
 function hydrateMediaCards(root,rows){
   rows.forEach(async m=>{try{const src=await blobUrl(m);const el=root.querySelector(`[data-cover="${m.id}"]`);if(el&&!el.querySelector('img,video')){const tag=m.type==='video'?`<video src="${src}" muted playsinline></video>`:`<img src="${src}">`;el.insertAdjacentHTML('afterbegin',tag);}}catch(e){}});
@@ -827,7 +854,8 @@ function drawActorProfileChart(name){
 }
 function openActorProfile(name){
   const actor=Object.values(GAME.actors).find(a=>a.name===name)||{id:null,name,elo:null,wins:0,losses:0};
-  const totals=actorTotals(name);const allMedia=Object.values(GAME.media).filter(m=>!m.deleted&&actorName(m.actorId)===name);
+  const totals=actorTotals(name);
+  const allMedia=Object.values(GAME.media).filter(m=>!m.deleted&&(actor.id?m.actorId===actor.id:actorName(m.actorId)===name));
   const photos=allMedia.filter(m=>m.type!=='video').sort((a,b)=>(b.elo||1500)-(a.elo||1500));
   const videos=allMedia.filter(m=>m.type==='video').sort((a,b)=>(b.elo||1500)-(a.elo||1500));
   const platHtml=Object.entries(totals.plats).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`<span class="pchip ${p==='PornMedia'?'pm':''}">${escapeHtml(p)} ${fmtNum(v)}</span>`).join('')||'<span class="pchip">sem pontos</span>';
@@ -871,17 +899,54 @@ $('#upSend').onclick=async()=>{
   }
   upQueue=[];$('#upNewActor').value='';saveGameSoon();$('#upStatus').textContent=`✓ ${n} mídia(s) enviada(s).`;refreshAll();startGameIfReady();
 };
-let libTypeFilter='photo';
+let libTypeFilter='photo', libActorFilter='all', libSortFilter='elo', libDateFilter='all';
+function fillLibActorFilter(){
+  const sel=$('#libActorFilter'); if(!sel)return;
+  const cur=sel.value||'all';
+  const opts=Object.values(GAME.actors).sort((a,b)=>a.name.localeCompare(b.name)).map(a=>`<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+  sel.innerHTML=`<option value="all">Todos os atores</option>`+opts;
+  sel.value=[...sel.options].some(o=>o.value===cur)?cur:'all';
+}
+function mediaDateOk(m){
+  if(libDateFilter==='all')return true;
+  if(!m.createdAt)return false;
+  const d=new Date(m.createdAt); if(isNaN(d))return false;
+  const now=new Date();
+  if(libDateFilter==='today')return d.toDateString()===now.toDateString();
+  if(libDateFilter==='week')return (now-d)<=7*24*60*60*1000;
+  if(libDateFilter==='month')return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
+  return true;
+}
+function sortMediaRows(rows){
+  const arr=[...rows];
+  if(libSortFilter==='date')arr.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+  else if(libSortFilter==='name')arr.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
+  else if(libSortFilter==='actor')arr.sort((a,b)=>actorName(a.actorId).localeCompare(actorName(b.actorId))||((b.elo||1500)-(a.elo||1500)));
+  else arr.sort((a,b)=>(b.elo||1500)-(a.elo||1500));
+  return arr;
+}
 function renderLibrary(){
   const q=($('#libSearch').value||'').toLowerCase();
+  libActorFilter=$('#libActorFilter')?.value||libActorFilter;
+  libSortFilter=$('#libSort')?.value||libSortFilter;
+  libDateFilter=$('#libDateFilter')?.value||libDateFilter;
   $('#libTypeFilters')?.querySelectorAll('[data-libtype]')?.forEach(b=>b.classList.toggle('on',b.dataset.libtype===libTypeFilter));
-  const rows=mediaRanked(libTypeFilter).filter(m=>(m.name+' '+actorName(m.actorId)).toLowerCase().includes(q));
+  const base=mediaPool(libTypeFilter).filter(m=>{
+    if(libActorFilter!=='all'&&m.actorId!==libActorFilter)return false;
+    if(!mediaDateOk(m))return false;
+    return (m.name+' '+actorName(m.actorId)).toLowerCase().includes(q);
+  });
+  const rows=sortMediaRows(base);
   const list=$('#libList');
-  if(!rows.length){list.innerHTML=`<div class="empty">Nenhuma ${libTypeFilter==='video'?'mídia de vídeo':'foto'} cadastrada.</div>`;return;}
-  list.innerHTML=mediaCardsHTML(rows.slice(0,80));
-  hydrateMediaCards(list,rows.slice(0,80));
+  const label=libTypeFilter==='video'?'vídeos':'fotos';
+  if(!rows.length){list.innerHTML=`<div class="empty">Nenhuma mídia encontrada para os filtros atuais.</div>`;return;}
+  list.innerHTML=`<div class="archive-head"><div><div class="title">${libTypeFilter==='video'?'Vídeos':'Fotos'}</div><div class="sub" style="margin-top:4px">${rows.length} ${label} · ranking separado por tipo de mídia</div></div><div class="hint micro">${libSortFilter==='elo'?'por ELO':libSortFilter==='date'?'mais recentes':libSortFilter==='name'?'por nome':'por ator'}</div></div>`+mediaCardsHTML(rows.slice(0,120));
+  hydrateMediaCards(list,rows.slice(0,120));
 }
 $('#libSearch').oninput=renderLibrary;
+$('#libActorFilter')?.addEventListener('change',renderLibrary);
+$('#libSort')?.addEventListener('change',renderLibrary);
+$('#libDateFilter')?.addEventListener('change',renderLibrary);
 $('#libTypeFilters')?.querySelectorAll('[data-libtype]')?.forEach(b=>b.onclick=()=>{libTypeFilter=b.dataset.libtype;renderLibrary();});
 
 /* =====================================================================
@@ -981,10 +1046,10 @@ $('#impAdd').onclick=()=>importDo('add');$('#impReplace').onclick=()=>importDo('
 /* =====================================================================
    NAV / refresh / toast / init
    ===================================================================== */
-$$('.tab').forEach(t=>t.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('on'));$$('.view').forEach(v=>v.classList.remove('on'));t.classList.add('on');$('#'+t.dataset.v).classList.add('on');const v=t.dataset.v;if(v==='ranking')renderRanking();if(v==='spotlight'){fillNames();}if(v==='atores')renderActors();if(v==='biblioteca'){fillUpActors();renderLibrary();}if(v==='lancar'){fillNames();lvUI();}});
+$$('.tab').forEach(t=>t.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('on'));$$('.view').forEach(v=>v.classList.remove('on'));t.classList.add('on');$('#'+t.dataset.v).classList.add('on');const v=t.dataset.v;if(v==='ranking')renderRanking();if(v==='spotlight'){fillNames();}if(v==='atores')renderActors();if(v==='biblioteca'){fillUpActors();fillLibActorFilter();renderLibrary();}if(v==='lancar'){fillNames();lvUI();}});
 function fillNames(){const names=[...new Set([...LEDGER.events.map(e=>e.nome),...Object.values(GAME.actors).map(a=>a.name)])].sort();const html=names.map(n=>`<option value="${escapeHtml(n)}">`).join('');$('#spotNames').innerHTML=html;$('#lvNames').innerHTML=html;}
 function refreshLight(){const today=todayBR();$('#livePts').textContent=fmtNum(LEDGER.events.filter(e=>e.plataforma==='PornMedia'&&e.dataBR===today).reduce((a,b)=>a+b.ponto,0))+' pts';}
-function refreshAll(){renderRanking();renderActors();fillUpActors();fillNames();fillPlats();renderLibrary();refreshLight();}
+function refreshAll(){renderRanking();renderActors();fillUpActors();fillLibActorFilter();fillNames();fillPlats();renderLibrary();refreshLight();}
 let toastT2=null;function toast(b,t){$('#toastB').textContent=b;$('#toastT').textContent=t;const el=$('#toast');el.classList.add('on');clearTimeout(toastT2);toastT2=setTimeout(()=>el.classList.remove('on'),1700);}
 addEventListener('keydown',e=>{if(vOpen){if(e.key==='Escape')closeViewer();if(e.key==='ArrowRight'&&vIdx<(viewerMode==='duel'?1:viewerItems.length-1)&&!zoom){vIdx++;setTrack(1);vmeta();}if(e.key==='ArrowLeft'&&vIdx>0&&!zoom){vIdx--;setTrack(1);vmeta();}return;}if($('#jogo').classList.contains('on')&&duel.a){if(e.key==='ArrowLeft')decide('a');if(e.key==='ArrowRight')decide('b');}});
 
