@@ -43,7 +43,56 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .cta.ghost{background:transparent;color:var(--ink)}
 .status{font-size:11.5px;color:var(--ink-2);margin-top:10px;min-height:15px}
 
-/* JOGO */
+/* BIBLIOTECA — grid navegável */
+.lib-upload-bar{background:var(--glass);backdrop-filter:blur(14px);border-bottom:1px solid var(--hair)}
+.lib-upload-toggle{width:100%;border:0;background:none;padding:11px 16px;display:flex;align-items:center;gap:8px;font:600 10px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;color:var(--ink-2)}
+.lib-upload-toggle:active{background:rgba(255,255,255,.3)}
+.lib-filters{position:sticky;top:88px;z-index:20;background:var(--glass);backdrop-filter:blur(14px);border-bottom:1px solid var(--hair);padding:9px 12px 8px}
+.lib-filter-row{display:flex;gap:8px;align-items:center}
+.lib-sort-row{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.lib-type-pills,.lib-sort-pills{display:flex;gap:4px}
+.lpill{border:1px solid var(--hair);background:transparent;padding:7px 11px;font:600 10px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);white-space:nowrap}
+.lpill.on{border-color:var(--ink);color:var(--ink);background:#fff}
+.lpill:active{transform:scale(.95)}
+.lib-actor-sel{flex:1;min-width:0;background:#fff;border:1px solid var(--hair-2);padding:7px 8px;font:500 12px var(--sans);color:var(--ink)}
+.lib-search{flex:1;min-width:80px;background:#fff;border:1px solid var(--hair-2);padding:7px 8px;font:500 12px var(--sans)}
+.lib-count{font:500 10px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.lib-grid-wrap{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 10px calc(30px + var(--sb))}
+.lib-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(min-width:480px){.lib-grid{grid-template-columns:repeat(4,1fr)}}
+.lib-tile{position:relative;aspect-ratio:2/3;background:var(--paper-2);border:1px solid var(--hair);overflow:hidden;cursor:pointer}
+.lib-tile img,.lib-tile video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:grayscale(1);transition:filter .4s}
+.lib-tile:active img,.lib-tile:active video{filter:grayscale(0)}
+.lib-tile .lt-veil{position:absolute;inset:0;background:linear-gradient(180deg,transparent 44%,rgba(0,0,0,.7))}
+.lib-tile .lt-foot{position:absolute;left:0;right:0;bottom:0;padding:8px 7px 7px;z-index:2}
+.lib-tile .lt-name{font:400 12px/1.15 var(--serif);color:#fff;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lib-tile .lt-actor{font:500 8px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.72);margin-top:4px;display:block}
+.lib-tile .lt-badge{position:absolute;top:6px;left:6px;background:rgba(255,255,255,.85);border:1px solid var(--hair);padding:3px 6px;font:700 9px/1 var(--sans);color:var(--ink);z-index:2}
+.lib-tile .lt-vid{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.55);border-radius:4px;width:20px;height:20px;display:grid;place-items:center;z-index:2}
+.lib-tile .lt-vid svg{width:9px;height:9px;fill:#fff}
+.lib-tile .lt-pts{position:absolute;bottom:6px;right:6px;font:700 9px/1 var(--sans);color:#fff;background:rgba(0,0,0,.45);padding:3px 5px;z-index:2;display:none}
+.lib-tile.has-video .lt-pts{display:block}
+
+/* JOGO — info de vídeo no duelo */
+.vid-info{position:absolute;top:36px;left:0;right:0;z-index:3;display:flex;justify-content:center;gap:8px;pointer-events:none}
+.vid-tag{background:var(--glass-2);border:1px solid var(--hair);padding:5px 9px;font:600 9px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;color:var(--ink);backdrop-filter:blur(6px)}
+.vid-tag.pts{color:var(--ok)}
+
+/* painel pós-duelo vídeo */
+.video-choice{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:rgba(244,243,241,.88);backdrop-filter:blur(8px)}
+.vc-inner{text-align:center;padding:24px 20px}
+.vc-actor{font:400 32px/1 var(--serif);letter-spacing:-.02em;margin-bottom:8px}
+.vc-sub{font-size:12px;color:var(--ink-2);margin-bottom:24px}
+.vc-btns{display:flex;flex-direction:column;gap:10px;max-width:320px;margin:0 auto}
+.vc-btn{border:1px solid var(--hair-2);background:rgba(255,255,255,.7);padding:16px;font:600 12px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:10px;transition:.2s;color:var(--ink)}
+.vc-btn.primary{border-color:var(--ink);background:var(--ink);color:var(--paper)}
+.vc-btn:active{transform:scale(.97)}
+#stage{position:relative}
+
+/* ELO de vídeo vs foto visível */
+.elo-video{color:var(--warn)!important}
+
+
 #jogo{height:calc(100dvh - 96px - var(--st))}
 .stage{flex:1 1 auto;position:relative;display:flex;flex-direction:column;gap:6px;padding:6px;min-height:0}
 .cont{position:relative;flex:1 1 50%;min-height:0;overflow:hidden;background:var(--paper-2);border:1px solid var(--hair);transition:transform .5s var(--ease),opacity .45s var(--ease),flex-basis .5s var(--ease)}
@@ -135,16 +184,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
 .media-section{margin-top:18px}.section-title{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--hair);padding-bottom:8px;margin-bottom:10px}.section-title .t{font:400 22px/1 var(--serif)}.section-title .c{color:var(--ink-3)}
 .media-card{cursor:pointer}.media-card:active{transform:scale(.99)}
 
-
-.archive-controls{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
-.archive-controls .fld{margin-bottom:0}
-.archive-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin:18px 0 10px;border-bottom:1px solid var(--hair);padding-bottom:9px}
-.archive-head .title{font:400 24px/1 var(--serif)}
-.archive-head .hint{color:var(--ink-3);text-align:right}
-.media-card.video .cover::after{content:"▶";position:absolute;right:6px;bottom:5px;background:rgba(255,255,255,.86);border:1px solid var(--hair);width:24px;height:24px;display:grid;place-items:center;font:600 10px/1 var(--sans);color:var(--ink)}
-.media-card .date{font-size:10.5px;color:var(--ink-3);margin-top:7px}
-.video-choice{display:flex;gap:8px;align-items:center;justify-content:center}
-
 /* viewer */
 .viewer{position:fixed;inset:0;z-index:60;background:rgba(13,13,11,0);visibility:hidden;opacity:0;pointer-events:none;transition:opacity .42s var(--ease),background .42s}
 .viewer.on{visibility:visible;opacity:1;pointer-events:auto;background:#0d0d0b}
@@ -193,22 +232,39 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
     <div class="stage" id="stage" style="display:none">
       <div class="cont a" id="cA"><div class="img"></div><div class="veil"></div><span class="ltr">A</span>
         <div class="tag"><b class="rk">#—</b><b class="tier">—</b></div>
+        <div class="vid-info" id="vidInfoA" style="display:none"></div>
         <div class="foot"><div><div class="nm">—</div><div class="ac micro">—</div></div>
           <div class="acts"><button class="fav" data-fav="a"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C1 9 2.5 5.5 6 5.5c2 0 3.2 1.2 4 2.3.8-1.1 2-2.3 4-2.3 3.5 0 5 3.5 3.5 6.5C19 16.5 12 21 12 21z"/></svg></button>
           <button class="pick" data-pick="a"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>Vence</button></div></div></div>
       <div class="cont b" id="cB"><div class="img"></div><div class="veil"></div><span class="ltr">B</span>
         <div class="tag"><b class="rk">#—</b><b class="tier">—</b></div>
+        <div class="vid-info" id="vidInfoB" style="display:none"></div>
         <div class="foot"><div><div class="nm">—</div><div class="ac micro">—</div></div>
           <div class="acts"><button class="fav" data-fav="b"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C1 9 2.5 5.5 6 5.5c2 0 3.2 1.2 4 2.3.8-1.1 2-2.3 4-2.3 3.5 0 5 3.5 3.5 6.5C19 16.5 12 21 12 21z"/></svg></button>
           <button class="pick" data-pick="b"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>Vence</button></div></div></div>
       <div class="divider"><div class="vs">vs</div><button class="skip" id="skip">Empate · pular</button></div>
     </div>
+    <!-- painel pós-duelo de vídeo -->
+    <div class="video-choice" id="videoChoice" style="display:none">
+      <div class="vc-inner">
+        <div class="vc-actor" id="vcActor">—</div>
+        <div class="vc-sub">Continuar com este ator ou próximo duelo?</div>
+        <div class="vc-btns">
+          <button class="vc-btn primary" id="continueActor">
+            <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Continuar com este ator
+          </button>
+          <button class="vc-btn" id="nextNormal">
+            <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            Próximo duelo
+          </button>
+        </div>
+      </div>
+    </div>
     <div class="gamebar">
       <button class="nb" id="newRound" aria-label="Nova rodada"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" stroke-linecap="round"/><path d="M3 4v4h4"/></svg></button>
-      <div class="ct"><span class="l micro">Duelo · PornMedia</span><div class="n" id="counter">000</div></div>
+      <div class="ct"><span class="l micro" id="gamebarLabel">Duelo · Fotos</span><div class="n" id="counter">000</div></div>
       <div class="ct"><span class="l micro">creditado hoje</span><div class="n" id="livePts">0 pts</div></div>
-      <button class="nb" id="nextNormal" style="display:none;width:auto;padding:0 10px;font:600 9px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase">Normal</button>
-      <button class="nb" id="continueActor" style="display:none;width:auto;padding:0 10px;font:600 9px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase">Mesmo ator</button>
     </div>
   </section>
 
@@ -239,32 +295,49 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
   </div></section>
 
   <!-- BIBLIOTECA -->
-  <section class="view" id="biblioteca"><div class="wrap">
-    <span class="eyebrow micro">Mídias no Drive</span><div class="h2">Biblioteca</div>
-    <div class="card"><div class="card-b">
-      <div class="fld"><label class="flabel micro">Enviar da galeria</label>
-        <div class="two">
-          <select id="upActor"></select>
-          <label class="cta ghost" style="display:flex;align-items:center;justify-content:center">Galeria<input id="upGallery" type="file" accept="image/*,video/*" multiple hidden></label>
-        </div>
-        <div id="upNewWrap" style="display:none;margin-top:10px">
-          <input id="upNewActor" placeholder="Nome do novo ator">
-        </div>
-        <div style="margin-top:10px">
+  <section class="view" id="biblioteca">
+    <!-- upload colapsável -->
+    <div class="lib-upload-bar" id="libUploadBar">
+      <div class="lib-upload-inner" id="libUploadInner" style="display:none">
+        <div class="wrap" style="padding-top:12px;padding-bottom:12px">
+          <div class="two" style="margin-bottom:10px">
+            <select id="upActor"></select>
+            <label class="cta ghost" style="display:flex;align-items:center;justify-content:center;gap:8px">
+              <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;stroke-width:1.8;fill:none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              Galeria<input id="upGallery" type="file" accept="image/*,video/*" multiple hidden>
+            </label>
+          </div>
+          <div id="upNewWrap" style="display:none;margin-bottom:10px"><input id="upNewActor" placeholder="Nome do novo ator"></div>
           <button class="cta" id="upSend" disabled>Enviar</button>
+          <div class="status" id="upStatus"></div>
         </div>
-        <div class="status" id="upStatus"></div>
       </div>
-    </div></div>
-    <div class="fld" style="margin-top:14px"><input id="libSearch" type="search" placeholder="Buscar mídia ou ator"></div>
-    <div class="filters" id="libTypeFilters"><button class="fbtn on" data-libtype="photo">Fotos</button><button class="fbtn" data-libtype="video">Vídeos</button></div>
-    <div class="archive-controls">
-      <div class="fld"><label class="flabel micro">Ator</label><select id="libActorFilter"><option value="all">Todos os atores</option></select></div>
-      <div class="fld"><label class="flabel micro">Ordenar</label><select id="libSort"><option value="elo">Ranking / ELO</option><option value="date">Mais recentes</option><option value="name">Nome</option><option value="actor">Ator</option></select></div>
-      <div class="fld"><label class="flabel micro">Data</label><select id="libDateFilter"><option value="all">Todas</option><option value="today">Hoje</option><option value="week">Últimos 7 dias</option><option value="month">Este mês</option></select></div>
+      <button class="lib-upload-toggle" id="libUploadToggle">
+        <svg viewBox="0 0 24 24" style="width:13px;height:13px;stroke:currentColor;stroke-width:2;fill:none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Enviar mídia
+      </button>
     </div>
-    <div id="libList"></div>
-  </div></section>
+    <!-- filtros sticky -->
+    <div class="lib-filters" id="libFilters">
+      <div class="lib-filter-row">
+        <div class="lib-type-pills">
+          <button class="lpill on" data-libtype="photo">Fotos</button>
+          <button class="lpill" data-libtype="video">Vídeos</button>
+        </div>
+        <select class="lib-actor-sel" id="libActorFilter"><option value="">Todos os atores</option></select>
+        <input class="lib-search" id="libSearch" type="search" placeholder="Buscar…">
+      </div>
+      <div class="lib-sort-row">
+        <span class="lib-count" id="libCount">—</span>
+        <div class="lib-sort-pills">
+          <button class="lpill on" data-libsort="elo">ELO</button>
+          <button class="lpill" data-libsort="recent">Recentes</button>
+          <button class="lpill" data-libsort="name">A-Z</button>
+        </div>
+      </div>
+    </div>
+    <div class="lib-grid-wrap"><div class="lib-grid" id="libGrid"></div></div>
+  </section>
 
   <!-- LANÇAR -->
   <section class="view" id="lancar"><div class="wrap">
@@ -469,28 +542,31 @@ function cooldown(m){const gap=count-(lastSeen[m.id]??-99);return gap>=3?1:0.22+
 function weightFor(m){return Math.max(0.02,tierWeight(mediaTier(m))*(1+(momentum[m.actorId]||0))*cooldown(m));}
 function wpick(list){if(!list.length)return null;const ws=list.map(weightFor);let r=Math.random()*ws.reduce((a,b)=>a+b,0);for(let i=0;i<list.length;i++){r-=ws[i];if(r<=0)return list[i];}return list[list.length-1];}
 function actorName(id){return GAME.actors[id]?.name||'—';}
-function hideVideoChoice(){pendingWinnerActorId=null;$('#continueActor').style.display='none';$('#nextNormal').style.display='none';}
-function showVideoChoice(actorId){pendingWinnerActorId=actorId;$('#continueActor').style.display='grid';$('#nextNormal').style.display='grid';}
+function hideVideoChoice(){pendingWinnerActorId=null;$('#videoChoice').style.display='none';$('#stage').style.display='flex';}
+function showVideoChoice(actorId){pendingWinnerActorId=actorId;$('#vcActor').textContent=actorName(actorId)||'—';$('#videoChoice').style.display='grid';$('#stage').style.display='none';}
+function updateVidInfo(side,m){
+  const el=$('#vidInfo'+side.toUpperCase());if(!el)return;
+  if(gameMode!=='video'||!m){el.style.display='none';return;}
+  const d=videoDurationSec(m,side);
+  const pts=d?Math.max(1,Math.round(d/10)):null;
+  el.style.display='flex';
+  el.innerHTML=`<span class="vid-tag">${d?fmtSec(d):'duração desconhecida'}</span>${pts?`<span class="vid-tag pts">+${pts} pts se vencer</span>`:''}`;
+}
+
 function pickDuel(preferActorId=null){
   const used=new Set(GAME.sessions.current.usedMediaIds||[]);
   const pool=activePool().filter(m=>!used.has(m.id));
   if(pool.length<2)return null;
-  let a=null,b=null;
+  let a=null;
   if(gameMode==='video'&&preferActorId){
     const preferred=pool.filter(m=>m.actorId===preferActorId);
-    if(preferred.length>=2){
-      a=wpick(preferred);
-      b=wpick(preferred.filter(m=>m.id!==a.id));
-      if(a&&b)return {a,b};
-    }else if(preferred.length===1){
-      a=preferred[0];
-    }
+    if(preferred.length)a=wpick(preferred);
   }
   if(!a)a=wpick(pool);
   let elig=pool.filter(m=>m.id!==a.id&&m.actorId!==a.actorId);
   if(!elig.length)elig=pool.filter(m=>m.id!==a.id);
   if(gameMode==='video'){
-    b=wpick(elig);return b?{a,b}:null;
+    const b=wpick(elig);return b?{a,b}:null;
   }
   const order=['S','A','B','C','D'],ai=order.indexOf(mediaTier(a));
   const same=elig.filter(m=>mediaTier(m)===mediaTier(a)),adj=elig.filter(m=>Math.abs(order.indexOf(mediaTier(m))-ai)===1);
@@ -507,19 +583,18 @@ function videoDurationSec(m,side){
   if(isFinite(d)&&d>0){m.durationSec=d;saveGameSoon();return d;}
   return 0;
 }
-function videoWinPoints(m,side){const d=videoDurationSec(m,side);return d>0?Math.max(1,Math.round(d/10)):1;}
-function videoPointsLabel(m,side){const d=videoDurationSec(m,side);return d>0?`~${videoWinPoints(m,side)} pts`:'~pts';}
+function videoWinPoints(m,side){const d=videoDurationSec(m,side);return Math.max(1,Math.round((d||10)/10));}
 async function setStage(side,m){
   const el=side==='a'?$('#cA'):$('#cB');el.className='cont '+side;
   el.querySelector('.nm').textContent=m.name;el.querySelector('.ac').textContent=actorName(m.actorId);
-  el.querySelector('.rk').textContent='#'+(mediaPos(m)||'—');el.querySelector('.tier').textContent=m.type==='video'?videoPointsLabel(m,side):'Tier '+mediaTier(m);
+  el.querySelector('.rk').textContent='#'+(mediaPos(m)||'—');el.querySelector('.tier').textContent='Tier '+mediaTier(m);
   el.querySelector('.fav').style.display=gameMode==='video'?'none':'grid';
   el.querySelector('.fav').classList.toggle('on',!!m.favorite);
   const img=el.querySelector('.img');img.style.backgroundImage='';el.querySelectorAll('video.media').forEach(v=>v.remove());
   try{const src=await blobUrl(m);if(m.type==='video'){const v=document.createElement('video');v.className='media';v.src=src;v.muted=true;v.controls=true;v.playsInline=true;v.preload='metadata';v.onloadedmetadata=()=>{if(isFinite(v.duration)&&v.duration>0){m.durationSec=v.duration;saveGameSoon();}};el.insertBefore(v,el.querySelector('.veil'));}else img.style.backgroundImage=`url("${src}")`;}
   catch(e){}
 }
-async function renderDuel(){$('#counter').textContent=String(count).padStart(3,'0');await setStage('a',duel.a);await setStage('b',duel.b);$('.gamebar .ct .l').textContent=gameMode==='video'?'Duelo · Vídeos':'Duelo · Fotos';}
+async function renderDuel(){$('#counter').textContent=String(count).padStart(3,'0');await setStage('a',duel.a);await setStage('b',duel.b);const lbl=gameMode==='video'?'Duelo · Vídeos':'Duelo · Fotos';$('#gamebarLabel').textContent=lbl;updateVidInfo('a',duel.a);updateVidInfo('b',duel.b);}
 async function nextDuel(preferActorId=null){
   hideVideoChoice();
   const p=pickDuel(preferActorId);
@@ -822,13 +897,8 @@ $('#spotInput').addEventListener('input',e=>{const v=cleanCell(e.target.value);i
    ===================================================================== */
 function addActor(name){name=cleanCell(name);if(!name)return null;const ex=Object.values(GAME.actors).find(a=>a.name.toLowerCase()===name.toLowerCase());if(ex)return ex;const a={id:uid('a'),name,elo:1500,wins:0,losses:0,createdAt:new Date().toISOString()};GAME.actors[a.id]=a;saveGameSoon();return a;}
 $('#acAdd').onclick=()=>{const a=addActor($('#acName').value);if(a){$('#acName').value='';refreshAll();}};
-function mediaDateLabel(m){
-  if(!m?.createdAt)return '';
-  const d=new Date(m.createdAt); if(isNaN(d))return '';
-  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
-}
 function mediaCardsHTML(rows){
-  return `<div class="media-rank">${rows.map(m=>`<div class="media-card ${m.type==='video'?'video':'photo'}" data-media="${m.id}"><div class="cover" data-cover="${m.id}"><span class="badge">#${mediaPos(m)||'—'}</span></div><div class="info"><div class="nm">${escapeHtml(m.name)}</div><div class="actor">${escapeHtml(actorName(m.actorId))}</div><div class="meta"><span class="stat">${m.type==='video'?videoPointsLabel(m):'Tier '+mediaTier(m)}</span><span class="stat">${m.wins||0}V/${m.losses||0}D</span><span class="stat">${mediaLabel(m)}</span></div><div class="date">${mediaDateLabel(m)}</div></div><div class="side"><div class="elo">${Math.round(m.elo||1500)}</div><div class="lab micro">ELO</div></div></div>`).join('')}</div>`;
+  return `<div class="media-rank">${rows.map(m=>`<div class="media-card" data-media="${m.id}"><div class="cover" data-cover="${m.id}"><span class="badge">#${mediaPos(m)||'—'}</span></div><div class="info"><div class="nm">${escapeHtml(m.name)}</div><div class="actor">${escapeHtml(actorName(m.actorId))}</div><div class="meta"><span class="stat">Tier ${mediaTier(m)}</span><span class="stat">${m.wins||0}V/${m.losses||0}D</span><span class="stat">${mediaLabel(m)}</span></div></div><div class="side"><div class="elo">${Math.round(m.elo||1500)}</div><div class="lab micro">ELO</div></div></div>`).join('')}</div>`;
 }
 function hydrateMediaCards(root,rows){
   rows.forEach(async m=>{try{const src=await blobUrl(m);const el=root.querySelector(`[data-cover="${m.id}"]`);if(el&&!el.querySelector('img,video')){const tag=m.type==='video'?`<video src="${src}" muted playsinline></video>`:`<img src="${src}">`;el.insertAdjacentHTML('afterbegin',tag);}}catch(e){}});
@@ -854,8 +924,7 @@ function drawActorProfileChart(name){
 }
 function openActorProfile(name){
   const actor=Object.values(GAME.actors).find(a=>a.name===name)||{id:null,name,elo:null,wins:0,losses:0};
-  const totals=actorTotals(name);
-  const allMedia=Object.values(GAME.media).filter(m=>!m.deleted&&(actor.id?m.actorId===actor.id:actorName(m.actorId)===name));
+  const totals=actorTotals(name);const allMedia=Object.values(GAME.media).filter(m=>!m.deleted&&actorName(m.actorId)===name);
   const photos=allMedia.filter(m=>m.type!=='video').sort((a,b)=>(b.elo||1500)-(a.elo||1500));
   const videos=allMedia.filter(m=>m.type==='video').sort((a,b)=>(b.elo||1500)-(a.elo||1500));
   const platHtml=Object.entries(totals.plats).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`<span class="pchip ${p==='PornMedia'?'pm':''}">${escapeHtml(p)} ${fmtNum(v)}</span>`).join('')||'<span class="pchip">sem pontos</span>';
@@ -899,55 +968,54 @@ $('#upSend').onclick=async()=>{
   }
   upQueue=[];$('#upNewActor').value='';saveGameSoon();$('#upStatus').textContent=`✓ ${n} mídia(s) enviada(s).`;refreshAll();startGameIfReady();
 };
-let libTypeFilter='photo', libActorFilter='all', libSortFilter='elo', libDateFilter='all';
+let libTypeFilter='photo',libActorFilter='',libSort='elo';
 function fillLibActorFilter(){
-  const sel=$('#libActorFilter'); if(!sel)return;
-  const cur=sel.value||'all';
-  const opts=Object.values(GAME.actors).sort((a,b)=>a.name.localeCompare(b.name)).map(a=>`<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
-  sel.innerHTML=`<option value="all">Todos os atores</option>`+opts;
-  sel.value=[...sel.options].some(o=>o.value===cur)?cur:'all';
-}
-function mediaDateOk(m){
-  if(libDateFilter==='all')return true;
-  if(!m.createdAt)return false;
-  const d=new Date(m.createdAt); if(isNaN(d))return false;
-  const now=new Date();
-  if(libDateFilter==='today')return d.toDateString()===now.toDateString();
-  if(libDateFilter==='week')return (now-d)<=7*24*60*60*1000;
-  if(libDateFilter==='month')return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth();
-  return true;
-}
-function sortMediaRows(rows){
-  const arr=[...rows];
-  if(libSortFilter==='date')arr.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
-  else if(libSortFilter==='name')arr.sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));
-  else if(libSortFilter==='actor')arr.sort((a,b)=>actorName(a.actorId).localeCompare(actorName(b.actorId))||((b.elo||1500)-(a.elo||1500)));
-  else arr.sort((a,b)=>(b.elo||1500)-(a.elo||1500));
-  return arr;
+  const sel=$('#libActorFilter');if(!sel)return;
+  const names=[...new Set(Object.values(GAME.media).filter(m=>!m.deleted).map(m=>actorName(m.actorId)))].sort();
+  sel.innerHTML='<option value="">Todos os atores</option>'+names.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
+  sel.value=libActorFilter;
 }
 function renderLibrary(){
   const q=($('#libSearch').value||'').toLowerCase();
-  libActorFilter=$('#libActorFilter')?.value||libActorFilter;
-  libSortFilter=$('#libSort')?.value||libSortFilter;
-  libDateFilter=$('#libDateFilter')?.value||libDateFilter;
-  $('#libTypeFilters')?.querySelectorAll('[data-libtype]')?.forEach(b=>b.classList.toggle('on',b.dataset.libtype===libTypeFilter));
-  const base=mediaPool(libTypeFilter).filter(m=>{
-    if(libActorFilter!=='all'&&m.actorId!==libActorFilter)return false;
-    if(!mediaDateOk(m))return false;
-    return (m.name+' '+actorName(m.actorId)).toLowerCase().includes(q);
+  $$('#libFilters .lpill[data-libtype]').forEach(b=>b.classList.toggle('on',b.dataset.libtype===libTypeFilter));
+  $$('#libFilters .lpill[data-libsort]').forEach(b=>b.classList.toggle('on',b.dataset.libsort===libSort));
+  let rows=mediaPool(libTypeFilter).filter(m=>{
+    if(libActorFilter&&actorName(m.actorId)!==libActorFilter)return false;
+    if(q&&!(m.name+' '+actorName(m.actorId)).toLowerCase().includes(q))return false;
+    return true;
   });
-  const rows=sortMediaRows(base);
-  const list=$('#libList');
-  const label=libTypeFilter==='video'?'vídeos':'fotos';
-  if(!rows.length){list.innerHTML=`<div class="empty">Nenhuma mídia encontrada para os filtros atuais.</div>`;return;}
-  list.innerHTML=`<div class="archive-head"><div><div class="title">${libTypeFilter==='video'?'Vídeos':'Fotos'}</div><div class="sub" style="margin-top:4px">${rows.length} ${label} · ranking separado por tipo de mídia</div></div><div class="hint micro">${libSortFilter==='elo'?'por ELO':libSortFilter==='date'?'mais recentes':libSortFilter==='name'?'por nome':'por ator'}</div></div>`+mediaCardsHTML(rows.slice(0,120));
-  hydrateMediaCards(list,rows.slice(0,120));
+  if(libSort==='elo')rows.sort((a,b)=>(b.elo||1500)-(a.elo||1500));
+  else if(libSort==='recent')rows.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
+  else rows.sort((a,b)=>a.name.localeCompare(b.name));
+  const grid=$('#libGrid');
+  const total=rows.length;$('#libCount').textContent=`${total} mídia${total!==1?'s':''}`;
+  if(!rows.length){grid.innerHTML=`<div style="grid-column:1/-1;padding:40px 0;text-align:center;color:var(--ink-3);font-size:13px">Nenhuma mídia encontrada.</div>`;return;}
+  const show=rows.slice(0,120);
+  const globalRanked=mediaRanked(libTypeFilter);
+  grid.innerHTML=show.map(m=>{
+    const gpos=globalRanked.findIndex(x=>x.id===m.id)+1;
+    const dur=m.durationSec?fmtSec(m.durationSec):'';
+    const pts=m.durationSec?`+${Math.max(1,Math.round(m.durationSec/10))}pts`:'';
+    return `<div class="lib-tile ${dur?'has-video':''}" data-media="${m.id}">
+      <div class="lt-veil"></div>
+      ${m.type==='video'?`<span class="lt-vid"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></span>`:''}
+      <span class="lt-badge">#${gpos}</span>
+      ${pts?`<span class="lt-pts">${dur} · ${pts}</span>`:''}
+      <div class="lt-foot"><span class="lt-name">${escapeHtml(m.name)}</span><span class="lt-actor">${escapeHtml(actorName(m.actorId))}</span></div>
+    </div>`;
+  }).join('');
+  show.forEach(async m=>{
+    try{const src=await blobUrl(m);const el=grid.querySelector(`[data-media="${m.id}"]`);if(!el||el.querySelector('img,video'))return;const tag=m.type==='video'?`<video src="${src}" muted playsinline preload="metadata"></video>`:`<img src="${src}" loading="lazy">`;el.insertAdjacentHTML('afterbegin',tag);}catch(e){}
+  });
+  grid.querySelectorAll('[data-media]').forEach(el=>el.onclick=()=>{const m=GAME.media[el.dataset.media];if(m)openMediaViewer([m],0);});
 }
+function fmtSec(s){const m=Math.floor(s/60),sec=Math.round(s%60);return m?`${m}:${String(sec).padStart(2,'0')}`:`${sec}s`;}
 $('#libSearch').oninput=renderLibrary;
-$('#libActorFilter')?.addEventListener('change',renderLibrary);
-$('#libSort')?.addEventListener('change',renderLibrary);
-$('#libDateFilter')?.addEventListener('change',renderLibrary);
-$('#libTypeFilters')?.querySelectorAll('[data-libtype]')?.forEach(b=>b.onclick=()=>{libTypeFilter=b.dataset.libtype;renderLibrary();});
+$('#libActorFilter').addEventListener('change',e=>{libActorFilter=e.target.value;renderLibrary();});
+$$('#libFilters .lpill[data-libtype]').forEach(b=>b.onclick=()=>{libTypeFilter=b.dataset.libtype;renderLibrary();});
+$$('#libFilters .lpill[data-libsort]').forEach(b=>b.onclick=()=>{libSort=b.dataset.libsort;renderLibrary();});
+$('#libUploadToggle').onclick=()=>{const inner=$('#libUploadInner');inner.style.display=inner.style.display==='none'?'block':'none';};
+
 
 /* =====================================================================
    LANÇAR (live entry)
