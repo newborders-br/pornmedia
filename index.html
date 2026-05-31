@@ -272,6 +272,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
 .media-card .side{text-align:right;min-width:54px}
 .media-card .side .elo{font:400 24px/1 var(--serif)}
 .media-card .side .lab{color:var(--ink-3)}
+.media-card .media-del{margin-top:7px;border:1px solid rgba(168,90,62,.35);background:rgba(255,255,255,.72);color:var(--danger);padding:5px 7px;font:700 8px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase}
+.media-card .media-del:active{transform:scale(.95)}
 @media(max-width:460px){.media-card{grid-template-columns:70px 1fr}.media-card .side{grid-column:2;text-align:left}.media-card .cover{width:70px;height:70px}}
 
 
@@ -1024,8 +1026,12 @@ function ledgerPeriodOnly(){
 }
 
 function currentMonthKey(){return monthKey(todayBR());}
-function previousMonthKey(){const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+function calendarPreviousMonthKey(k=currentMonthKey()){const [y,m]=k.split('-').map(Number);const d=new Date(y,m-1,1);d.setMonth(d.getMonth()-1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;}
+function monthsWithData(){return [...new Set(LEDGER.events.map(e=>monthKey(e.dataBR)).filter(Boolean))].sort();}
+function currentComparableMonthKey(){const cur=currentMonthKey();const months=monthsWithData();return months.includes(cur)?cur:(months[months.length-1]||cur);}
+function previousComparableMonthKey(curK=currentComparableMonthKey()){const months=monthsWithData().filter(k=>k<curK);return months.length?months[months.length-1]:calendarPreviousMonthKey(curK);}
 function keyLabel(k){if(!k)return '—';const [y,m]=k.split('-');return `${MESES[(+m||1)-1]}/${String(y).slice(2)}`;}
+function rankLabel(v,k){return v?`#${v} ${keyLabel(k)}`:`— ${keyLabel(k)}`;}
 function importantPlatformName(p){const g=platformGroupName(p);const k=String(g||'').toLowerCase();if(k==='telegram'||k==='telegram full'||k==='telegram only')return 'telegram';if(k==='pc-on'||k==='pc-onr'||k==='pc-off')return k;if(k==='pornmedia')return 'PornMedia';return null;}
 function rankMonthData(k){
   const by={};
@@ -1051,19 +1057,24 @@ function importantPlatformsForMonth(name,k){
     .map(([name,pts])=>({name,pts}));
 }
 function fallAnalysis(name){
-  const curK=currentMonthKey(),prevK=previousMonthKey();
+  const curK=currentComparableMonthKey(),prevK=previousComparableMonthKey(curK);
   if(!prevK||prevK===curK)return null;
   const prev=rankMonthData(prevK),cur=rankMonthData(curK);
-  const pr=prev.map[name];
-  if(!pr||pr.rank>20)return null;
-  const cr=cur.map[name]||{rank:(cur.rows.length||0)+1,total:0};
-  const drop=cr.rank-pr.rank;
+  const pr=prev.map[name]||null;
+  const cr=cur.map[name]||null;
+  if(!pr&&!cr)return null;
+  const curFallbackRank=(cur.rows.length||0)+1;
+  const curRank=cr?cr.rank:curFallbackRank;
+  const prevRank=pr?pr.rank:null;
+  const drop=prevRank?curRank-prevRank:null;
+  const prevPts=pr?pr.total:0;
+  const curPts=cr?cr.total:0;
   const prevPlats=importantPlatformsForMonth(name,prevK);
   const curPlats=importantPlatformsForMonth(name,curK);
   const curSet=new Set(curPlats.map(x=>x.name));
   const lost=prevPlats.filter(x=>!curSet.has(x.name));
-  const flag=(drop>=5||cr.rank>20)&&lost.length>0;
-  return {flag,prevKey:prevK,curKey:curK,prevRank:pr.rank,curRank:cr.rank,drop,prevPts:pr.total,curPts:cr.total,prevPlats,curPlats,lost};
+  const flag=!!(prevRank&&prevRank<=20&&((drop!==null&&drop>=5)||curRank>20)&&lost.length>0);
+  return {flag,prevKey:prevK,curKey:curK,prevRank,curRank,drop,prevPts,curPts,prevPlats,curPlats,lost};
 }
 function platformPills(items,cls=''){
   return (items||[]).length?items.map(x=>`<span class="fall-pill ${cls}">${escapeHtml(x.name)} ${fmtNum(x.pts)}</span>`).join(''):'<span style="color:var(--ink-3)">—</span>';
@@ -1073,7 +1084,7 @@ function fallProfileHTML(name){
   const title=f.flag?'queda por perda de plataforma':'comparativo mensal';
   return `<div class="card fall-card" style="margin-top:14px"><div class="card-b" style="padding:14px">
     <div class="flabel micro" style="margin-bottom:10px">${title}</div>
-    <div class="fall-row"><span>ranking</span><b>#${f.prevRank} ${keyLabel(f.prevKey)} → #${f.curRank} ${keyLabel(f.curKey)}${f.drop>0?` · queda ${f.drop}`:''}</b></div>
+    <div class="fall-row"><span>ranking</span><b>${rankLabel(f.prevRank,f.prevKey)} → ${rankLabel(f.curRank,f.curKey)}${f.drop>0?` · queda ${f.drop}`:''}</b></div>
     <div class="fall-row"><span>pontos</span><b>${fmtNum(f.prevPts)} → ${fmtNum(f.curPts)}</b></div>
     <div class="fall-row"><span>antes</span><div>${platformPills(f.prevPlats)}</div></div>
     <div class="fall-row"><span>agora</span><div>${platformPills(f.curPlats)}</div></div>
@@ -1182,11 +1193,23 @@ $('#spotInput').addEventListener('input',e=>{const v=cleanCell(e.target.value);i
 function addActor(name){name=cleanCell(name);if(!name)return null;const ex=Object.values(GAME.actors).find(a=>a.name.toLowerCase()===name.toLowerCase());if(ex)return ex;const a={id:uid('a'),name,elo:1500,wins:0,losses:0,createdAt:new Date().toISOString()};GAME.actors[a.id]=a;saveGameSoon();return a;}
 $('#acAdd').onclick=()=>{const a=addActor($('#acName').value);if(a){$('#acName').value='';refreshAll();}};
 function mediaCardsHTML(rows){
-  return `<div class="media-rank">${rows.map(m=>`<div class="media-card" data-media="${m.id}"><div class="cover" data-cover="${m.id}"><span class="badge">#${mediaPos(m)||'—'}</span></div><div class="info"><div class="nm">${escapeHtml(m.name)}</div><div class="actor">${escapeHtml(actorName(m.actorId))}</div><div class="meta"><span class="stat">Tier ${mediaTier(m)}</span><span class="stat">${m.wins||0}V/${m.losses||0}D</span><span class="stat">${mediaLabel(m)}</span></div></div><div class="side"><div class="elo">${Math.round(m.elo||1500)}</div><div class="lab micro">ELO</div></div></div>`).join('')}</div>`;
+  return `<div class="media-rank">${rows.map(m=>`<div class="media-card" data-media="${m.id}"><div class="cover" data-cover="${m.id}"><span class="badge">#${mediaPos(m)||'—'}</span></div><div class="info"><div class="nm">${escapeHtml(m.name)}</div><div class="actor">${escapeHtml(actorName(m.actorId))}</div><div class="meta"><span class="stat">Tier ${mediaTier(m)}</span><span class="stat">${m.wins||0}V/${m.losses||0}D</span><span class="stat">${mediaLabel(m)}</span></div></div><div class="side"><div class="elo">${Math.round(m.elo||1500)}</div><div class="lab micro">ELO</div><button class="media-del" data-del-media="${m.id}">Excluir</button></div></div>`).join('')}</div>`;
 }
+async function deleteMediaFromProfile(id){
+  const m=GAME.media[id];if(!m)return;
+  const name=actorName(m.actorId);
+  if(!confirm(`Excluir ${m.name} do ator ${name}?
+
+A mídia será removida da biblioteca e, se possível, movida para a lixeira do Drive.`))return;
+  m.deleted=true;m.deletedAt=new Date().toISOString();
+  if(m.fileId){try{await trashFile(m.fileId);}catch(e){log('Não consegui mover o arquivo para a lixeira do Drive: '+e.message);}}
+  saveGameSoon();refreshAll();openActorProfile(name);
+}
+
 function hydrateMediaCards(root,rows){
   rows.forEach(async m=>{try{const src=await blobUrl(m);const el=root.querySelector(`[data-cover="${m.id}"]`);if(el&&!el.querySelector('img,video')){const tag=m.type==='video'?`<video src="${src}" muted playsinline></video>`:`<img src="${src}">`;el.insertAdjacentHTML('afterbegin',tag);}}catch(e){}});
-  root.querySelectorAll('[data-media]').forEach(el=>{el.onclick=()=>{const id=el.dataset.media;const m=GAME.media[id];if(m)openMediaViewer([m],0);};});
+  root.querySelectorAll('[data-del-media]').forEach(btn=>{btn.onclick=e=>{e.stopPropagation();deleteMediaFromProfile(btn.dataset.delMedia);};});
+  root.querySelectorAll('[data-media]').forEach(el=>{el.onclick=e=>{if(e.target.closest('[data-del-media]'))return;const id=el.dataset.media;const m=GAME.media[id];if(m)openMediaViewer([m],0);};});
 }
 function actorLedgerRows(name){return LEDGER.events.filter(e=>e.nome===name);}
 function actorTotals(name){const rows=actorLedgerRows(name),mk=monthKey(todayBR());return{total:rows.reduce((s,e)=>s+(Number(e.ponto)||0),0),month:rows.filter(e=>monthKey(e.dataBR)===mk).reduce((s,e)=>s+(Number(e.ponto)||0),0),events:rows.length,plats:rows.reduce((o,e)=>{const p=platformGroupName(e.plataforma);o[p]=(o[p]||0)+(Number(e.ponto)||0);return o;},{})};}
