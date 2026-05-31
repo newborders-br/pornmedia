@@ -169,7 +169,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
     <nav id="nav">
       <button class="tab on" data-v="jogo">Jogo</button>
       <button class="tab" data-v="ranking">Ranking</button>
-      <button class="tab" data-v="spotlight">Desempenho</button>
       <button class="tab" data-v="atores">Atores</button>
       <button class="tab" data-v="biblioteca">Biblioteca</button>
       <button class="tab" data-v="lancar">Lançar</button>
@@ -179,6 +178,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
 
   <!-- JOGO -->
   <section class="view on" id="jogo">
+    <div class="filters" id="gameModeFilters" style="padding:8px 12px 0;margin:0;justify-content:center"><button class="fbtn on" data-game="photo">Fotos</button><button class="fbtn" data-game="video">Vídeos</button></div>
     <div class="jogo-empty" id="jogoEmpty"><div class="empty" style="border:0">Conecte o Drive e cadastre fotos pra começar o duelo.<br>O ranking do PONTO sobe a cada vitória.</div></div>
     <div class="stage" id="stage" style="display:none">
       <div class="cont a" id="cA"><div class="img"></div><div class="veil"></div><span class="ltr">A</span>
@@ -197,6 +197,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
       <button class="nb" id="newRound" aria-label="Nova rodada"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" stroke-linecap="round"/><path d="M3 4v4h4"/></svg></button>
       <div class="ct"><span class="l micro">Duelo · PornMedia</span><div class="n" id="counter">000</div></div>
       <div class="ct"><span class="l micro">creditado hoje</span><div class="n" id="livePts">0 pts</div></div>
+      <button class="nb" id="nextNormal" style="display:none;width:auto;padding:0 10px;font:600 9px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase">Normal</button>
+      <button class="nb" id="continueActor" style="display:none;width:auto;padding:0 10px;font:600 9px/1 var(--sans);letter-spacing:.1em;text-transform:uppercase">Mesmo ator</button>
     </div>
   </section>
 
@@ -417,12 +419,14 @@ function creditPonto(actorName,pts){
 }
 
 /* =====================================================================
-   JOGO: duelo de fotos + ELO + balanceamento ponderado (C/D ↓, vencedor ↑)
+   JOGO: duelo de fotos/vídeos separados + ELO + PONTO
    ===================================================================== */
-let duel={a:null,b:null},count=0,deciding=false;
+let duel={a:null,b:null},count=0,deciding=false,gameMode='photo',pendingWinnerActorId=null;
 const momentum={},lastSeen={};
-const BAL={sup:0.70,boost:0.80,decay:0.82};   // valores do lab (ajustáveis)
+const BAL={sup:0.70,boost:0.80,decay:0.82};
 function photoPool(){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&!m.skipped&&m.type!=='video');}
+function videoPool(){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&!m.skipped&&m.type==='video');}
+function activePool(){return gameMode==='video'?videoPool():photoPool();}
 function ranked(){return photoPool().sort((x,y)=>(y.elo||1500)-(x.elo||1500));}
 function pos(m){return ranked().findIndex(x=>x.id===m.id)+1;}
 function tierOf(m){const tot=photoPool().length||1;const p=pos(m)/tot;return p<=.06?'S':p<=.2?'A':p<=.45?'B':p<=.75?'C':'D';}
@@ -434,33 +438,57 @@ function mediaTier(m){const tot=mediaPool(mediaKind(m)).length||1;const p=(media
 function mediaLabel(m){return mediaKind(m)==='video'?'Vídeo':'Foto';}
 function tierWeight(tg){if(tg==='C')return 1-0.72*BAL.sup;if(tg==='D')return 1-0.86*BAL.sup;return{S:1,A:.85,B:.65}[tg]||.5;}
 function cooldown(m){const gap=count-(lastSeen[m.id]??-99);return gap>=3?1:0.22+0.78*(gap/3);}
-function weightFor(m){return Math.max(0.02,tierWeight(tierOf(m))*(1+(momentum[GAME.media[m.id].actorId]||0))*cooldown(m));}
+function weightFor(m){return Math.max(0.02,tierWeight(mediaTier(m))*(1+(momentum[m.actorId]||0))*cooldown(m));}
 function wpick(list){if(!list.length)return null;const ws=list.map(weightFor);let r=Math.random()*ws.reduce((a,b)=>a+b,0);for(let i=0;i<list.length;i++){r-=ws[i];if(r<=0)return list[i];}return list[list.length-1];}
 function actorName(id){return GAME.actors[id]?.name||'—';}
-function pickDuel(){
+function hideVideoChoice(){pendingWinnerActorId=null;$('#continueActor').style.display='none';$('#nextNormal').style.display='none';}
+function showVideoChoice(actorId){pendingWinnerActorId=actorId;$('#continueActor').style.display='grid';$('#nextNormal').style.display='grid';}
+function pickDuel(preferActorId=null){
   const used=new Set(GAME.sessions.current.usedMediaIds||[]);
-  const pool=photoPool().filter(m=>!used.has(m.id));
+  const pool=activePool().filter(m=>!used.has(m.id));
   if(pool.length<2)return null;
-  const a=wpick(pool);let elig=pool.filter(m=>m.id!==a.id&&m.actorId!==a.actorId);if(!elig.length)elig=pool.filter(m=>m.id!==a.id);
-  const order=['S','A','B','C','D'],ai=order.indexOf(tierOf(a));
-  const same=elig.filter(m=>tierOf(m)===tierOf(a)),adj=elig.filter(m=>Math.abs(order.indexOf(tierOf(m))-ai)===1);
+  let a=null;
+  if(gameMode==='video'&&preferActorId){
+    const preferred=pool.filter(m=>m.actorId===preferActorId);
+    if(preferred.length)a=wpick(preferred);
+  }
+  if(!a)a=wpick(pool);
+  let elig=pool.filter(m=>m.id!==a.id&&m.actorId!==a.actorId);
+  if(!elig.length)elig=pool.filter(m=>m.id!==a.id);
+  if(gameMode==='video'){
+    const b=wpick(elig);return b?{a,b}:null;
+  }
+  const order=['S','A','B','C','D'],ai=order.indexOf(mediaTier(a));
+  const same=elig.filter(m=>mediaTier(m)===mediaTier(a)),adj=elig.filter(m=>Math.abs(order.indexOf(mediaTier(m))-ai)===1);
   const roll=Math.random();let set=roll<.7&&same.length?same:roll<.92&&adj.length?adj:elig;if(!set.length)set=elig;
   const b=wpick(set);return b?{a,b}:null;
 }
 function expct(a,b){return 1/(1+Math.pow(10,((b.elo||1500)-(a.elo||1500))/400));}
 function applyElo(w,l,k=32){w.elo=(w.elo||1500)+k*(1-expct(w,l));l.elo=(l.elo||1500)+k*(0-expct(l,w));}
+function videoDurationSec(m,side){
+  const stored=Number(m.durationSec||m.duration_seg||m.duration||0);
+  if(stored>0)return stored;
+  const el=(side==='a'?$('#cA'):$('#cB'))?.querySelector('video.media');
+  const d=Number(el?.duration||0);
+  if(isFinite(d)&&d>0){m.durationSec=d;saveGameSoon();return d;}
+  return 0;
+}
+function videoWinPoints(m,side){const d=videoDurationSec(m,side);return Math.max(1,Math.round((d||10)/10));}
 async function setStage(side,m){
   const el=side==='a'?$('#cA'):$('#cB');el.className='cont '+side;
   el.querySelector('.nm').textContent=m.name;el.querySelector('.ac').textContent=actorName(m.actorId);
-  el.querySelector('.rk').textContent='#'+pos(m);el.querySelector('.tier').textContent='Tier '+tierOf(m);
+  el.querySelector('.rk').textContent='#'+(mediaPos(m)||'—');el.querySelector('.tier').textContent='Tier '+mediaTier(m);
+  el.querySelector('.fav').style.display=gameMode==='video'?'none':'grid';
   el.querySelector('.fav').classList.toggle('on',!!m.favorite);
   const img=el.querySelector('.img');img.style.backgroundImage='';el.querySelectorAll('video.media').forEach(v=>v.remove());
-  try{const src=await blobUrl(m);if(m.type==='video'){const v=document.createElement('video');v.className='media';v.src=src;v.muted=true;v.playsInline=true;v.preload='metadata';el.insertBefore(v,el.querySelector('.veil'));}else img.style.backgroundImage=`url("${src}")`;}catch(e){}
+  try{const src=await blobUrl(m);if(m.type==='video'){const v=document.createElement('video');v.className='media';v.src=src;v.muted=true;v.controls=true;v.playsInline=true;v.preload='metadata';v.onloadedmetadata=()=>{if(isFinite(v.duration)&&v.duration>0){m.durationSec=v.duration;saveGameSoon();}};el.insertBefore(v,el.querySelector('.veil'));}else img.style.backgroundImage=`url("${src}")`;}
+  catch(e){}
 }
-async function renderDuel(){$('#counter').textContent=String(count).padStart(3,'0');await setStage('a',duel.a);await setStage('b',duel.b);}
-async function nextDuel(){
-  const p=pickDuel();
-  if(!p){$('#stage').style.display='none';$('#jogoEmpty').style.display='grid';$('#jogoEmpty').querySelector('.empty').innerHTML=photoPool().length<2?'Cadastre pelo menos 2 fotos (em Biblioteca) pra duelar.':'Rodada concluída. Toque em nova rodada.';return;}
+async function renderDuel(){$('#counter').textContent=String(count).padStart(3,'0');await setStage('a',duel.a);await setStage('b',duel.b);$('.gamebar .ct .l').textContent=gameMode==='video'?'Duelo · Vídeos':'Duelo · Fotos';}
+async function nextDuel(preferActorId=null){
+  hideVideoChoice();
+  const p=pickDuel(preferActorId);
+  if(!p){$('#stage').style.display='none';$('#jogoEmpty').style.display='grid';const label=gameMode==='video'?'vídeos':'fotos';$('#jogoEmpty').querySelector('.empty').innerHTML=activePool().length<2?`Cadastre pelo menos 2 ${label} (em Biblioteca) pra duelar.`:'Rodada concluída. Toque em nova rodada.';return;}
   duel=p;count++;[duel.a,duel.b].forEach(m=>lastSeen[m.id]=count);
   $('#jogoEmpty').style.display='none';$('#stage').style.display='flex';await renderDuel();
 }
@@ -472,19 +500,23 @@ async function decide(side){
   GAME.sessions.current.usedMediaIds=[...new Set([...(GAME.sessions.current.usedMediaIds||[]),w.id,l.id])];
   GAME.duels=(GAME.duels||0)+1;
   momentum[w.actorId]=(momentum[w.actorId]||0)+BAL.boost;Object.keys(momentum).forEach(k=>{momentum[k]*=BAL.decay;if(momentum[k]<.03)delete momentum[k];});
-  creditPonto(actorName(w.actorId),1);          // ← tempo real
+  const pts=gameMode==='video'?videoWinPoints(w,side):1;
+  creditPonto(actorName(w.actorId),pts);
   saveGameSoon();
   const stg=$('#stage');stg.classList.add('deciding');$('#cA').classList.add(side==='a'?'win':'lose');$('#cB').classList.add(side==='b'?'win':'lose');
   closeViewer(true);
-  setTimeout(async()=>{stg.classList.remove('deciding');deciding=false;await nextDuel();refreshLight();},480);
+  setTimeout(async()=>{stg.classList.remove('deciding');$('#cA').classList.remove('win','lose');$('#cB').classList.remove('win','lose');deciding=false;if(gameMode==='video')showVideoChoice(w.actorId);else{await nextDuel();refreshLight();}},520);
 }
 $('[data-pick="a"]').onclick=e=>{e.stopPropagation();decide('a');};
 $('[data-pick="b"]').onclick=e=>{e.stopPropagation();decide('b');};
 $$('[data-fav]').forEach(b=>b.onclick=e=>{e.stopPropagation();const m=duel[b.dataset.fav];if(!m)return;m.favorite=!m.favorite;b.classList.toggle('on',m.favorite);saveGameSoon();});
 $('#skip').onclick=()=>{if(!duel.a)return;GAME.sessions.current.usedMediaIds=[...new Set([...(GAME.sessions.current.usedMediaIds||[]),duel.a.id,duel.b.id])];[duel.a,duel.b].forEach(m=>m.elo=Math.max(0,(m.elo||1500)-4));saveGameSoon();nextDuel();};
-$('#newRound').onclick=()=>{GAME.sessions.current.usedMediaIds=[];saveGameSoon();nextDuel();};
-['a','b'].forEach(s=>{(s==='a'?$('#cA'):$('#cB')).querySelector('.img').addEventListener('click',()=>openViewer(s==='a'?0:1));});
-async function startGameIfReady(){if(photoPool().length>=2)await nextDuel();else{$('#stage').style.display='none';$('#jogoEmpty').style.display='grid';}}
+$('#newRound').onclick=()=>{GAME.sessions.current.usedMediaIds=[];hideVideoChoice();saveGameSoon();nextDuel();};
+$('#nextNormal').onclick=()=>nextDuel();
+$('#continueActor').onclick=()=>nextDuel(pendingWinnerActorId);
+['a','b'].forEach(s=>{(s==='a'?$('#cA'):$('#cB')).addEventListener('click',e=>{if(e.target.closest('button')||e.target.closest('video'))return;openViewer(s==='a'?0:1);});});
+async function startGameIfReady(){if(activePool().length>=2)await nextDuel();else{$('#stage').style.display='none';$('#jogoEmpty').style.display='grid';}}
+$$('#gameModeFilters [data-game]').forEach(b=>b.onclick=async()=>{gameMode=b.dataset.game;$$('#gameModeFilters [data-game]').forEach(x=>x.classList.toggle('on',x===b));GAME.sessions.current.usedMediaIds=[];hideVideoChoice();await nextDuel();});
 
 /* viewer zoom/swipe */
 const viewer=$('#viewer'),track=$('#vTrack'),slides=$$('.v-slide');
