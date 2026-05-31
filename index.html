@@ -533,8 +533,7 @@ $$('#gameModeFilters [data-game]').forEach(b=>b.onclick=async()=>{gameMode=b.dat
 
 /* viewer zoom/swipe */
 const viewer=$('#viewer'),track=$('#vTrack'),slides=$$('.v-slide');
-let vIdx=0,vOpen=false,zoom=false,scale=1,panX=0,panY=0,sx=0,sy=0,dx=0,dy=0,drag=false,lastTap=0,spX=0,spY=0;
-let gesture='none',pinchStartDist=0,pinchStartScale=1,pinchStartPanX=0,pinchStartPanY=0,pinchStartCX=0,pinchStartCY=0;
+let vIdx=0,vOpen=false,zoom=false,scale=1,panX=0,panY=0,lastTap=0;
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const touchList=e=>Array.from(e.touches||[]);
 const touchDist=ts=>Math.hypot(ts[0].clientX-ts[1].clientX,ts[0].clientY-ts[1].clientY);
@@ -554,26 +553,52 @@ async function paintViewerSlides(){
     catch(e){}
   }
 }
+/* ---------------------------------------------------------------
+   VIEWER — refatorado limpo.
+   Estado canônico do gesto vive em G; toda decisão lê G antes de
+   qualquer reset. Sem history.back() automático (flag de fechamento).
+   1 dedo s/ zoom = swipe A/B ou fechar pra baixo · 1 dedo c/ zoom = pan · 2 dedos = pinch.
+   --------------------------------------------------------------- */
+let viewerClosing=false;
+const G={mode:'none',active:false,sx:0,sy:0,dx:0,dy:0,sPanX:0,sPanY:0,pStartDist:0,pStartScale:1,pCX:0,pCY:0,pPanX:0,pPanY:0};
+function resetGesture(){G.mode='none';G.active=false;G.dx=0;G.dy=0;G.pStartDist=0;}
+
+function clearZoomState(animated){zoom=false;scale=1;panX=panY=0;viewer.classList.remove('zoomed');slides.forEach(sl=>{const img=sl.querySelector('.vimg');if(img){img.style.transition=animated?'transform .22s var(--ease)':'none';img.style.transform='';}});}
+function neutralizeViewer(){resetGesture();clearZoomState(false);lastTap=0;viewer.style.background='';}
+/* aliases p/ chamadas legadas no resto do arquivo */
+function resetZoomAll(a=true){clearZoomState(a);}
+function resetZoom(){clearZoomState(true);}
+function resetViewerGesture(hard=false){resetGesture();viewer.style.background='';if(hard){lastTap=0;clearZoomState(false);}}
+
 async function openViewer(i){
   if(!duel.a)return;
-  viewerMode='duel';viewerItems=[duel.a,duel.b];vIdx=i;vOpen=true;resetZoomAll(false);gesture='none';drag=false;
+  viewerClosing=false;viewerMode='duel';viewerItems=[duel.a,duel.b];vIdx=i;vOpen=true;
+  neutralizeViewer();
   await paintViewerSlides();
-  viewer.classList.add('on');viewer.classList.remove('zoomed');setTrack(0);vmeta();
+  viewer.classList.add('on');viewer.classList.remove('zoomed');setTrack(false);vmeta();
   try{history.pushState({v:1},'');}catch(e){}
 }
 async function openMediaViewer(items,start=0){
   const arr=(items||[]).filter(Boolean);if(!arr.length)return;
-  viewerMode='media';viewerItems=[arr[start]||arr[0]];vIdx=0;vOpen=true;resetZoomAll(false);gesture='none';drag=false;
+  viewerClosing=false;viewerMode='media';viewerItems=[arr[start]||arr[0]];vIdx=0;vOpen=true;
+  neutralizeViewer();
   await paintViewerSlides();
-  viewer.classList.add('on');viewer.classList.remove('zoomed');setTrack(0);vmeta();
+  viewer.classList.add('on');viewer.classList.remove('zoomed');setTrack(false);vmeta();
   try{history.pushState({v:1},'');}catch(e){}
 }
 function closeViewer(sil){
-  if(!vOpen)return;
-  resetViewerGesture(true);
+  if(!vOpen||viewerClosing)return;
+  viewerClosing=true;
   track.querySelectorAll('video').forEach(v=>{try{v.pause();v.removeAttribute('src');v.load();}catch(e){}});
-  vOpen=false;viewer.classList.remove('on','zoomed');viewer.style.background='';viewerMode='duel';viewerItems=[];$('#vPick').style.display='flex';$$('.v-dots i').forEach(d=>d.style.display='');setTrack(false);
+  vOpen=false;
+  viewer.classList.remove('on','zoomed');
+  neutralizeViewer();
+  viewerMode='duel';viewerItems=[];vIdx=0;
+  $('#vPick').style.display='flex';$$('.v-dots i').forEach(d=>d.style.display='');
+  setTrack(false);
+  // só desfaz o history se foi fechamento ativo (X/swipe), não quando veio de popstate
   if(!sil){try{if(history.state?.v)history.back();}catch(e){}}
+  setTimeout(()=>{viewerClosing=false;},60);
 }
 function setTrack(a){track.style.transition=a?'transform .32s var(--ease)':'none';track.style.transform=`translate3d(${-vIdx*100}%,0,0)`;}
 function dragTrack(px){track.style.transition='none';track.style.transform=`translate3d(calc(${-vIdx*100}% + ${px}px),0,0)`;}
@@ -585,71 +610,83 @@ function vmeta(){
   if(viewerMode==='duel'){$('#vPick').style.display='flex';$('#vPick').querySelector('span').textContent=(vIdx===0?'A':'B')+' vence';}
   else{$('#vPick').style.display='none';}
 }
-function applyZoom(){const img=currentImg();if(!img)return;img.style.transition=gesture==='pinch'||gesture==='pan'?'none':'transform .22s var(--ease)';img.style.transform=`translate3d(${panX}px,${panY}px,0) scale(${scale})`;}
-function resetZoomAll(animated=true){zoom=false;scale=1;panX=panY=0;viewer.classList.remove('zoomed');slides.forEach(sl=>{const img=sl.querySelector('.vimg');if(img){img.style.transition=animated?'transform .22s var(--ease)':'none';img.style.transform='';}});}
-function resetZoom(){resetZoomAll(true);}
-function resetViewerGesture(hard=false){
-  gesture='none';drag=false;dx=dy=0;sx=sy=0;spX=spY=0;pinchStartDist=0;viewer.style.background='';
-  if(hard){lastTap=0;resetZoomAll(false);}
-}
+function applyZoom(){const img=currentImg();if(!img)return;img.style.transition=(G.mode==='pinch'||G.mode==='pan')?'none':'transform .22s var(--ease)';img.style.transform=`translate3d(${panX}px,${panY}px,0) scale(${scale})`;}
+function maxIdx(){return viewerMode==='duel'?1:viewerItems.length-1;}
 function goSlide(i,animated=true){
-  const max=viewerMode==='duel'?1:viewerItems.length-1;
-  if(i<0||i>max){resetViewerGesture(false);setTrack(true);return;}
-  if(i!==vIdx)resetZoomAll(false);
-  vIdx=i;resetViewerGesture(false);setTrack(animated);vmeta();
+  if(i<0||i>maxIdx()){setTrack(true);return;}
+  if(i!==vIdx)clearZoomState(false);
+  vIdx=i;resetGesture();setTrack(animated);vmeta();
 }
-$('#vClose').onclick=()=>closeViewer();$('#vPick').onclick=()=>{if(viewerMode==='duel')decide(vIdx===0?'a':'b');};
+$('#vClose').onclick=()=>closeViewer();
+$('#vPick').onclick=()=>{if(viewerMode==='duel')decide(vIdx===0?'a':'b');};
 $$('.v-dots i').forEach(d=>d.onclick=()=>goSlide(+d.dataset.d,true));
+
 track.addEventListener('touchstart',e=>{
   if(!vOpen)return;
-  if(e.target.closest('video') && (!e.touches || e.touches.length<2)){resetViewerGesture(false);return;}
   const ts=touchList(e);
+  // 2 dedos = pinch (sempre)
   if(ts.length===2){
-    e.preventDefault();gesture='pinch';drag=false;
-    const c=touchCenter(ts);pinchStartDist=touchDist(ts)||1;pinchStartScale=scale;pinchStartPanX=panX;pinchStartPanY=panY;pinchStartCX=c.x;pinchStartCY=c.y;
+    e.preventDefault();
+    G.mode='pinch';G.active=true;
+    const c=touchCenter(ts);
+    G.pStartDist=touchDist(ts)||1;G.pStartScale=scale;G.pPanX=panX;G.pPanY=panY;G.pCX=c.x;G.pCY=c.y;
     return;
   }
+  // 1 dedo sobre vídeo (sem zoom): deixa o vídeo receber o toque
+  if(e.target.closest('video') && !zoom){resetGesture();return;}
   const t=ts[0];if(!t)return;
-  sx=t.clientX;sy=t.clientY;dx=dy=0;drag=true;gesture=zoom?'pan':'swipe';spX=panX;spY=panY;setTrack(0);
-  const n=Date.now();if(n-lastTap<280){e.preventDefault();toggleZoom(t.clientX,t.clientY);lastTap=0;}else lastTap=n;
+  G.mode=zoom?'pan':'swipe';G.active=true;
+  G.sx=t.clientX;G.sy=t.clientY;G.dx=0;G.dy=0;G.sPanX=panX;G.sPanY=panY;
+  setTrack(false);
+  const n=Date.now();
+  if(n-lastTap<280){e.preventDefault();toggleZoom(t.clientX,t.clientY);lastTap=0;G.mode='tap';}
+  else lastTap=n;
 },{passive:false});
+
 track.addEventListener('touchmove',e=>{
-  if(!vOpen)return;
+  if(!vOpen||!G.active)return;
   const ts=touchList(e);
   if(ts.length===2){
     e.preventDefault();
-    if(gesture!=='pinch'){
-      gesture='pinch';drag=false;const c0=touchCenter(ts);pinchStartDist=touchDist(ts)||1;pinchStartScale=scale;pinchStartPanX=panX;pinchStartPanY=panY;pinchStartCX=c0.x;pinchStartCY=c0.y;
-    }
-    const c=touchCenter(ts),dist=touchDist(ts)||pinchStartDist;
-    scale=clamp(pinchStartScale*(dist/(pinchStartDist||1)),1,5);
-    panX=pinchStartPanX+(c.x-pinchStartCX);panY=pinchStartPanY+(c.y-pinchStartCY);
+    if(G.mode!=='pinch'){const c0=touchCenter(ts);G.mode='pinch';G.pStartDist=touchDist(ts)||1;G.pStartScale=scale;G.pPanX=panX;G.pPanY=panY;G.pCX=c0.x;G.pCY=c0.y;}
+    const c=touchCenter(ts),dist=touchDist(ts)||G.pStartDist;
+    scale=clamp(G.pStartScale*(dist/(G.pStartDist||1)),1,5);
+    panX=G.pPanX+(c.x-G.pCX);panY=G.pPanY+(c.y-G.pCY);
     zoom=scale>1.02;viewer.classList.toggle('zoomed',zoom);applyZoom();
     return;
   }
-  if(!drag||!ts.length)return;
-  const t=ts[0];dx=t.clientX-sx;dy=t.clientY-sy;
-  if(zoom){e.preventDefault();panX=spX+dx;panY=spY+dy;applyZoom();return;}
-  if(Math.abs(dx)>Math.abs(dy)){e.preventDefault();dragTrack(dx);}
-  else if(dy>0){viewer.style.background=`rgba(13,13,11,${Math.max(.35,1-dy/500)})`;}
+  const t=ts[0];if(!t)return;
+  G.dx=t.clientX-G.sx;G.dy=t.clientY-G.sy;
+  if(G.mode==='pan'||zoom){e.preventDefault();panX=G.sPanX+G.dx;panY=G.sPanY+G.dy;applyZoom();return;}
+  // swipe 1 dedo sem zoom
+  if(Math.abs(G.dx)>Math.abs(G.dy)){e.preventDefault();dragTrack(G.dx);}
+  else if(G.dy>0){viewer.style.background=`rgba(13,13,11,${Math.max(.35,1-G.dy/500)})`;}
 },{passive:false});
+
 track.addEventListener('touchend',e=>{
-  const ts=touchList(e);
-  if(gesture==='pinch'){
-    if(scale<=1.03)resetZoom();else{zoom=true;viewer.classList.add('zoomed');applyZoom();}
-    if(!ts.length)resetViewerGesture(false);return;
+  if(!vOpen){resetGesture();return;}
+  // LÊ os valores finais ANTES de qualquer reset
+  const endDx=G.dx, endDy=G.dy, mode=G.mode;
+  const remaining=touchList(e).length;
+  if(mode==='pinch'){
+    if(remaining<1){if(scale<=1.03)clearZoomState(true);else{zoom=true;viewer.classList.add('zoomed');applyZoom();}resetGesture();}
+    return;
   }
-  if(zoom){if(!ts.length)resetViewerGesture(false);return;}
-  resetViewerGesture(false);
-  if(dy>110&&Math.abs(dx)<90){closeViewer();return;}
-  if(Math.abs(dx)>55&&Math.abs(dx)>Math.abs(dy)){goSlide(vIdx+(dx<0?1:-1),true);}
-  else setTrack(1);
+  if(mode==='tap'){resetGesture();return;}
+  if(mode==='pan'||zoom){if(remaining<1)resetGesture();return;}
+  // swipe: decide com os valores guardados, e SÓ DEPOIS reseta
+  viewer.style.background='';
+  resetGesture();
+  if(endDy>110 && Math.abs(endDx)<90){closeViewer();return;}
+  if(Math.abs(endDx)>55 && Math.abs(endDx)>Math.abs(endDy)){goSlide(vIdx+(endDx<0?1:-1),true);return;}
+  setTrack(true);
 },{passive:false});
-track.addEventListener('touchcancel',()=>{resetViewerGesture(true);setTrack(true);},{passive:false});
-document.addEventListener('fullscreenchange',()=>{if(vOpen){resetViewerGesture(true);setTrack(false);}},false);
-document.addEventListener('webkitfullscreenchange',()=>{if(vOpen){resetViewerGesture(true);setTrack(false);}},false);
-document.addEventListener('visibilitychange',()=>{if(vOpen&&!document.hidden){resetViewerGesture(true);setTrack(false);}},false);
-function toggleZoom(cx,cy){const m=activeMedia();if(!m||m.type==='video')return;if(zoom){resetZoom();return;}scale=2.4;const r=slides[vIdx].getBoundingClientRect();panX=(r.width/2-(cx-r.left))*(scale-1)/scale;panY=(r.height/2-(cy-r.top))*(scale-1)/scale;zoom=true;viewer.classList.add('zoomed');applyZoom();}
+
+track.addEventListener('touchcancel',()=>{viewer.style.background='';resetGesture();setTrack(true);},{passive:false});
+document.addEventListener('fullscreenchange',()=>{if(vOpen){resetGesture();setTrack(false);}},false);
+document.addEventListener('webkitfullscreenchange',()=>{if(vOpen){resetGesture();setTrack(false);}},false);
+document.addEventListener('visibilitychange',()=>{if(vOpen&&!document.hidden){resetGesture();setTrack(false);}},false);
+function toggleZoom(cx,cy){const m=activeMedia();if(!m||m.type==='video')return;if(zoom){clearZoomState(true);return;}scale=2.4;const r=slides[vIdx].getBoundingClientRect();panX=(r.width/2-(cx-r.left))*(scale-1)/scale;panY=(r.height/2-(cy-r.top))*(scale-1)/scale;zoom=true;viewer.classList.add('zoomed');applyZoom();}
 slides.forEach(s=>s.addEventListener('click',e=>{if(matchMedia('(hover:hover)').matches&&!e.target.closest('video'))toggleZoom(e.clientX,e.clientY);}));
 addEventListener('popstate',()=>{if(vOpen)closeViewer(true);});
 
