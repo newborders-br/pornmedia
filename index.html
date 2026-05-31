@@ -578,7 +578,11 @@ async function openViewer(i){
   viewerClosing=false;viewerMode='duel';viewerItems=[duel.a,duel.b];vIdx=i;vOpen=true;
   neutralizeViewer();
   await paintViewerSlides();
-  viewer.classList.add('on');viewer.classList.remove('zoomed');setTrack(false);vmeta();
+  viewer.classList.add('on');viewer.classList.remove('zoomed');
+  vmeta();
+  // posiciona no slide certo SÓ depois do viewer estar visível e medido (corrige abrir direto no B no iOS)
+  setTrack(false);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{setTrack(false);}));
   try{history.pushState({v:1},'');}catch(e){}
 }
 async function openMediaViewer(items,start=0){
@@ -586,7 +590,10 @@ async function openMediaViewer(items,start=0){
   viewerClosing=false;viewerMode='media';viewerItems=[arr[start]||arr[0]];vIdx=0;vOpen=true;
   neutralizeViewer();
   await paintViewerSlides();
-  viewer.classList.add('on');viewer.classList.remove('zoomed');setTrack(false);vmeta();
+  viewer.classList.add('on');viewer.classList.remove('zoomed');
+  vmeta();
+  setTrack(false);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{setTrack(false);}));
   try{history.pushState({v:1},'');}catch(e){}
 }
 function closeViewer(sil){
@@ -603,7 +610,7 @@ function closeViewer(sil){
   if(!sil){try{if(history.state?.v)history.back();}catch(e){}}
   setTimeout(()=>{viewerClosing=false;},60);
 }
-function setTrack(a){track.style.transition=a?'transform .32s var(--ease)':'none';track.style.transform=`translate3d(${-vIdx*100}%,0,0)`;}
+function setTrack(a){track.style.transition=a?'transform .32s var(--ease)':'none';track.style.transform=`translate3d(${-vIdx*100}%,0,0)`;if(!a){void track.offsetWidth;}}
 function dragTrack(px){track.style.transition='none';track.style.transform=`translate3d(calc(${-vIdx*100}% + ${px}px),0,0)`;}
 function vmeta(){
   const m=activeMedia();if(!m)return;
