@@ -92,6 +92,7 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .wformbox{display:none}.wformbox.on{display:block}
 .wplatbar{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 4px}
 .wplatbar .fbtn{padding:8px 10px}
+.wplatbar .fbtn.on{border-color:var(--ink);color:var(--ink);background:#fff}
 .wlink{color:var(--warn)!important} 
 /* vídeo em aberto */
 .wvid-open{border-top:2px solid var(--warn);background:rgba(154,123,62,.06);padding:12px 14px}
@@ -1436,8 +1437,20 @@ function fillPlats(){$('#lvPlat').innerHTML=Object.keys(LIVE_RULES).map(p=>`<opt
    ASSISTINDO — vídeos em andamento com múltiplos atores e pontuação por dia
    ===================================================================== */
 const W_PLATS=['pc-onr','pc-on','pc-off','telegram full','telegram only','twitter'];
-let wPlatformFilter='all';
+let wPlatformFilters=new Set(['all']);
 const W_LABELS={'all':'todos','pc-on':'pc-on','pc-onr':'pc-onr','pc-off':'pc-off','telegram full':'telegram full','telegram only':'telegram only','twitter':'twitter'};
+function wFilterIsOn(p){return wPlatformFilters.has('all')?p==='all':wPlatformFilters.has(p);}
+function wTogglePlatformFilter(p){
+  if(p==='all'){wPlatformFilters=new Set(['all']);return;}
+  if(wPlatformFilters.has('all'))wPlatformFilters=new Set();
+  if(wPlatformFilters.has(p))wPlatformFilters.delete(p); else wPlatformFilters.add(p);
+  if(!wPlatformFilters.size)wPlatformFilters=new Set(['all']);
+}
+function wFilteredRows(){
+  ensureWatches();
+  if(wPlatformFilters.has('all'))return LEDGER.watches;
+  return LEDGER.watches.filter(w=>wPlatformFilters.has(w.platform));
+}
 function wExtractUrl(w){const direct=cleanCell(w?.link||'');if(direct)return direct;const txt=String(w?.title||'');const m=txt.match(/https?:\/\/[^\s]+/i);return m?m[0]:'';}
 function wDisplayTitle(w){const stripped=String(w?.title||'').replace(/https?:\/\/[^\s]+/ig,'').replace(/\s+/g,' ').trim();return stripped||w?.actors?.join(', ')||'—';}
 function wLinkUI(){const wrap=$('#wLinkWrap');if(!wrap)return;const show=$('#wPlat')?.value==='pc-on';wrap.style.display=show?'block':'none';if(!show){const input=$('#wLink');if(input)input.value='';}}
@@ -1472,7 +1485,7 @@ function wTotalPts(w){
   const sessPts=(w.sessions||[]).reduce((s,x)=>s+(Number(x.pts)||0),0);
   const vidPts=w.openVideo?(w.openVideo.sessions||[]).reduce((s,x)=>{
     const net=Math.max(0,(x.seconds||0)-(x.skip||0));
-    return s+wBasePoints(net,w.platform,w.rankMult||1);
+    return s+(x.pts!=null?Number(x.pts):wVideoEntryPoints(x.seconds||0,x.skip||0,w.platform,x.rankMult||w.rankMult||1,x.finishMult||1));
   },0):0;
   return sessPts+vidPts;
 }
@@ -1483,6 +1496,14 @@ function wBasePoints(seconds,platform,mult=1){
   else if(r.kind==='pointsPerMinute')base=(seconds/60)*r.value;
   else base=seconds;
   return Math.round(base*mult);
+}
+function wRankMultFromValue(v){return v==='first'?3:v==='second'?2:1;}
+function wRankValueFromMult(v){return Number(v)===3?'first':Number(v)===2?'second':'none';}
+function wFinishMultFromValue(v){return v==='plus'?1.2:v==='minus'?0.8:1;}
+function wFinishLabel(v){return v==='plus'?'+20%':v==='minus'?'-20%':'sem 20%';}
+function wVideoEntryPoints(seconds,skip,platform,rankMult=1,finishMult=1){
+  const net=Math.max(0,(Number(seconds)||0)-(Number(skip)||0));
+  return Math.round(wBasePoints(net,platform,rankMult)*finishMult);
 }
 function wLastPos(w){
   if(w.openVideo)return w.openVideo.position;
@@ -1504,7 +1525,7 @@ $('#wCreate').onclick=()=>{
   LEDGER.watches.push(w);savePontoSoon();
   $('#wActors').value='';$('#wTitle').value='';if($('#wLink'))$('#wLink').value='';$('#wTotalDur').value='';$('#wCreateStatus').textContent='';
   const box=$('#wFormBox'); if(box) box.classList.remove('on');
-  wPlatformFilter=platform;
+  wPlatformFilters=new Set([platform]);
   renderWatches();
 };
 
@@ -1515,10 +1536,10 @@ function renderWatches(){
   if(bar){
     const counts=LEDGER.watches.reduce((o,w)=>{o[w.platform]=(o[w.platform]||0)+1;o.all=(o.all||0)+1;return o;},{all:LEDGER.watches.length});
     const plats=['all',...W_PLATS.filter(p=>counts[p])];
-    bar.innerHTML=plats.map(p=>`<button class="fbtn ${wPlatformFilter===p?'on':''}" data-wpf="${p}">${W_LABELS[p]||p}${counts[p]?` · ${counts[p]}`:''}</button>`).join('');
-    bar.querySelectorAll('[data-wpf]').forEach(b=>b.onclick=()=>{wPlatformFilter=b.dataset.wpf;renderWatches();});
+    bar.innerHTML=plats.map(p=>`<button class="fbtn ${wFilterIsOn(p)?'on':''}" data-wpf="${p}">${W_LABELS[p]||p}${counts[p]?` · ${counts[p]}`:''}</button>`).join('');
+    bar.querySelectorAll('[data-wpf]').forEach(b=>b.onclick=()=>{wTogglePlatformFilter(b.dataset.wpf);renderWatches();});
   }
-  const rows=wPlatformFilter==='all'?LEDGER.watches:LEDGER.watches.filter(w=>w.platform===wPlatformFilter);
+  const rows=wFilteredRows();
   const cnt=$('#wFilterCount');if(cnt)cnt.textContent=rows.length?`${rows.length} em andamento`:'nenhum em andamento';
   if(!LEDGER.watches.length){list.innerHTML='<div class="empty">Nenhum registro em andamento.</div>';return;}
   if(!rows.length){list.innerHTML='<div class="empty">Nenhum registro nesta plataforma.</div>';return;}
@@ -1545,7 +1566,7 @@ function wCardHTML(w){
   const hasVideo=!!w.openVideo;
   const linkUrl=w.platform==='pc-on'?wExtractUrl(w):'';
   const vidSessions=hasVideo?(w.openVideo.sessions||[]).reduce((s,x)=>s+(x.seconds||0),0):0;
-  const vidPts=hasVideo?(w.openVideo.sessions||[]).reduce((s,x)=>{const net=Math.max(0,(x.seconds||0)-(x.skip||0));return s+wBasePoints(net,w.platform,w.rankMult||1);},0):0;
+  const vidPts=hasVideo?(w.openVideo.sessions||[]).reduce((s,x)=>s+(x.pts!=null?Number(x.pts):wVideoEntryPoints(x.seconds||0,x.skip||0,w.platform,x.rankMult||w.rankMult||1,x.finishMult||1)),0):0;
   const sessRows=(w.sessions||[]).slice().reverse().map(s=>
     `<div class="wsess-row"><span class="wsdate">${s.date}</span><span>${s.position?`#${s.position}${w.totalItems?'/'+w.totalItems:''}`:''}</span><b>+${s.pts} pts</b></div>`
   ).join('');
@@ -1560,6 +1581,10 @@ function wCardHTML(w){
         <div class="wadd-row">
           <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Assistido hoje</label><input class="wvid-sec" placeholder="ex: 40 ou 01:20" autocomplete="off"></div>
           <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Skip (opcional)</label><input class="wvid-skip" placeholder="0 ou 00:30" autocomplete="off"></div>
+        </div>
+        <div class="wadd-row">
+          <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Bônus posição</label><select class="wvid-rank"><option value="none" ${wRankValueFromMult(w.rankMult)==='none'?'selected':''}>sem bônus</option><option value="second" ${wRankValueFromMult(w.rankMult)==='second'?'selected':''}>#2 ×2</option><option value="first" ${wRankValueFromMult(w.rankMult)==='first'?'selected':''}>#1 ×3</option></select></div>
+          <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Bônus final</label><select class="wvid-finish"><option value="none">sem 20%</option><option value="plus">+20%</option><option value="minus">-20%</option></select></div>
         </div>
         <div style="display:flex;gap:8px">
           <button class="cta wvid-submit" style="flex:2">+ Adicionar tempo</button>
@@ -1621,9 +1646,12 @@ function wAddVideoTime(id){
   const parsed=parseLiveDuration(secRaw,w.platform);
   if(!parsed.ok||parsed.seconds<=0){alert('Digite uma duração válida.');return;}
   const skipSec=skipRaw&&skipRaw!=='0'?parseLiveDuration(skipRaw,w.platform).seconds:0;
-  const net=Math.max(0,parsed.seconds-(skipSec||0));
-  const pts=wBasePoints(net,w.platform,w.rankMult||1);
-  const sess={date:todayBR(),seconds:parsed.seconds,skip:skipSec||0,pts,released:true};
+  const rankVal=card.querySelector('.wvid-rank')?.value||'none';
+  const finishVal=card.querySelector('.wvid-finish')?.value||'none';
+  const rankMult=wRankMultFromValue(rankVal);
+  const finishMult=wFinishMultFromValue(finishVal);
+  const pts=wVideoEntryPoints(parsed.seconds,skipSec||0,w.platform,rankMult,finishMult);
+  const sess={date:todayBR(),seconds:parsed.seconds,skip:skipSec||0,pts,rankBonus:rankVal,rankMult,finishBonus:finishVal,finishMult,released:true};
   w.openVideo.sessions.push(sess);
 
   // Vídeo longo agora libera no ledger a cada nova entrada,
@@ -1631,13 +1659,13 @@ function wAddVideoTime(id){
   w.actors.forEach(actor=>{
     LEDGER.events.push({
       id:uid('wv'),nome:actor,tipo:'Ator',ponto:pts,dataBR:sess.date,
-      plataforma:w.platform,score:null,titulo:w.title||'',modo:'assistindo-video',source:'watch-video'
+      plataforma:w.platform,score:null,titulo:w.title||'',modo:'assistindo-video',rankBonus:rankVal,finishBonus:finishVal,source:'watch-video'
     });
   });
 
   card.querySelector('.wvid-sec').value='';if(card.querySelector('.wvid-skip'))card.querySelector('.wvid-skip').value='';
   savePontoSoon();renderWatches();renderRanking();
-  toast(`+${fmtNum(pts)}`,`${w.actors.join(', ')} · ${w.platform}`);
+  toast(`+${fmtNum(pts)}`,`${w.actors.join(', ')} · ${w.platform}${rankVal!=='none'?' · '+(rankVal==='first'?'#1':'#2'):''}${finishVal!=='none'?' · '+wFinishLabel(finishVal):''}`);
 }
 function wCloseVideo(id){
   ensureWatches();
@@ -1649,7 +1677,7 @@ function wCloseVideo(id){
   // sem liberar pontos de novo.
   (w.openVideo.sessions||[]).forEach(s=>{
     const net=Math.max(0,(s.seconds||0)-(s.skip||0));
-    const pts=s.pts!=null?s.pts:wBasePoints(net,w.platform,w.rankMult||1);
+    const pts=s.pts!=null?s.pts:wVideoEntryPoints(s.seconds||0,s.skip||0,w.platform,s.rankMult||w.rankMult||1,s.finishMult||1);
     w.sessions.push({date:s.date,pts,position:null,video:true,released:true,seconds:s.seconds||0,skip:s.skip||0});
   });
 
