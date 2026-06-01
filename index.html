@@ -229,6 +229,10 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .fall-pill{display:inline-flex;border:1px solid var(--hair);background:#fff;padding:4px 6px;margin:0 4px 4px 0;font:600 9px/1 var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2)}
 .fall-pill.lost{border-color:rgba(168,90,62,.35);color:var(--danger);background:rgba(168,90,62,.055)}
 .split{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-2);padding:5px 0}.split b{font-weight:600;color:var(--ink)}
+
+.rank-controls{display:grid;grid-template-columns:1fr minmax(150px,220px);gap:8px;margin:12px 0 4px}
+.rank-controls input,.rank-controls select{padding:10px 11px;font:500 12px var(--sans);background:#fff;border:1px solid var(--hair-2)}
+@media(max-width:520px){.rank-controls{grid-template-columns:1fr}.rank-controls select{max-width:none}}
 .platform-share{border:1px solid var(--hair);background:rgba(255,255,255,.48);margin-top:12px;padding:12px;display:flex;flex-direction:column;gap:9px}
 .platform-share-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:2px}
 .platform-share-title{font:600 9px/1 var(--sans);letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3)}
@@ -411,7 +415,11 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
         <select id="pickYear" style="background:#fff;border:1px solid var(--hair-2);padding:9px;font:500 13px var(--sans)"></select>
       </div>
     </div>
-    <div class="filters" id="platFilters" style="flex-wrap:wrap;gap:6px;margin-top:2px"></div>
+    <div class="rank-controls">
+      <input id="rankSearch" list="rankNames" type="search" placeholder="Pesquisar ator…" autocomplete="off">
+      <datalist id="rankNames"></datalist>
+      <select id="platSelect" aria-label="Filtrar plataforma"></select>
+    </div>
     <div class="platform-share" id="platformShare" style="display:none"></div>
     <div class="rank-list" id="rankList"></div>
   </div></section>
@@ -1073,7 +1081,7 @@ addEventListener('popstate',()=>{if(vOpen)closeViewer(true);});
 /* =====================================================================
    RANKING (agrega ledger)
    ===================================================================== */
-let periodFilter='month',platFilter='all',pickMonthVal='',pickYearVal='',showStudio=false;
+let periodFilter='month',platFilter='all',pickMonthVal='',pickYearVal='',showStudio=false,rankSearch='';
 const HIDDEN_PLATS=new Set(['Studio','studio']);
 
 function ledgerActive(){
@@ -1200,21 +1208,37 @@ function aggregate(){
   });
   return Object.values(by).sort((a,b)=>b.total-a.total);
 }
+function normSearch(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();}
+function allActorNames(){return [...new Set([...(LEDGER.events||[]).map(e=>e.nome),...Object.values(GAME.actors||{}).map(a=>a.name)].filter(Boolean))].sort((a,b)=>a.localeCompare(b));}
+function renderPlatformSelect(){
+  const sel=$('#platSelect');if(!sel)return;
+  const plats=allPlatforms();
+  const current=plats.includes(platFilter)?platFilter:'all';
+  if(current!==platFilter)platFilter=current;
+  sel.innerHTML=`<option value="all">Todas as plataformas</option>`+plats.map(p=>`<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join('');
+  sel.value=platFilter;
+}
+function rankRowsForSearch(baseRows){
+  const q=normSearch(rankSearch);
+  if(!q)return baseRows;
+  const rows=baseRows.filter(r=>normSearch(r.nome).includes(q));
+  const existing=new Set(rows.map(r=>r.nome));
+  allActorNames().forEach(name=>{
+    if(existing.has(name))return;
+    if(normSearch(name).includes(q))rows.push({nome:name,total:0,plats:{}});
+  });
+  return rows.sort((a,b)=>(b.total-a.total)||a.nome.localeCompare(b.nome));
+}
 function renderRanking(){
   $$('#periodFilters [data-period]').forEach(b=>b.classList.toggle('on',b.dataset.period===periodFilter));
   const pw=$('#periodPickWrap');if(pw)pw.style.display=periodFilter==='pick'?'block':'none';
   if(periodFilter==='pick')fillPickSelects();
   renderPlatformShare();
-  const plats=allPlatforms();
-  const hasStudio=LEDGER.events.some(e=>[...HIDDEN_PLATS].some(h=>e.plataforma?.toLowerCase()===h.toLowerCase()));
-  const studioBtn=hasStudio?`<button class="fbtn ${showStudio?'on':''}" id="studioToggle">${showStudio?'Ocultar Studio':'↩ Studio (legado)'}</button>`:'';
-  $('#platFilters').innerHTML=
-    `<button class="fbtn ${platFilter==='all'?'on':''}" data-plat="all">Todas</button>`+
-    plats.map(p=>`<button class="fbtn ${platFilter===p?'on':''}" data-plat="${escapeHtml(p)}">${escapeHtml(p)}</button>`).join('')+studioBtn;
-  $('#platFilters').querySelectorAll('[data-plat]').forEach(b=>b.onclick=()=>{platFilter=b.dataset.plat;renderRanking();});
-  $('#studioToggle')?.addEventListener('click',()=>{showStudio=!showStudio;if(!showStudio&&[...HIDDEN_PLATS].some(h=>platFilter?.toLowerCase()===h.toLowerCase()))platFilter='all';renderRanking();});
-  const rows=aggregate(),list=$('#rankList');
-  if(!rows.length){list.innerHTML='<div class="empty">Nenhum ponto neste período.</div>';return;}
+  renderPlatformSelect();
+  const baseRows=aggregate();
+  const rows=rankRowsForSearch(baseRows);
+  const list=$('#rankList');
+  if(!rows.length){list.innerHTML=rankSearch?'<div class="empty">Nenhum ator encontrado.</div>':'<div class="empty">Nenhum ponto neste período.</div>';return;}
   list.innerHTML=rows.map((r,i)=>{
     const chips=Object.entries(r.plats).sort((a,b)=>b[1]-a[1]).map(([p,v])=>`<span class="pchip ${p==='PornMedia'?'pm':''}">${escapeHtml(p)} ${fmtNum(v)}</span>`).join('');
     const ti=actorTierInfo(r.nome);
@@ -1229,6 +1253,8 @@ function renderRanking(){
 $$('#periodFilters [data-period]').forEach(b=>b.onclick=()=>{periodFilter=b.dataset.period;renderRanking();});
 $('#pickMonth')?.addEventListener('change',e=>{pickMonthVal=e.target.value;renderRanking();});
 $('#pickYear')?.addEventListener('change',e=>{pickYearVal=e.target.value;renderRanking();});
+$('#rankSearch')?.addEventListener('input',e=>{rankSearch=e.target.value;renderRanking();});
+$('#platSelect')?.addEventListener('change',e=>{platFilter=e.target.value;renderRanking();});
 
 /* =====================================================================
    SPOTLIGHT (desempenho por tempo) — canvas portado, cor luxe
@@ -1918,7 +1944,7 @@ $$('[data-reg]').forEach(b=>b.onclick=()=>{
   if(b.dataset.reg==='andamento'){wFillPlats();renderWatches();}
 });
 $$('.tab').forEach(t=>t.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('on'));$$('.view').forEach(v=>v.classList.remove('on'));t.classList.add('on');$('#'+t.dataset.v).classList.add('on');const v=t.dataset.v;if(v==='ranking')renderRanking();if(v==='spotlight'){fillNames();}if(v==='atores')renderActors();if(v==='biblioteca'){fillUpActors();fillLibActorFilter();renderLibrary();}if(v==='lancar'){fillNames();lvUI();}});
-function fillNames(){const names=[...new Set([...LEDGER.events.map(e=>e.nome),...Object.values(GAME.actors).map(a=>a.name)])].sort();const html=names.map(n=>`<option value="${escapeHtml(n)}">`).join('');$('#spotNames').innerHTML=html;$('#lvNames').innerHTML=html;}
+function fillNames(){const names=allActorNames();const html=names.map(n=>`<option value="${escapeHtml(n)}">`).join('');$('#spotNames').innerHTML=html;$('#lvNames').innerHTML=html;const rn=$('#rankNames');if(rn)rn.innerHTML=html;}
 function refreshLight(){const today=todayBR();$('#livePts').textContent=fmtNum(LEDGER.events.filter(e=>e.plataforma==='PornMedia'&&e.dataBR===today).reduce((a,b)=>a+b.ponto,0))+' pts';}
 function refreshAll(){renderRanking();renderActors();fillUpActors();fillLibActorFilter();fillNames();fillPlats();renderLibrary();refreshLight();wFillPlats();renderWatches();}
 let toastT2=null;function toast(b,t){$('#toastB').textContent=b;$('#toastT').textContent=t;const el=$('#toast');el.classList.add('on');clearTimeout(toastT2);toastT2=setTimeout(()=>el.classList.remove('on'),1700);}
