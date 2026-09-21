@@ -146,6 +146,33 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .vc-btn.primary{border-color:var(--ink);background:var(--ink);color:var(--paper)}
 .vc-btn:active{transform:scale(.97)}
 #stage{position:relative}
+/* mosaico do duelo de atores */
+.cont .mosaic{position:absolute;inset:0;display:grid;gap:2px;grid-template-columns:repeat(3,1fr);grid-auto-rows:1fr;background:var(--paper-3)}
+.cont .mosaic[data-n="1"]{grid-template-columns:1fr}
+.cont .mosaic[data-n="2"]{grid-template-columns:repeat(2,1fr)}
+.cont .mosaic[data-n="4"]{grid-template-columns:repeat(2,1fr)}
+.cont .mt{background:var(--paper-2) center/cover no-repeat;filter:grayscale(1) contrast(1.02);transition:filter .5s var(--ease);cursor:zoom-in;position:relative}
+.cont .mt.vid::after{content:"▶";position:absolute;right:6px;bottom:6px;font:10px/1 var(--sans);color:#fff;background:rgba(0,0,0,.45);padding:3px 5px}
+.cont.win .mt{filter:grayscale(0)}
+.cont .veil{z-index:1}
+@media (min-width:900px){.cont .mosaic{grid-template-columns:repeat(2,1fr)}.cont .mosaic[data-n="1"]{grid-template-columns:1fr}.cont .mosaic[data-n="3"]{grid-template-columns:1fr}}
+/* fase do vencedor / sorteio */
+.fphase{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:8px;padding:10px 12px}
+.fp-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
+.fp-kick{color:var(--ink-3)}
+.fp-name{font:400 26px/1.05 var(--serif);margin-top:4px}
+.fp-count{color:var(--ink-2);white-space:nowrap}
+.fp-media{flex:1 1 auto;min-height:0;position:relative;background:#0d0d0b;display:grid;place-items:center;overflow:hidden}
+.fp-media img,.fp-media video{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;display:block}
+.fp-media img{cursor:zoom-in}
+.fp-load{color:rgba(255,255,255,.6)}
+.fp-meta{color:var(--ink-2);text-align:center;min-height:12px}
+.fp-acts{display:grid;grid-template-columns:1fr 1.4fr;gap:8px}
+.fp-btn{height:52px;border:1px solid var(--hair-2);background:rgba(255,255,255,.7);font:600 12px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:9px;color:var(--ink)}
+.fp-btn svg{width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none}
+.fp-btn.primary{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.fp-btn:active{transform:scale(.97)}
+.fp-end{align-self:center;border:0;background:none;color:var(--ink-2);font:600 10px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;padding:6px 10px}
 
 /* ELO de vídeo vs foto visível */
 .elo-video{color:var(--warn)!important}
@@ -160,7 +187,32 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .cont .ltr{position:absolute;top:0;left:0;z-index:3;background:var(--glass-2);border-right:1px solid var(--hair);border-bottom:1px solid var(--hair);padding:6px 12px 7px;font:400 22px/1 var(--serif)}
 .cont .tag{position:absolute;top:10px;right:10px;z-index:3;display:flex;gap:6px}
 .cont .tag b{background:var(--glass-2);border:1px solid var(--hair);padding:6px 8px;font:600 10px/1 var(--sans);letter-spacing:.06em}
-.cont .foot{position:absolute;left:0;right:0;bottom:0;z-index:4;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding:12px}
+.cont .foot{position:absolute;left:0;right:0;bottom:0;z-index:4;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding:12px;pointer-events:none}
+.cont .foot .acts,.cont .foot button{pointer-events:auto}
+/* vídeo: rodapé sobe e libera a barra nativa de controles */
+.cont.is-video .foot{bottom:52px}
+.cont.is-video .veil{background:linear-gradient(180deg,rgba(244,243,241,0) 40%,rgba(20,19,12,.38) 70%,rgba(20,19,12,0))}
+.fsb{width:40px;height:40px;border:1px solid rgba(255,255,255,.5);background:rgba(20,19,12,.28);display:none;place-items:center;backdrop-filter:blur(10px)}
+.fsb svg{width:16px;height:16px;stroke:#fff;stroke-width:1.6;fill:none}
+.cont.is-video .fsb{display:grid}
+.cont video.media:fullscreen{object-fit:contain;filter:none;background:#000}
+.cont video.media:-webkit-full-screen{object-fit:contain;filter:none;background:#000}
+/* sequência do ator no jogo de fotos */
+/* ranking de artistas */
+.ar-sort{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 4px}
+/* exportação */
+.exp-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+/* prévia do import de sessões */
+.imp-prev{margin-top:12px;display:none}
+.imp-prev .sum{font-size:12px;color:var(--ink-2);margin-bottom:8px;line-height:1.5}
+.imp-prev .tw{overflow-x:auto;border:1px solid var(--hair);background:#fff;max-height:340px;overflow-y:auto}
+.imp-prev table{border-collapse:collapse;width:100%;font:500 11px/1.3 var(--sans)}
+.imp-prev th{position:sticky;top:0;background:var(--paper-2);text-align:left;padding:6px 8px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:9px;color:var(--ink-2)}
+.imp-prev td{padding:6px 8px;border-top:1px solid var(--hair);white-space:nowrap}
+.imp-prev td.n{text-align:right;font-variant-numeric:tabular-nums}
+.imp-prev tr.warn td{background:rgba(154,123,62,.09)}
+.imp-prev tr.err td{background:rgba(168,90,62,.10);color:var(--danger)}
+.imp-prev .fl{color:var(--warn);white-space:normal;min-width:140px}
 .cont .nm{font:400 20px/1 var(--serif);color:#fff;text-shadow:0 1px 14px rgba(0,0,0,.5);max-width:58vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cont .ac{color:rgba(255,255,255,.85);margin-top:5px;text-shadow:0 1px 10px rgba(0,0,0,.5)}
 .acts{display:flex;gap:8px;align-items:center}
@@ -356,39 +408,29 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
 
   <!-- JOGO -->
   <section class="view on" id="jogo">
-    <div class="filters" id="gameModeFilters" style="padding:8px 12px 0;margin:0;justify-content:center"><button class="fbtn on" data-game="photo">Fotos</button><button class="fbtn" data-game="video">Vídeos</button></div>
-    <div class="jogo-empty" id="jogoEmpty"><div class="empty" style="border:0">Conecte o Drive e cadastre fotos pra começar o duelo.<br>O ranking do PONTO sobe a cada vitória.</div></div>
+    <div class="filters" id="gameModeFilters" style="padding:8px 12px 0;margin:0;justify-content:center;gap:6px"><button class="fbtn on" data-game="duel-photo">Duelo · Fotos</button><button class="fbtn" data-game="duel-video">Duelo · Vídeos</button><button class="fbtn" data-game="sorteio">Sorteio</button></div>
+    <div class="jogo-empty" id="jogoEmpty"><div class="empty" style="border:0">Conecte o Drive e cadastre fotos pra começar.<br>O ranking do PONTO sobe a cada foto pontuada.</div></div>
     <div class="stage" id="stage" style="display:none">
-      <div class="cont a" id="cA"><div class="img"></div><div class="veil"></div><span class="ltr">A</span>
+      <div class="cont a" id="cA"><div class="mosaic"></div><div class="veil"></div><span class="ltr">A</span>
         <div class="tag"><b class="rk">#—</b><b class="tier">—</b></div>
-        <div class="vid-info" id="vidInfoA" style="display:none"></div>
         <div class="foot"><div><div class="nm">—</div><div class="ac micro">—</div></div>
-          <div class="acts"><button class="fav" data-fav="a"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C1 9 2.5 5.5 6 5.5c2 0 3.2 1.2 4 2.3.8-1.1 2-2.3 4-2.3 3.5 0 5 3.5 3.5 6.5C19 16.5 12 21 12 21z"/></svg></button>
-          <button class="pick" data-pick="a"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>Vence</button></div></div></div>
-      <div class="cont b" id="cB"><div class="img"></div><div class="veil"></div><span class="ltr">B</span>
+          <div class="acts"><button class="pick" data-pick="a"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>Vence</button></div></div></div>
+      <div class="cont b" id="cB"><div class="mosaic"></div><div class="veil"></div><span class="ltr">B</span>
         <div class="tag"><b class="rk">#—</b><b class="tier">—</b></div>
-        <div class="vid-info" id="vidInfoB" style="display:none"></div>
         <div class="foot"><div><div class="nm">—</div><div class="ac micro">—</div></div>
-          <div class="acts"><button class="fav" data-fav="b"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9.5-9C1 9 2.5 5.5 6 5.5c2 0 3.2 1.2 4 2.3.8-1.1 2-2.3 4-2.3 3.5 0 5 3.5 3.5 6.5C19 16.5 12 21 12 21z"/></svg></button>
-          <button class="pick" data-pick="b"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>Vence</button></div></div></div>
-      <div class="divider"><div class="vs">vs</div><button class="skip" id="skip">Empate · pular</button></div>
+          <div class="acts"><button class="pick" data-pick="b"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>Vence</button></div></div></div>
+      <div class="divider"><div class="vs">vs</div><button class="skip" id="skip">Outro duelo</button></div>
     </div>
-    <!-- painel pós-duelo de vídeo -->
-    <div class="video-choice" id="videoChoice" style="display:none">
-      <div class="vc-inner">
-        <div class="vc-actor" id="vcActor">—</div>
-        <div class="vc-sub">Continuar com este ator ou próximo duelo?</div>
-        <div class="vc-btns">
-          <button class="vc-btn primary" id="continueActor">
-            <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-            Continuar com este ator
-          </button>
-          <button class="vc-btn" id="nextNormal">
-            <svg viewBox="0 0 24 24" style="width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            Próximo duelo
-          </button>
-        </div>
+    <!-- fase do vencedor / sorteio -->
+    <div class="fphase" id="fphase" style="display:none">
+      <div class="fp-head"><div><span class="micro fp-kick" id="fpKicker">—</span><div class="fp-name" id="fpName">—</div></div><div class="fp-count micro" id="fpCount"></div></div>
+      <div class="fp-media" id="fpMedia"></div>
+      <div class="fp-meta micro" id="fpMeta"></div>
+      <div class="fp-acts">
+        <button class="fp-btn" id="fpSkip"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke-linecap="round"/></svg><span>Pular</span></button>
+        <button class="fp-btn primary" id="fpScore"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Pontuar</span></button>
       </div>
+      <button class="fp-end" id="fpEnd">Encerrar ator →</button>
     </div>
     <div class="gamebar">
       <button class="nb" id="newRound" aria-label="Nova rodada"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" stroke-linecap="round"/><path d="M3 4v4h4"/></svg></button>
@@ -401,6 +443,18 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
   <section class="view" id="ranking"><div class="wrap">
     <span class="eyebrow micro">Pontuação consolidada</span><div class="h2">Ranking</div>
     <div class="sub">Soma de todas as plataformas. PornMedia entra ao vivo; as outras pelo Registrar/Importar.</div>
+    <div class="filters" id="rankModeFilters" style="gap:6px;margin-top:10px"><button class="fbtn on" data-rmode="pontos">Pontos</button><button class="fbtn" data-rmode="artistas">Artistas</button></div>
+    <div id="rankArtistasWrap" style="display:none">
+      <div class="ar-sort" id="arSort">
+        <button class="fbtn on" data-arsort="elo">ELO</button>
+        <button class="fbtn" data-arsort="acervo">ELO do acervo</button>
+        <button class="fbtn" data-arsort="wins">Vitórias</button>
+        <button class="fbtn" data-arsort="pct">Aproveitamento</button>
+      </div>
+      <div class="sub" id="arSub" style="margin-top:4px"></div>
+      <div class="rank-list" id="artistList"></div>
+    </div>
+    <div id="rankPontosWrap">
     <div class="filters" id="periodFilters" style="flex-wrap:wrap;gap:6px">
       <button class="fbtn" data-period="today">Hoje</button>
       <button class="fbtn" data-period="7d">7 dias</button>
@@ -422,6 +476,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
     </div>
     <div class="platform-share" id="platformShare" style="display:none"></div>
     <div class="rank-list" id="rankList"></div>
+    </div>
   </div></section>
 
   <!-- SPOTLIGHT -->
@@ -538,7 +593,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
   <!-- IMPORTAR -->
   <section class="view" id="importar"><div class="wrap">
     <span class="eyebrow micro">Migrar dados</span><div class="h2">Importar TXT / CSV</div>
-    <div class="sub">Cole o histórico de outras plataformas (ou exports antigos). Vira ledger e salva no Drive.</div>
+    <div class="sub">Cole as sessões da planilha (com o cabeçalho) ou o histórico no formato antigo. Sessões mostram a prévia dos pontos antes de gravar.</div>
     <div class="card"><div class="card-b">
       <div class="fld"><textarea id="impText" placeholder="@data 11/05/2026&#10;@plataforma PornMedia&#10;&#10;Vega; Ator; 8; -; -"></textarea></div>
       <div class="fld" style="margin-top:10px">
@@ -546,13 +601,20 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
         <input id="impFile" type="file" accept=".txt,.csv,text/plain,text/csv,*/*" style="background:#fff;border:1px solid var(--hair-2);padding:10px;width:100%">
       </div>
       <div class="two" style="margin-top:10px"><button class="cta ghost" id="impFileBtn" type="button">Abrir seletor</button><button class="cta ghost" id="impClear" type="button">Limpar texto</button></div>
-      <div class="ex">@data 11/05/2026
-@plataforma tv live
-
-Nome; Ator; 240; -; -</div>
+      <div class="ex">Data	Plataforma	Produtora	Ator	Duração	Skip	Score
+12/08/2026	PC-OFF	MEN	Angel Elias	0:26:31	0:15:10	48
+18/08/2026	Twitter	-	Angel Elias	0:24:00	-	-</div>
+      <div class="imp-prev" id="impPreview"></div>
       <div class="two" style="margin-top:12px"><button class="cta ghost" id="impAdd" disabled>Adicionar ao ledger</button><button class="cta" id="impReplace" disabled>Substituir base</button></div>
       <div class="status" id="impStatus"></div>
       <div class="log" id="log">pronto.</div>
+    </div></div>
+    <span class="eyebrow micro" style="display:block;margin-top:22px">Levar pra fora</span><div class="h2">Exportar</div>
+    <div class="sub">Todo o ledger (o que foi assistido e pontuado), no formato NOME;TIPO;PONTO;DATA;PLATAFORMA;SCORE — o mesmo do pontos.csv e da Pasta.xlsx. Volta pra cá pelo Importar sem perder nada.</div>
+    <div class="card"><div class="card-b">
+      <div class="fld"><label class="flabel micro">Período</label><select id="expPeriod" style="background:#fff;border:1px solid var(--hair-2);padding:9px;font:500 13px var(--sans);width:100%"></select></div>
+      <div class="exp-row"><button class="cta ghost" id="expCopy" type="button">Copiar p/ planilha</button><button class="cta" id="expCsv" type="button">Baixar pontos.csv</button></div>
+      <div class="status" id="expStatus"></div>
     </div></div>
   </div></section>
 </div>
@@ -686,7 +748,19 @@ function monthKey(b){const d=parseDateBR(b);return d?`${d.getFullYear()}-${Strin
 function fmtNum(n){const x=Number(n);return Number.isInteger(x)?String(x):String(x.toFixed(1)).replace('.',',');}
 function canonicalPlatform(v){const raw=cleanCell(v).replace(/\s+/g,' ');const k=raw.toLowerCase();const map={'pc off':'pc-off','pcoff':'pc-off','pc-off':'pc-off','pc on':'pc-on','pcon':'pc-on','pc-on':'pc-on','pc onr':'pc-onr','pconr':'pc-onr','pc-onr':'pc-onr','telegram':'telegram','telegram full':'telegram full','telegram-only':'telegram only','telegram only':'telegram only','tv full':'tv full','tv live':'tv live','aloha':'aloha','foto':'fotos','fotos':'fotos','photo':'fotos','photos':'fotos','twitter':'twitter','x':'twitter','pornmedia':'PornMedia'};return map[k]||raw||'—';}
 function platformGroupName(v){const p=canonicalPlatform(v);const k=String(p||'').toLowerCase();if(k==='telegram'||k==='telegram full'||k==='telegram only'||k==='telegram-only')return 'telegram';return p;}
-const LIVE_RULES={'pc-off':{kind:'secondsDivisor',value:2,label:'2s = 1 ponto',skip:true},'pc-on':{kind:'secondsDivisor',value:3,label:'3s = 1 ponto',rankBonus:true,skip:true},'telegram full':{kind:'secondsDivisor',value:3,label:'3s = 1 ponto',skip:true},'telegram only':{kind:'secondsDivisor',value:5,label:'5s = 1 ponto',skip:true},'tv full':{kind:'secondsDivisor',value:5,label:'5s = 1 ponto',skip:true},'tv live':{kind:'pointsPerMinute',value:20,label:'20 pts/min'},'pc-onr':{kind:'pointsPerMinute',value:3,label:'3 pts/min',rankBonus:true},'aloha':{kind:'pointsPerMinute',value:2,label:'2 pts/min'},'fotos':{kind:'manualPoints',value:1,label:'pontos manuais'},'twitter':{kind:'manualPoints',value:1,label:'pontos manuais'}};
+/* Régua PONTO — quantos segundos valem 1 ponto. */
+const LIVE_RULES={
+  'pc-off':{kind:'secondsDivisor',value:2,label:'2s = 1 ponto',skip:true},
+  'pc-on':{kind:'secondsDivisor',value:3,label:'3s = 1 ponto',rankBonus:true,skip:true},
+  'telegram full':{kind:'secondsDivisor',value:5,label:'5s = 1 ponto',skip:true},
+  'tv full':{kind:'secondsDivisor',value:5,label:'5s = 1 ponto',skip:true},
+  'pc-onr':{kind:'secondsDivisor',value:15,label:'15s = 1 ponto',rankBonus:true,skip:true},
+  'telegram only':{kind:'secondsDivisor',value:15,label:'15s = 1 ponto',skip:true},
+  'twitter':{kind:'secondsDivisor',value:20,label:'20s = 1 ponto',skip:true},
+  'tv live':{kind:'pointsPerMinute',value:20,label:'20 pts/min'},
+  'aloha':{kind:'pointsPerMinute',value:2,label:'2 pts/min'},
+  'fotos':{kind:'manualPoints',value:1,label:'pontos manuais'}
+};
 function parseLiveDuration(raw,platform){const s=cleanCell(raw).toLowerCase();if(!s)return{seconds:0,ok:false};if(/^\d{1,2}:\d{1,2}(:\d{1,2})?$/.test(s)){const p=s.split(':').map(Number);const sec=p.length===2?p[0]*60+p[1]:p[0]*3600+p[1]*60+p[2];return{seconds:sec,ok:sec>0};}const mm=s.match(/(\d+(?:[\.,]\d+)?)\s*(m|min|mins|minuto|minutos)/),sm=s.match(/(\d+(?:[\.,]\d+)?)\s*(s|seg|segs|segundo|segundos)/);if(mm||sm){const mins=mm?parseNumber(mm[1]):0,secs=sm?parseNumber(sm[1]):0;const t=mins*60+secs;return{seconds:t,ok:t>0};}const n=parseNumber(s);if(!n||n<=0)return{seconds:0,ok:false};const r=LIVE_RULES[platform];return{seconds:r?.kind==='pointsPerMinute'?n*60:n,ok:true};}
 function liveBasePoints(seconds,platform){const r=LIVE_RULES[platform];if(!r||!seconds)return 0;if(r.kind==='secondsDivisor')return seconds/r.value;if(r.kind==='pointsPerMinute')return(seconds/60)*r.value;return 0;}
 
@@ -706,8 +780,8 @@ function creditPonto(actorName,pts){
 /* =====================================================================
    JOGO: duelo de fotos/vídeos separados + ELO + PONTO
    ===================================================================== */
-let duel={a:null,b:null},count=0,deciding=false,gameMode='photo',pendingWinnerActorId=null;
-const momentum={},lastSeen={};
+let duel={a:null,b:null},count=0,deciding=false,gameMode='duel-photo',pendingWinnerActorId=null;
+const momentum={},lastSeen={},actorSeen={};
 const BAL={sup:0.70,boost:0.80,decay:0.82};
 function photoPool(){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&!m.skipped&&m.type!=='video');}
 function videoPool(){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&!m.skipped&&m.type==='video');}
@@ -745,100 +819,169 @@ function cooldown(m){const gap=count-(lastSeen[m.id]??-99);return gap>=3?1:0.22+
 function weightFor(m){return Math.max(0.02,tierWeight(mediaTier(m))*(1+(momentum[m.actorId]||0))*cooldown(m));}
 function wpick(list){if(!list.length)return null;const ws=list.map(weightFor);let r=Math.random()*ws.reduce((a,b)=>a+b,0);for(let i=0;i<list.length;i++){r-=ws[i];if(r<=0)return list[i];}return list[list.length-1];}
 function actorName(id){return GAME.actors[id]?.name||'—';}
-function hideVideoChoice(){pendingWinnerActorId=null;$('#videoChoice').style.display='none';$('#stage').style.display='flex';}
-function showVideoChoice(actorId){pendingWinnerActorId=actorId;$('#vcActor').textContent=actorName(actorId)||'—';$('#videoChoice').style.display='grid';$('#stage').style.display='none';}
-function updateVidInfo(side,m){
-  const el=$('#vidInfo'+side.toUpperCase());if(!el)return;
-  if(gameMode!=='video'||!m){el.style.display='none';return;}
-  const d=videoDurationSec(m,side);
-  const pts=d?Math.max(1,Math.round(d/10)):null;
-  el.style.display='flex';
-  el.innerHTML=`<span class="vid-tag">${d?fmtSec(d):'duração desconhecida'}</span>${pts?`<span class="vid-tag pts">+${pts} pts se vencer</span>`:''}`;
-}
-
-function pickDuel(preferActorId=null){
-  const used=new Set(GAME.sessions.current.usedMediaIds||[]);
-  const pool=activePool().filter(m=>!used.has(m.id));
-  if(pool.length<2)return null;
-  let a=null;
-  if(gameMode==='video'&&preferActorId){
-    const preferred=pool.filter(m=>m.actorId===preferActorId);
-    if(preferred.length)a=wpick(preferred);
-  }
-  if(!a)a=wpick(pool);
-  let elig=pool.filter(m=>m.id!==a.id&&m.actorId!==a.actorId);
-  if(!elig.length)elig=pool.filter(m=>m.id!==a.id);
-  if(gameMode==='video'){
-    const b=wpick(elig);return b?{a,b}:null;
-  }
-  const order=['S','A','B','C','D'],ai=order.indexOf(mediaTier(a));
-  const same=elig.filter(m=>mediaTier(m)===mediaTier(a)),adj=elig.filter(m=>Math.abs(order.indexOf(mediaTier(m))-ai)===1);
-  const roll=Math.random();let set=roll<.7&&same.length?same:roll<.92&&adj.length?adj:elig;if(!set.length)set=elig;
-  const b=wpick(set);return b?{a,b}:null;
-}
+/* =====================================================================
+   JOGO 3.0 — modalidades
+   · Duelo (fotos/vídeos): ator × ator, cada lado um mosaico das 6 melhores mídias
+     disponíveis. Vencedor → fase do vencedor: mídias dele uma a uma, Pontuar/Pular.
+       foto pontuada volta pra fila; pulada é descartada; vídeo não repete.
+     Perdedor: todas as mídias dele (do tipo) perdem LOSER_PEN de ELO.
+   · Sorteio: fotos aleatórias de todo o acervo, chance igual, Pontuar/Pular.
+   ELO do Pontuar/Pular é Elo de verdade contra uma referência:
+     média do acervo do ator (duelo) ou média geral (sorteio).
+   ===================================================================== */
+const MOSAIC_N=6,LOSER_PEN=4,K_FOCUS=16,LS_PHASE='pm2Phase';
+let phase=null,phaseBusy=false,phaseToken=0;
+function gKind(){return gameMode==='duel-video'?'video':'photo';}
+function usedSet(){return new Set(GAME.sessions.current.usedMediaIds||[]);}
+function markUsed(ids){GAME.sessions.current.usedMediaIds=[...new Set([...(GAME.sessions.current.usedMediaIds||[]),...ids])];}
+function availMedia(kind,actorId=null){const used=usedSet();return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&!m.skipped&&(kind==='video'?m.type==='video':m.type!=='video')&&!used.has(m.id)&&(actorId==null||m.actorId===actorId));}
+function topMosaic(aid,kind){return availMedia(kind,aid).sort((x,y)=>(y.elo||1500)-(x.elo||1500)).slice(0,MOSAIC_N);}
+function duelActors(kind){const s=new Set();availMedia(kind).forEach(m=>s.add(m.actorId));return[...s].filter(id=>GAME.actors[id]);}
+function actorCool(id){const gap=count-(actorSeen[id]??-99);return gap>=4?1:0.15+0.85*(gap/4);}
+function wpickBy(list,wf){if(!list.length)return null;const ws=list.map(wf);let r=Math.random()*ws.reduce((a,b)=>a+b,0);for(let i=0;i<list.length;i++){r-=ws[i];if(r<=0)return list[i];}return list[list.length-1];}
+function actorEloPos(aid){return Object.values(GAME.actors).sort((x,y)=>(y.elo||1500)-(x.elo||1500)).findIndex(a=>a.id===aid)+1;}
 function expct(a,b){return 1/(1+Math.pow(10,((b.elo||1500)-(a.elo||1500))/400));}
 function applyElo(w,l,k=32){w.elo=(w.elo||1500)+k*(1-expct(w,l));l.elo=(l.elo||1500)+k*(0-expct(l,w));}
-function videoDurationSec(m,side){
-  const stored=Number(m.durationSec||m.duration_seg||m.duration||0);
-  if(stored>0)return stored;
-  const el=(side==='a'?$('#cA'):$('#cB'))?.querySelector('video.media');
-  const d=Number(el?.duration||0);
-  if(isFinite(d)&&d>0){m.durationSec=d;saveGameSoon();return d;}
-  return 0;
+function avgElo(list){return list.length?list.reduce((s,m)=>s+(Number(m.elo)||1500),0)/list.length:1500;}
+function eloFocus(m,score,ref){const E=1/(1+Math.pow(10,(ref-(m.elo||1500))/400));m.elo=(m.elo||1500)+K_FOCUS*(score-E);}
+function videoPts(sec){return Math.max(1,Math.round((Number(sec)||20)/20));}   // PornMedia vídeo: 20s = 1 pt
+function mediaPts(m){return m.type==='video'?videoPts(m.durationSec):1;}         // PornMedia foto: 1 pt
+const thumbCache=new Map();
+async function thumbUrl(m){if(!m?.fileId)return null;if(thumbCache.has(m.fileId))return thumbCache.get(m.fileId);let u=null;try{const j=await driveJson(`https://www.googleapis.com/drive/v3/files/${m.fileId}?fields=thumbnailLink`);if(j.thumbnailLink)u=j.thumbnailLink.replace(/=s\d+$/,'=s640');}catch(e){}thumbCache.set(m.fileId,u);return u;}
+
+function pickActorDuel(kind){
+  const ids=duelActors(kind);if(ids.length<2)return null;
+  const a=wpickBy(ids,actorCool),ea=GAME.actors[a].elo||1500;
+  const rest=ids.filter(id=>id!==a).sort((x,y)=>Math.abs((GAME.actors[x].elo||1500)-ea)-Math.abs((GAME.actors[y].elo||1500)-ea));
+  const near=Math.random()<.7?rest.slice(0,Math.max(3,Math.ceil(rest.length*.25))):rest;
+  return{a,b:wpickBy(near,actorCool)};
 }
-function videoWinPoints(m,side){const d=videoDurationSec(m,side);return Math.max(1,Math.round((d||10)/10));}
-async function setStage(side,m){
+async function setStageActor(side,aid,kind){
   const el=side==='a'?$('#cA'):$('#cB');el.className='cont '+side;
-  el.querySelector('.nm').textContent=m.name;el.querySelector('.ac').textContent=actorName(m.actorId);
-  el.querySelector('.rk').textContent='#'+(mediaPos(m)||'—');el.querySelector('.tier').textContent='Tier '+mediaTier(m);
-  el.querySelector('.fav').style.display=gameMode==='video'?'none':'grid';
-  el.querySelector('.fav').classList.toggle('on',!!m.favorite);
-  const img=el.querySelector('.img');img.style.backgroundImage='';el.querySelectorAll('video.media').forEach(v=>v.remove());
-  try{
-    const src=await blobUrl(m);
-    if(m.type==='video'){
-      const v=document.createElement('video');v.className='media';v.src=src;v.muted=true;v.controls=true;v.playsInline=true;v.preload='metadata';
-      v.onloadedmetadata=()=>{
-        if(isFinite(v.duration)&&v.duration>0){m.durationSec=v.duration;saveGameSoon();}
-        updateVidInfo(side,m);  // atualiza o chip assim que a duração chega
-      };
-      el.insertBefore(v,el.querySelector('.veil'));
-    }else img.style.backgroundImage=`url("${src}")`;
-  }catch(e){}
+  const list=topMosaic(aid,kind),a=GAME.actors[aid],tot=availMedia(kind,aid).length;
+  el.querySelector('.nm').textContent=actorName(aid);
+  el.querySelector('.ac').textContent=`ELO ${Math.round(a?.elo||1500)} · ${a?.wins||0}V/${a?.losses||0}D`;
+  el.querySelector('.rk').textContent='#'+(actorEloPos(aid)||'—');
+  el.querySelector('.tier').textContent=`${tot} ${kind==='video'?'vídeo':'foto'}${tot!==1?'s':''}`;
+  const mo=el.querySelector('.mosaic');mo.dataset.n=list.length;
+  mo.innerHTML=list.map(m=>`<div class="mt${m.type==='video'?' vid':''}" data-mid="${m.id}"></div>`).join('');
+  mo.querySelectorAll('.mt').forEach((t,i)=>t.onclick=e=>{e.stopPropagation();openMediaViewer(list,i);});
+  list.forEach(async m=>{try{const u=m.type==='video'?await thumbUrl(m):await blobUrl(m);const t=mo.querySelector(`[data-mid="${m.id}"]`);if(u&&t&&t.isConnected)t.style.backgroundImage=`url("${u}")`;}catch(e){}});
 }
-async function renderDuel(){$('#counter').textContent=String(count).padStart(3,'0');await setStage('a',duel.a);await setStage('b',duel.b);const lbl=gameMode==='video'?'Duelo · Vídeos':'Duelo · Fotos';$('#gamebarLabel').textContent=lbl;updateVidInfo('a',duel.a);updateVidInfo('b',duel.b);}
-async function nextDuel(preferActorId=null){
-  hideVideoChoice();
-  const p=pickDuel(preferActorId);
-  if(!p){$('#stage').style.display='none';$('#jogoEmpty').style.display='grid';const label=gameMode==='video'?'vídeos':'fotos';$('#jogoEmpty').querySelector('.empty').innerHTML=activePool().length<2?`Cadastre pelo menos 2 ${label} (em Biblioteca) pra duelar.`:'Rodada concluída. Toque em nova rodada.';return;}
-  duel=p;count++;[duel.a,duel.b].forEach(m=>lastSeen[m.id]=count);
-  $('#jogoEmpty').style.display='none';$('#stage').style.display='flex';await renderDuel();
+function showDuelUI(){$('#fphase').style.display='none';$('#jogoEmpty').style.display='none';$('#stage').style.display='flex';}
+function showPhaseUI(){$('#stage').style.display='none';$('#jogoEmpty').style.display='none';$('#fphase').style.display='flex';}
+function showEmpty(msg){$('#stage').style.display='none';$('#fphase').style.display='none';$('#jogoEmpty').style.display='grid';$('#jogoEmpty').querySelector('.empty').innerHTML=msg;}
+function savePhase(){try{localStorage.setItem(LS_PHASE,JSON.stringify({day:localDay(),mode:gameMode,phase}));}catch(e){}}
+function setModeButtons(){$$('#gameModeFilters [data-game]').forEach(x=>x.classList.toggle('on',x.dataset.game===gameMode));}
+
+async function nextDuel(){
+  if(gameMode==='sorteio')return startSorteio();
+  phase=null;savePhase();
+  const kind=gKind(),label=kind==='video'?'vídeos':'fotos';
+  const p=pickActorDuel(kind);
+  if(!p){showEmpty(duelActors(kind).length||!availMedia(kind).length?`Não sobraram 2 atores com ${label} disponíveis nesta rodada.<br>Toque em nova rodada.`:`Cadastre ${label} de pelo menos 2 atores (em Biblioteca).`);return;}
+  duel=p;count++;actorSeen[p.a]=actorSeen[p.b]=count;
+  showDuelUI();
+  $('#counter').textContent=String(count).padStart(3,'0');
+  $('#gamebarLabel').textContent=kind==='video'?'Duelo · Vídeos':'Duelo · Fotos';
+  await setStageActor('a',p.a,kind);await setStageActor('b',p.b,kind);
 }
 async function decide(side){
-  if(deciding||!duel.a||!duel.b)return;deciding=true;
-  const w=duel[side],l=duel[side==='a'?'b':'a'];
-  applyElo(w,l);w.wins=(w.wins||0)+1;l.losses=(l.losses||0)+1;
-  const aw=GAME.actors[w.actorId],al=GAME.actors[l.actorId];if(aw&&al){applyElo(aw,al,24);}
-  GAME.sessions.current.usedMediaIds=[...new Set([...(GAME.sessions.current.usedMediaIds||[]),w.id,l.id])];
-  GAME.duels=(GAME.duels||0)+1;
-  momentum[w.actorId]=(momentum[w.actorId]||0)+BAL.boost;Object.keys(momentum).forEach(k=>{momentum[k]*=BAL.decay;if(momentum[k]<.03)delete momentum[k];});
-  const pts=gameMode==='video'?videoWinPoints(w,side):1;
-  creditPonto(actorName(w.actorId),pts);
-  saveSessionNow();  // imediato — garante que F5 não repete a mídia
+  if(deciding||phase||!duel.a||!duel.b)return;deciding=true;
+  const kind=gKind(),wId=duel[side],lId=duel[side==='a'?'b':'a'];
+  const aw=GAME.actors[wId],al=GAME.actors[lId];
+  if(aw&&al){applyElo(aw,al,24);aw.wins=(aw.wins||0)+1;al.losses=(al.losses||0)+1;}
+  Object.values(GAME.media).filter(m=>m.actorId===lId&&!m.deleted&&mediaKind(m)===kind).forEach(m=>m.elo=(m.elo||1500)-LOSER_PEN);
+  GAME.duels=(GAME.duels||0)+1;saveGameSoon();
   const stg=$('#stage');stg.classList.add('deciding');$('#cA').classList.add(side==='a'?'win':'lose');$('#cB').classList.add(side==='b'?'win':'lose');
   closeViewer(true);
-  setTimeout(async()=>{stg.classList.remove('deciding');$('#cA').classList.remove('win','lose');$('#cB').classList.remove('win','lose');deciding=false;if(gameMode==='video')showVideoChoice(w.actorId);else{await nextDuel();refreshLight();}},520);
+  setTimeout(()=>{stg.classList.remove('deciding');$('#cA').classList.remove('win','lose');$('#cB').classList.remove('win','lose');deciding=false;startWinnerPhase(wId,kind);},520);
 }
+function startWinnerPhase(aid,kind){
+  const mine=availMedia(kind,aid).sort((x,y)=>(y.elo||1500)-(x.elo||1500));
+  if(!mine.length){nextDuel();return;}
+  phase={type:'winner',actorId:aid,kind,ref:avgElo(mine),queue:mine.map(m=>m.id),cur:null};
+  nextPhaseItem();
+}
+function startSorteio(){phase={type:'sorteio',kind:'photo',queue:[],cur:null};nextPhaseItem();}
+function nextPhaseItem(){
+  if(!phase)return nextDuel();
+  if(phase.type==='winner'){
+    phase.queue=phase.queue.filter(id=>GAME.media[id]&&!GAME.media[id].deleted);
+    if(!phase.queue.length)return endWinnerPhase();
+    phase.cur=phase.queue[0];
+  }else{
+    const pool=availMedia('photo');
+    if(!pool.length){phase=null;savePhase();showEmpty('Sorteio esgotado: todas as fotos foram puladas.<br>Toque em nova rodada.');return;}
+    const opts=pool.length>1?pool.filter(m=>m.id!==phase.cur):pool;
+    phase.cur=opts[Math.floor(Math.random()*opts.length)].id;
+    phase.ref=avgElo(Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&m.type!=='video'));
+  }
+  savePhase();renderPhaseItem();
+}
+function endWinnerPhase(){
+  if(phase?.type==='winner'){markUsed(availMedia(phase.kind,phase.actorId).map(m=>m.id));saveSessionNow();}
+  phase=null;savePhase();nextDuel();
+}
+async function renderPhaseItem(){
+  const m=GAME.media[phase.cur];if(!m)return nextPhaseItem();
+  showPhaseUI();
+  const tok=++phaseToken,isV=m.type==='video';
+  $('#fpKicker').textContent=phase.type==='winner'?`Vencedor · ${isV?'vídeos':'fotos'}`:'Sorteio · todos os atores';
+  $('#fpName').textContent=actorName(m.actorId);
+  $('#fpCount').textContent=phase.type==='winner'?`${phase.queue.length} na fila`:`${availMedia('photo').length} disponíveis`;
+  $('#gamebarLabel').textContent=phase.type==='winner'?'Vencedor':'Sorteio';
+  $('#fpEnd').style.display=phase.type==='winner'?'':'none';
+  const meta=()=>{$('#fpMeta').textContent=`${m.name} · #${mediaPos(m)||'—'} · Tier ${mediaTier(m)} · ELO ${Math.round(m.elo||1500)}${isV&&m.durationSec?' · '+fmtSec(m.durationSec):''}`;$('#fpScore').querySelector('span').textContent=`Pontuar +${mediaPts(m)}`;};
+  meta();
+  const box=$('#fpMedia');box.querySelectorAll('video').forEach(v=>{try{v.pause();v.removeAttribute('src');v.load();}catch(e){}});box.innerHTML='<div class="fp-load micro">carregando…</div>';
+  let src=null;try{src=await blobUrl(m);}catch(e){}
+  if(tok!==phaseToken)return;
+  if(!src){box.innerHTML='<div class="fp-load micro">não consegui abrir essa mídia</div>';return;}
+  if(isV){
+    const v=document.createElement('video');v.src=src;v.controls=true;v.playsInline=true;v.autoplay=true;
+    v.onloadedmetadata=()=>{if(isFinite(v.duration)&&v.duration>0){m.durationSec=v.duration;saveGameSoon();meta();}};
+    v.ondblclick=e=>{e.preventDefault();try{(v.requestFullscreen||v.webkitRequestFullscreen||v.webkitEnterFullscreen).call(v);}catch(_){}};
+    box.innerHTML='';box.appendChild(v);v.play().catch(()=>{});
+  }else{
+    box.innerHTML='';const img=document.createElement('img');img.src=src;img.alt='';img.onclick=()=>openMediaViewer([m],0);box.appendChild(img);
+    // pré-carrega a próxima da fila
+    const nx=phase.type==='winner'?GAME.media[phase.queue[1]]:null;if(nx&&nx.type!=='video')blobUrl(nx).catch(()=>{});
+  }
+}
+function phaseAct(score){
+  if(!phase||phaseBusy)return;const m=GAME.media[phase.cur];if(!m)return;
+  phaseBusy=true;setTimeout(()=>phaseBusy=false,250);
+  const vid=$('#fpMedia video');if(vid&&isFinite(vid.duration)&&vid.duration>0)m.durationSec=vid.duration;
+  eloFocus(m,score?1:0,phase.ref||1500);
+  if(score){m.wins=(m.wins||0)+1;creditPonto(actorName(m.actorId),mediaPts(m));refreshLight();}
+  else m.losses=(m.losses||0)+1;
+  if(phase.type==='winner'){
+    phase.queue.shift();
+    if(score&&m.type!=='video')phase.queue.push(m.id);   // foto pontuada volta pro fim da fila
+    else markUsed([m.id]);                                // pulada, ou vídeo: sai da rodada
+  }else if(!score)markUsed([m.id]);
+  saveGameSoon();saveSessionNow();
+  nextPhaseItem();
+}
+$('#fpScore').onclick=()=>phaseAct(true);
+$('#fpSkip').onclick=()=>phaseAct(false);
+$('#fpEnd').onclick=()=>endWinnerPhase();
 $('[data-pick="a"]').onclick=e=>{e.stopPropagation();decide('a');};
 $('[data-pick="b"]').onclick=e=>{e.stopPropagation();decide('b');};
-$$('[data-fav]').forEach(b=>b.onclick=e=>{e.stopPropagation();const m=duel[b.dataset.fav];if(!m)return;m.favorite=!m.favorite;b.classList.toggle('on',m.favorite);saveGameSoon();});
-$('#skip').onclick=()=>{if(!duel.a)return;GAME.sessions.current.usedMediaIds=[...new Set([...(GAME.sessions.current.usedMediaIds||[]),duel.a.id,duel.b.id])];[duel.a,duel.b].forEach(m=>m.elo=Math.max(0,(m.elo||1500)-4));saveSessionNow();nextDuel();};
-$('#newRound').onclick=()=>{GAME.sessions.current.usedMediaIds=[];hideVideoChoice();saveGameSoon();nextDuel();};
-$('#nextNormal').onclick=()=>nextDuel();
-$('#continueActor').onclick=()=>nextDuel(pendingWinnerActorId);
-['a','b'].forEach(s=>{(s==='a'?$('#cA'):$('#cB')).addEventListener('click',e=>{if(e.target.closest('button')||e.target.closest('video'))return;openViewer(s==='a'?0:1);});});
-async function startGameIfReady(){if(activePool().length>=2)await nextDuel();else{$('#stage').style.display='none';$('#jogoEmpty').style.display='grid';}}
-$$('#gameModeFilters [data-game]').forEach(b=>b.onclick=async()=>{gameMode=b.dataset.game;$$('#gameModeFilters [data-game]').forEach(x=>x.classList.toggle('on',x===b));GAME.sessions.current.usedMediaIds=[];hideVideoChoice();await nextDuel();});
+$('#skip').onclick=()=>{if(!duel.a||phase)return;nextDuel();};
+$('#newRound').onclick=()=>{GAME.sessions.current.usedMediaIds=[];phase=null;savePhase();saveSessionNow();nextDuel();};
+async function startGameIfReady(){
+  try{const s=JSON.parse(localStorage.getItem(LS_PHASE)||'null');
+    if(s&&s.day===localDay()&&s.phase&&['duel-photo','duel-video','sorteio'].includes(s.mode)){
+      gameMode=s.mode;setModeButtons();phase=s.phase;
+      if(phase.type==='winner')phase.queue=(phase.queue||[]).filter(id=>GAME.media[id]&&!GAME.media[id].deleted&&!usedSet().has(id));
+      if(phase.type==='sorteio'||phase.queue.length){nextPhaseItemRestore();return;}
+    }}catch(e){}
+  phase=null;await nextDuel();
+}
+function nextPhaseItemRestore(){if(phase.type==='winner'){phase.cur=phase.queue[0];savePhase();renderPhaseItem();}else nextPhaseItem();}
+$$('#gameModeFilters [data-game]').forEach(b=>b.onclick=async()=>{if(b.dataset.game===gameMode&&!phase)return;gameMode=b.dataset.game;setModeButtons();phase=null;savePhase();await nextDuel();});
 
 /* viewer zoom/swipe */
 const viewer=$('#viewer'),track=$('#vTrack'),slides=$$('.v-slide');
@@ -1229,7 +1372,41 @@ function rankRowsForSearch(baseRows){
   });
   return rows.sort((a,b)=>(b.total-a.total)||a.nome.localeCompare(b.nome));
 }
+let rankMode='pontos',arSort='elo';
+const AR_MIN=5; // duelos mínimos pra entrar no aproveitamento
+function artistRows(){
+  const photos=mediaRanked('photo'),posOf=new Map(photos.map((m,i)=>[m.id,i+1]));
+  return Object.values(GAME.actors).map(a=>{
+    const med=Object.values(GAME.media).filter(m=>m.actorId===a.id&&!m.deleted);
+    const ph=med.filter(m=>m.type!=='video'),vi=med.filter(m=>m.type==='video');
+    const w=a.wins||0,l=a.losses||0,g=w+l;
+    const acervo=ph.length?ph.reduce((s,m)=>s+(Number(m.elo)||1500),0)/ph.length:null;
+    const best=ph.map(m=>posOf.get(m.id)).filter(Boolean).sort((x,y)=>x-y)[0]||null;
+    return{name:a.name,elo:a.elo||1500,w,l,g,pct:g?w/g:0,acervo,best,nPh:ph.length,nVi:vi.length};
+  }).filter(r=>r.g>0||r.nPh||r.nVi);
+}
+function renderArtists(){
+  $$('#arSort [data-arsort]').forEach(b=>b.classList.toggle('on',b.dataset.arsort===arSort));
+  let rows=artistRows();
+  const key={elo:r=>r.elo,acervo:r=>r.acervo??-1,wins:r=>r.w,pct:r=>r.pct}[arSort];
+  if(arSort==='pct')rows=rows.filter(r=>r.g>=AR_MIN);
+  rows.sort((x,y)=>key(y)-key(x)||y.elo-x.elo);
+  $('#arSub').textContent={elo:'ELO do ator, movido a cada duelo que ele disputa.',acervo:'Média do ELO das fotos dele — a força do material, não do histórico.',wins:'Total de vitórias em duelo.',pct:`Vitórias ÷ duelos. Só entra quem tem ${AR_MIN}+ duelos.`}[arSort];
+  const list=$('#artistList');
+  if(!rows.length){list.innerHTML='<div class="empty">Nenhum artista com duelos ainda.</div>';return;}
+  const val=r=>arSort==='wins'?[r.w,'vitórias']:arSort==='pct'?[Math.round(r.pct*100)+'%','aprov.']:arSort==='acervo'?[r.acervo?Math.round(r.acervo):'—','ELO acervo']:[Math.round(r.elo),'ELO'];
+  list.innerHTML=rows.map((r,i)=>{const[v,lab]=val(r);
+    const chips=[`${r.w}V/${r.l}D${r.g?' · '+Math.round(r.pct*100)+'%':''}`,`${r.nPh} foto${r.nPh!==1?'s':''}`,r.nVi?`${r.nVi} vídeo${r.nVi!==1?'s':''}`:'',r.best?`melhor foto #${r.best}`:''].filter(Boolean).map(c=>`<span class="pchip">${escapeHtml(c)}</span>`).join('');
+    return `<div class="rrow ${i===0?'top1':''}" data-artist="${escapeHtml(r.name)}"><div class="pos">${i+1}</div><div class="who"><div class="nm">${escapeHtml(r.name)}</div><div class="chips">${chips}</div></div><div class="pts"><div class="v">${v}</div><div class="l micro">${lab}</div></div></div>`;}).join('');
+  list.querySelectorAll('[data-artist]').forEach(row=>row.onclick=()=>showActorProfile(row.dataset.artist));
+}
+$$('#rankModeFilters [data-rmode]').forEach(b=>b.onclick=()=>{rankMode=b.dataset.rmode;renderRanking();});
+$$('#arSort [data-arsort]').forEach(b=>b.onclick=()=>{arSort=b.dataset.arsort;renderArtists();});
 function renderRanking(){
+  $$('#rankModeFilters [data-rmode]').forEach(b=>b.classList.toggle('on',b.dataset.rmode===rankMode));
+  $('#rankPontosWrap').style.display=rankMode==='pontos'?'':'none';
+  $('#rankArtistasWrap').style.display=rankMode==='artistas'?'':'none';
+  if(rankMode==='artistas'){renderArtists();return;}
   $$('#periodFilters [data-period]').forEach(b=>b.classList.toggle('on',b.dataset.period===periodFilter));
   const pw=$('#periodPickWrap');if(pw)pw.style.display=periodFilter==='pick'?'block':'none';
   if(periodFilter==='pick')fillPickSelects();
@@ -1390,7 +1567,9 @@ function openActorProfile(name){
     <div class="eyebrow micro">Página do ator</div>
     <div class="name">${escapeHtml(name)}</div>
     <div class="meta">ELO ${actor.elo?Math.round(actor.elo):'—'} · ${actor.wins||0}V/${actor.losses||0}D · ${allMedia.length} mídia(s)</div>
-  </div><button class="chip btn" id="actorBack">← Ranking</button></div>
+  </div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end"><button class="chip btn" id="actorBack">← Ranking</button>
+    <label class="chip btn" style="cursor:pointer">+ Enviar mídia<input id="actorUpInput" type="file" accept="image/*,video/*" multiple hidden></label></div></div>
+  <div class="status" id="actorUpStatus" style="margin:-6px 0 10px"></div>
 
   <!-- stats principais -->
   <div class="stats-grid">
@@ -1446,6 +1625,17 @@ function openActorProfile(name){
   </div>`:''}`;
 
   $('#actorBack').onclick=()=>{$$('.view').forEach(v=>v.classList.remove('on'));$('#ranking').classList.add('on');renderRanking();};
+  $('#actorUpInput').onchange=async e=>{
+    const files=[...e.target.files];e.target.value='';if(!files.length)return;
+    const st=$('#actorUpStatus');
+    if(!accessToken){st.textContent='Conecte o Drive primeiro.';return;}
+    const a=actor.id?GAME.actors[actor.id]:addActor(name);   // ator só do ledger ganha cadastro no jogo
+    if(!a){st.textContent='Não consegui identificar o ator.';return;}
+    const n=await uploadFilesForActor(a.id,files,t=>st.textContent=t);
+    saveGameSoon();refreshAll();startGameIfReady();
+    openActorProfile(name);
+    const st2=$('#actorUpStatus');if(st2)st2.textContent=`✓ ${n} mídia(s) enviada(s).`;
+  };
   $('#actorPhotosMore')?.addEventListener('click',()=>{$('#actorPhotos').innerHTML=mediaCardsHTML(photos);hydrateMediaCards($('#actorPhotos'),photos);$('#actorPhotosMore').remove();});
   $('#actorVideosMore')?.addEventListener('click',()=>{$('#actorVideos').innerHTML=mediaCardsHTML(videos);hydrateMediaCards($('#actorVideos'),videos);$('#actorVideosMore').remove();});
   drawActorProfileChart(name);
@@ -1473,13 +1663,18 @@ $('#upSend').onclick=async()=>{
     aid=a.id;
   }
   if(!aid||!GAME.actors[aid]){$('#upStatus').textContent='Selecione um ator.';return;}
-  $('#upSend').disabled=true;let n=0;
-  for(const f of upQueue){
-    try{const num=actorNextNumber(aid);const ext=(f.name.match(/(\.[^.]+)$/)||[''])[0];const base=`${GAME.actors[aid].name} ${String(num).padStart(3,'0')}`;$('#upStatus').textContent=`Enviando ${base}…`;const up=await uploadMediaFile(f,base+ext);const mid=uid('m');GAME.media[mid]={id:mid,fileId:up.id,name:base,mimeType:f.type,type:f.type.startsWith('video/')?'video':'photo',actorId:aid,elo:1500,wins:0,losses:0,favorite:false,deleted:false,createdAt:new Date().toISOString()};n++;}
-    catch(e){log('Erro upload: '+e.message);}
-  }
+  $('#upSend').disabled=true;
+  const n=await uploadFilesForActor(aid,upQueue,t=>$('#upStatus').textContent=t);
   upQueue=[];$('#upNewActor').value='';saveGameSoon();$('#upStatus').textContent=`✓ ${n} mídia(s) enviada(s).`;refreshAll();startGameIfReady();
 };
+async function uploadFilesForActor(aid,files,onStatus=()=>{}){
+  let n=0;const list=[...files];
+  for(let i=0;i<list.length;i++){const f=list[i];
+    try{const num=actorNextNumber(aid);const ext=(f.name.match(/(\.[^.]+)$/)||[''])[0];const base=`${GAME.actors[aid].name} ${String(num).padStart(3,'0')}`;onStatus(`Enviando ${base} (${i+1}/${list.length})…`);const up=await uploadMediaFile(f,base+ext);const mid=uid('m');GAME.media[mid]={id:mid,fileId:up.id,name:base,mimeType:f.type,type:f.type.startsWith('video/')?'video':'photo',actorId:aid,elo:1500,wins:0,losses:0,favorite:false,deleted:false,createdAt:new Date().toISOString()};n++;}
+    catch(e){log('Erro upload: '+e.message);}
+  }
+  return n;
+}
 let libTypeFilter='photo',libActorFilter='',libSort='elo';
 function fillLibActorFilter(){
   const sel=$('#libActorFilter');if(!sel)return;
@@ -1507,7 +1702,7 @@ function renderLibrary(){
   grid.innerHTML=show.map(m=>{
     const gpos=globalRanked.findIndex(x=>x.id===m.id)+1;
     const dur=m.durationSec?fmtSec(m.durationSec):'';
-    const pts=m.durationSec?`+${Math.max(1,Math.round(m.durationSec/10))}pts`:'';
+    const pts=m.durationSec?`+${videoPts(m.durationSec)}pts`:'';
     return `<div class="lib-tile ${dur?'has-video':''}" data-media="${m.id}">
       <div class="lt-veil"></div>
       ${m.type==='video'?`<span class="lt-vid"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg></span>`:''}
@@ -1845,6 +2040,7 @@ window.saveSessionNow=async function(){lsSaveUsed();await _origSaveSessionNow();
 
 
 function lvCompute(){const plat=$('#lvPlat').value,rule=LIVE_RULES[plat];if(rule.kind==='manualPoints'){const p=Math.round(parseNumber($('#lvDur').value));return{ok:!!p&&isFinite(p),points:p,text:p?`${plat} · manual = ${fmtNum(p)} pts`:'Digite uma pontuação.',modo:'manual'};}const dur=parseLiveDuration($('#lvDur').value,plat);if(!dur.ok)return{ok:false,points:0,text:'Digite uma duração válida.'};let skipSec=0,prov=false;if(rule.skip){const sv=cleanCell($('#lvSkip').value);if(sv&&sv!=='-'){if(sv==='0'){skipSec=0;prov=true;}else{const sp=parseLiveDuration(sv,plat);if(sp.ok){skipSec=sp.seconds;prov=true;}}}}const net=Math.max(0,dur.seconds-skipSec);let mult=1;if(rule.rankBonus){const r=$('#lvRank').value;mult=r==='first'?3:r==='second'?2:1;}const pts=Math.round(liveBasePoints(net,plat)*mult);const skTxt=rule.skip?(prov?` · líquido ${net}s`:' · skip não informado'):'';return{ok:pts!==0,points:pts,text:`${plat} · ${dur.seconds}s${skTxt} · ${rule.label}${mult!==1?` · ×${mult}`:''} = ${fmtNum(pts)} pts`,modo:'round:'+plat};}
+function lvRule(){return LIVE_RULES[$('#lvPlat')?.value]||LIVE_RULES['pc-onr'];}
 function lvUI(){const r=lvRule(),man=r.kind==='manualPoints';$('#lvDurLabel').textContent=man?'Pontos':(r.kind==='pointsPerMinute'?'Minutos assistidos':'Segundos assistidos');$('#lvDur').placeholder=man?'Ex.: 10':(r.kind==='pointsPerMinute'?'5 ou 01:20':'42 ou 01:20');$('#lvSkipWrap').style.display=r.skip?'block':'none';$('#lvRankWrap').style.display=r.rankBonus?'block':'none';lvPrev();}
 function lvPrev(){const name=cleanCell($('#lvName').value),c=lvCompute();$('#lvPreview').innerHTML=c.text+(c.ok?`<br><b>${fmtNum(c.points)} pts</b>`:'');const ok=!!name&&c.ok;$('#lvAdd').disabled=!ok;$('#lvAdd').textContent=ok?`+ Adicionar ${fmtNum(c.points)} pts`:'+ Adicionar';}
 $('#lvAdd').onclick=()=>{const name=cleanCell($('#lvName').value),plat=canonicalPlatform($('#lvPlat').value),c=lvCompute();if(!name||!c.ok){$('#lvStatus').textContent='Confira ator e pontuação.';return;}const dataBR=cleanCell($('#lvDate').value)||todayBR();LEDGER.events.push({id:uid('lv'),nome:name,tipo:'Ator',ponto:c.points,dataBR,plataforma:plat,score:null,titulo:'',modo:c.modo,source:'live'});$('#lvStatus').textContent=`✓ ${name} · ${fmtNum(c.points)} pts em ${plat}.`;$('#lvDur').value='';$('#lvSkip').value='';savePontoSoon();refreshAll();lvPrev();};
@@ -1910,6 +2106,79 @@ function parseCSV(raw){
   const rows=lines.slice(hasH?1:0).map((l,i)=>{const v=splitDelimited(l,delimiter);const row=normRow({nome:v[idx('nome',0)],tipo:v[idx('tipo',1)],ponto:v[idx(['ponto','pontos'],2)],data:v[idx(['data','databr'],3)],plataforma:v[idx(['plataforma','platform','site'],4)],score:v[idx('score',5)],titulo:v[idx(['titulo','title','video'],6)],modo:v[idx(['modo','mode'],7)],assistido_seg:v[idx('assistido_seg',8)],skipado_seg:v[idx('skipado_seg',9)],duracao_video_seg:v[idx('duracao_video_seg',10)],score_aplicavel:v[idx('score_aplicavel',11)]});if(!row)errors.push(`linha ${i+1}: inválida`);return row;}).filter(Boolean);
   parseCSV.lastErrors=errors;return rows;
 }
+/* ---------- sessões da planilha (Data · Plataforma · Produtora · Ator · Duração · Skip · Score) ----------
+   Colunas lidas pelo cabeçalho; Código e colunas desconhecidas são ignoradas.
+   Plataforma sem cabeçalho (coluna vazia no fim) também é aceita. */
+const MES_PT={jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
+const p2d=x=>String(x).padStart(2,'0');
+function sessDate(s){
+  s=cleanCell(s).toLowerCase();let m;
+  if((m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/))){let y=m[3];if(y.length===2)y='20'+y;return p2d(m[1])+'/'+p2d(m[2])+'/'+y;}
+  const y=new Date().getFullYear();
+  if((m=s.match(/^(\d{1,2})\/(\d{1,2})$/)))return p2d(m[1])+'/'+p2d(m[2])+'/'+y;
+  if((m=s.match(/^(\d{1,2})\s*[\/\-\s]\s*([a-zç]{3})/))&&MES_PT[m[2]])return p2d(m[1])+'/'+p2d(MES_PT[m[2]])+'/'+y;
+  return null;
+}
+function sessDur(s){
+  s=cleanCell(s);if(!s||s==='-')return{sec:null};
+  const p=s.split(':').map(x=>parseInt(x,10));if(!p.length||p.some(isNaN))return{sec:null,bad:true};
+  if(p.length===3){const[a,b,c]=p;if(a>=6&&c===0)return{sec:a*60+b,flag:'formato antigo mm:ss:00'};return{sec:a*3600+b*60+c};}
+  if(p.length===2){const[a,b]=p;if(a===0)return{sec:b*60,flag:`"${s}" lido como ${b} min`};return{sec:a*60+b};}
+  if(p.length===1)return{sec:p[0]};
+  return{sec:null,bad:true};
+}
+function sessPoints(net,plat){const r=LIVE_RULES[plat];if(!r)return null;if(r.kind==='secondsDivisor')return Math.round(net/r.value);if(r.kind==='pointsPerMinute')return Math.round(net/60*r.value);return null;}
+function fmtHMS(s){if(s==null)return '-';s=Math.round(s);return Math.floor(s/3600)+':'+p2d(Math.floor(s%3600/60))+':'+p2d(s%60);}
+function parseSessions(raw){
+  const lines=raw.replace(/^\uFEFF/,'').split(/\r?\n/).filter(l=>l.trim());if(lines.length<2)return null;
+  const sep=lines[0].includes('\t')?'\t':';';
+  const head=splitDelimited(lines[0],sep).map(x=>cleanCell(x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''));
+  const col=pre=>head.findIndex(x=>x.startsWith(pre));
+  const iA=col('ator'),iD=col('dura');if(iA<0||iD<0)return null;
+  const iData=col('data'),iProd=col('produt'),iSkip=col('skip'),iScore=col('score');
+  let iPlat=col('plataf');
+  const cells=lines.slice(1).map(l=>splitDelimited(l,sep).map(cleanCell));
+  if(iPlat<0){for(let k=Math.max(head.length,...cells.map(c=>c.length))-1;k>=0;k--){if(!head[k]&&cells.some(c=>c[k])){iPlat=k;break;}}}
+  const out=[],errors=[];
+  cells.forEach((c,li)=>{
+    const L=li+2,r={line:L,flags:[]};
+    r.data=sessDate(c[iData]);if(!r.data){r.flags.push('data inválida');}
+    const ator=c[iA]||'',prod=iProd>=0?(c[iProd]||''):'';
+    const isStudio=!ator||ator==='-';
+    r.nome=isStudio?(prod&&prod!=='-'?prod:''):ator;r.tipo=isStudio?'Studio':'Ator';r.prod=prod==='-'?'':prod;
+    if(!r.nome)r.flags.push('sem ator nem produtora');
+    r.platRaw=iPlat>=0?(c[iPlat]||''):'';r.plat=canonicalPlatform(r.platRaw);
+    const d=sessDur(c[iD]),sk=iSkip>=0?sessDur(c[iSkip]):{sec:null};
+    r.dur=d.sec;r.skip=sk.sec;if(d.flag)r.flags.push(d.flag);if(sk.flag)r.flags.push('skip '+sk.flag);
+    if(r.dur==null)r.flags.push('duração inválida');
+    const sc=iScore>=0?cleanCell(c[iScore]):'';r.score=(!sc||sc==='-')?null:parseNumber(sc);
+    r.net=Math.max(0,(r.dur||0)-(r.skip||0));
+    r.pts=r.dur==null?null:sessPoints(r.net,r.plat);
+    if(r.dur!=null&&r.pts==null)r.flags.push(`sem régua pra "${r.platRaw||'—'}"`);
+    else if(r.pts===0)r.flags.push('0 pontos');
+    r.ok=!!(r.data&&r.nome&&r.dur!=null&&r.pts>0);
+    r.warn=r.ok&&r.flags.length>0;
+    if(!r.ok)errors.push(`linha ${L}: ${r.flags.join(', ')}`);
+    out.push(r);
+  });
+  return{list:out,errors,rows:out.filter(r=>r.ok).map(r=>({id:uid('ss'),nome:r.nome,tipo:r.tipo,ponto:r.pts,dataBR:r.data,plataforma:r.plat,score:r.score,titulo:r.prod,modo:'sessao',assistido_seg:r.dur,skipado_seg:r.skip,duracao_video_seg:r.dur,score_aplicavel:'',source:'import-sessao'}))};
+}
+function sessKey(e){return[e.nome,e.dataBR,e.plataforma,Math.round(e.assistido_seg||0),Math.round(e.skipado_seg||0)].join('|').toLowerCase();}
+function renderImpPreview(){
+  const box=$('#impPreview');if(!box)return;
+  const S=parseSessions($('#impText').value||'');
+  if(!S){box.style.display='none';box.innerHTML='';return;}
+  const ok=S.list.filter(r=>r.ok),warn=S.list.filter(r=>r.warn),bad=S.list.filter(r=>!r.ok);
+  const have=new Set(LEDGER.events.filter(e=>e.source==='import-sessao').map(sessKey));
+  const dup=S.rows.filter(e=>have.has(sessKey(e))).length;
+  const tot=ok.reduce((s,r)=>s+r.pts,0);
+  box.style.display='block';
+  box.innerHTML=`<div class="sum"><b>${ok.length}</b> linha(s) entram · <b>${fmtNum(tot)} pts</b>${warn.length?` · <span style="color:var(--warn)">${warn.length} pra conferir</span>`:''}${bad.length?` · <span style="color:var(--danger)">${bad.length} não entram</span>`:''}${dup?` · ${dup} já estão no ledger (Adicionar pula)`:''}</div>
+  <div class="tw"><table><thead><tr><th>Linha</th><th>Data</th><th>Ator</th><th>Plataforma</th><th>Duração</th><th>Skip</th><th>Líquido</th><th>Pts</th><th>Aviso</th></tr></thead><tbody>${
+    S.list.map(r=>`<tr class="${!r.ok?'err':r.warn?'warn':''}"><td class="n">${r.line}</td><td>${r.data||'?'}</td><td>${escapeHtml(r.nome||'—')}${r.tipo==='Studio'?' <span class="micro">(studio)</span>':''}</td><td>${escapeHtml(r.plat)}</td><td class="n">${fmtHMS(r.dur)}</td><td class="n">${fmtHMS(r.skip)}</td><td class="n">${fmtHMS(r.net)}</td><td class="n"><b>${r.pts==null?'—':fmtNum(r.pts)}</b></td><td class="fl">${escapeHtml(r.flags.join(' · '))}</td></tr>`).join('')
+  }</tbody></table></div>`;
+}
+let impPrevT=null;
 function parseAny(raw){
   const txt=raw.trim(); if(!txt)return[];
   // Se começa com @/# ou tem ; em várias linhas, usa o parser TXT/canônico.
@@ -1919,19 +2188,52 @@ function parseAny(raw){
 }
 function importDo(mode){
   const raw=$('#impText').value||'';
-  const rows=parseAny(raw);
-  const errs=[...(parseTXT.lastErrors||[]),...(parseCSV.lastErrors||[])].slice(0,6);
+  const S=parseSessions(raw);
+  let rows,errs;
+  if(S){
+    rows=S.rows;errs=S.errors.slice(0,6);
+    if(mode!=='replace'){const have=new Set(LEDGER.events.filter(e=>e.source==='import-sessao').map(sessKey));const before=rows.length;rows=rows.filter(e=>!have.has(sessKey(e)));if(before!==rows.length)log(`${before-rows.length} sessão(ões) já estavam no ledger e foram puladas.`);}
+  }else{
+    parseTXT.lastErrors=[];parseCSV.lastErrors=[];
+    rows=parseAny(raw);
+    errs=[...(parseTXT.lastErrors||[]),...(parseCSV.lastErrors||[])].slice(0,6);
+  }
   if(!rows.length){$('#impStatus').textContent='Nenhuma entrada válida encontrada.';log('Importação falhou. Exemplo: @data 31/05/2026 / @plataforma PornMedia / Nome; Ator; 8; -');return;}
   LEDGER.events=mode==='replace'?rows:LEDGER.events.concat(rows);
   $('#impStatus').textContent=`✓ ${rows.length} entrada(s) ${mode==='replace'?'como nova base':'adicionada(s)'}.`+(errs.length?` ${errs.length} linha(s) ignorada(s).`:'' );
   if(errs.length)log('Importação com avisos:\n'+errs.join('\n'));
-  savePontoSoon();refreshAll();
+  savePontoSoon();refreshAll();renderImpPreview();
 }
-$('#impText').addEventListener('input',()=>{const has=$('#impText').value.trim().length>0;$('#impAdd').disabled=!has;$('#impReplace').disabled=!has;});
+$('#impText').addEventListener('input',()=>{const has=$('#impText').value.trim().length>0;$('#impAdd').disabled=!has;$('#impReplace').disabled=!has;clearTimeout(impPrevT);impPrevT=setTimeout(renderImpPreview,250);});
 $('#impFileBtn')?.addEventListener('click',()=>$('#impFile')?.click());
-$('#impFile')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const reader=new FileReader();reader.onload=ev=>{const txt=String(ev.target.result||'');$('#impText').value=txt;const has=txt.trim().length>0;$('#impAdd').disabled=!has;$('#impReplace').disabled=!has;$('#impStatus').textContent=`Arquivo carregado: ${f.name}`;log(`Arquivo importado para a caixa: ${f.name}`);};reader.onerror=()=>{$('#impStatus').textContent='Não consegui ler o arquivo selecionado.';log('Erro ao ler arquivo TXT/CSV.');};reader.readAsText(f,'UTF-8');e.target.value='';});
-$('#impClear')?.addEventListener('click',()=>{$('#impText').value='';$('#impAdd').disabled=true;$('#impReplace').disabled=true;$('#impStatus').textContent='Texto limpo.';});
+$('#impFile')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)return;const reader=new FileReader();reader.onload=ev=>{const txt=String(ev.target.result||'');$('#impText').value=txt;renderImpPreview();const has=txt.trim().length>0;$('#impAdd').disabled=!has;$('#impReplace').disabled=!has;$('#impStatus').textContent=`Arquivo carregado: ${f.name}`;log(`Arquivo importado para a caixa: ${f.name}`);};reader.onerror=()=>{$('#impStatus').textContent='Não consegui ler o arquivo selecionado.';log('Erro ao ler arquivo TXT/CSV.');};reader.readAsText(f,'UTF-8');e.target.value='';});
+$('#impClear')?.addEventListener('click',()=>{$('#impText').value='';renderImpPreview();$('#impAdd').disabled=true;$('#impReplace').disabled=true;$('#impStatus').textContent='Texto limpo.';});
 $('#impAdd').onclick=()=>importDo('add');$('#impReplace').onclick=()=>importDo('replace');
+/* ---------- exportação do ledger ---------- */
+const EXP_COLS=['NOME','TIPO','PONTO','DATA','PLATAFORMA','SCORE','TITULO','MODO'];
+function fillExpPeriod(){const sel=$('#expPeriod');if(!sel)return;const cur=sel.value||'all';const ms=monthsWithData().slice().reverse();sel.innerHTML='<option value="all">Tudo</option>'+ms.map(k=>`<option value="${k}">${keyLabel(k)}</option>`).join('');sel.value=[...sel.options].some(o=>o.value===cur)?cur:'all';}
+function expNum(v){const x=Number(v)||0;return Number.isInteger(x)?String(x):String(+x.toFixed(2)).replace('.',',');}   // vírgula: o parser do Importar lê ponto como milhar
+function expRows(){
+  const k=$('#expPeriod')?.value||'all';
+  return LEDGER.events.filter(e=>k==='all'||monthKey(e.dataBR)===k)
+    .slice().sort((a,b)=>(parseDateBR(a.dataBR)||0)-(parseDateBR(b.dataBR)||0))
+    .map(e=>[e.nome,e.tipo||'Ator',expNum(e.ponto),e.dataBR,e.plataforma||'',e.score==null?'-':expNum(e.score),e.titulo||'',e.modo||'']);
+}
+function csvCell(v,sep){const s=String(v??'');return(s.includes(sep)||s.includes('"')||/\n/.test(s))?'"'+s.replace(/"/g,'""')+'"':s;}
+$('#expCsv').onclick=()=>{
+  const rows=expRows();if(!rows.length){$('#expStatus').textContent='Nada pra exportar nesse período.';return;}
+  const txt='\uFEFF'+[EXP_COLS,...rows].map(r=>r.map(c=>csvCell(c,';')).join(';')).join('\r\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
+  const k=$('#expPeriod').value;a.download=k==='all'?'pontos.csv':`pontos_${k}.csv`;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);
+  $('#expStatus').textContent=`✓ ${rows.length} linha(s) em ${a.download}.`;
+};
+$('#expCopy').onclick=async()=>{
+  const rows=expRows();if(!rows.length){$('#expStatus').textContent='Nada pra exportar nesse período.';return;}
+  const txt=[EXP_COLS,...rows].map(r=>r.map(c=>String(c).replace(/[\t\n]/g,' ')).join('\t')).join('\n');
+  try{await navigator.clipboard.writeText(txt);$('#expStatus').textContent=`✓ ${rows.length} linha(s) copiadas. Cole direto na planilha.`;}
+  catch(e){const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');$('#expStatus').textContent=`✓ ${rows.length} linha(s) copiadas.`;}catch(_){$('#expStatus').textContent='O navegador bloqueou a cópia. Use o CSV.';}ta.remove();}
+};
 
 /* =====================================================================
    NAV / refresh / toast / init
@@ -1946,9 +2248,9 @@ $$('[data-reg]').forEach(b=>b.onclick=()=>{
 $$('.tab').forEach(t=>t.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('on'));$$('.view').forEach(v=>v.classList.remove('on'));t.classList.add('on');$('#'+t.dataset.v).classList.add('on');const v=t.dataset.v;if(v==='ranking')renderRanking();if(v==='spotlight'){fillNames();}if(v==='atores')renderActors();if(v==='biblioteca'){fillUpActors();fillLibActorFilter();renderLibrary();}if(v==='lancar'){fillNames();lvUI();}});
 function fillNames(){const names=allActorNames();const html=names.map(n=>`<option value="${escapeHtml(n)}">`).join('');$('#spotNames').innerHTML=html;$('#lvNames').innerHTML=html;const rn=$('#rankNames');if(rn)rn.innerHTML=html;}
 function refreshLight(){const today=todayBR();$('#livePts').textContent=fmtNum(LEDGER.events.filter(e=>e.plataforma==='PornMedia'&&e.dataBR===today).reduce((a,b)=>a+b.ponto,0))+' pts';}
-function refreshAll(){renderRanking();renderActors();fillUpActors();fillLibActorFilter();fillNames();fillPlats();renderLibrary();refreshLight();wFillPlats();renderWatches();}
+function refreshAll(){fillExpPeriod();renderRanking();renderActors();fillUpActors();fillLibActorFilter();fillNames();fillPlats();renderLibrary();refreshLight();wFillPlats();renderWatches();}
 let toastT2=null;function toast(b,t){$('#toastB').textContent=b;$('#toastT').textContent=t;const el=$('#toast');el.classList.add('on');clearTimeout(toastT2);toastT2=setTimeout(()=>el.classList.remove('on'),1700);}
-addEventListener('keydown',e=>{if(vOpen){if(e.key==='Escape')closeViewer();if(e.key==='ArrowRight'&&vIdx<(viewerMode==='duel'?1:viewerItems.length-1)&&!zoom){vIdx++;setTrack(1);vmeta();}if(e.key==='ArrowLeft'&&vIdx>0&&!zoom){vIdx--;setTrack(1);vmeta();}return;}if($('#jogo').classList.contains('on')&&duel.a){if(e.key==='ArrowLeft')decide('a');if(e.key==='ArrowRight')decide('b');}});
+addEventListener('keydown',e=>{if(vOpen){if(e.key==='Escape')closeViewer();if(e.key==='ArrowRight'&&vIdx<(viewerMode==='duel'?1:viewerItems.length-1)&&!zoom){vIdx++;setTrack(1);vmeta();}if(e.key==='ArrowLeft'&&vIdx>0&&!zoom){vIdx--;setTrack(1);vmeta();}return;}if($('#jogo').classList.contains('on')&&!e.target.closest?.('input,textarea,select')){if(phase){if(e.key==='ArrowLeft')phaseAct(false);if(e.key==='ArrowRight')phaseAct(true);}else if(duel.a){if(e.key==='ArrowLeft')decide('a');if(e.key==='ArrowRight')decide('b');}}});
 
 fillPlats();lvUI();$('#lvDate').value=todayBR();
 log('PornMedia 2.0 pronto. Conecte o Drive (precisa estar no domínio autorizado).');
