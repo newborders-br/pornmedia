@@ -1689,11 +1689,15 @@ function profSeries(name){
   const allM=Object.keys(totalByMonth).sort(),actM=Object.keys(actorByMonth).sort();
   if(!actM.length)return null;
   const full=buildMonthRange(actM[0],allM[allM.length-1]);
-  let acum=0;
+  let acum=0;const soma={};   // soma corrente de TODOS, pra posição histórica
   const data=full.map(k=>{
     const a=actorByMonth[k]||0,t=totalByMonth[k]||0;acum+=a;
+    Object.entries(namesByMonth[k]||{}).forEach(([nm,v])=>{soma[nm]=(soma[nm]||0)+v;});
     const idx=Object.entries(namesByMonth[k]||{}).sort((x,y)=>y[1]-x[1]).findIndex(([nm])=>nm===name);
-    return{k,a,acum,pct:t?a/t*100:0,rank:idx>=0&&a>0?idx+1:null};
+    const ordem=Object.entries(soma).sort((x,y)=>y[1]-x[1]);
+    const ia=ordem.findIndex(([nm])=>nm===name);
+    return{k,a,acum,pct:t?a/t*100:0,rank:idx>=0&&a>0?idx+1:null,
+           allRank:(ia>=0&&acum>0)?ia+1:null,universo:ordem.length};
   });
   return{data,full};
 }
@@ -1736,13 +1740,14 @@ function profileChartHTML(name){
       +`<div class="legend"><span>Posição no ranking de pontos de cada mês. A linha corta onde o ator não pontuou.</span>${domMax>100?'<span><i class="rfi"></i>linha do top 100</span>':'<span>escala até #100</span>'}</div>`;
   }
   if(profChartMode==='acum'){
-    const d=S.data,max=Math.max(1,...d.map(x=>x.acum));
-    const nice=Math.pow(10,Math.floor(Math.log10(max)));
-    const ticks=[0,max/4,max/2,max*3/4,max].map(v=>Math.round(v/nice)*nice).filter((v,i,a)=>a.indexOf(v)===i);
-    return profLineSVG(d,{invert:false,min:0,domMax:max,ref:0,ticks,
-      tick:t=>fmtNum(t),value:x=>x.acum,
-      tip:x=>`${fmtNum(x.acum)} acumulados · +${fmtNum(x.a)} no mês`,aria:'pontos acumulados'})
-      +`<div class="legend"><span>Tudo o que ele somou desde a primeira pontuação, mês a mês.</span><span>${fmtNum(d[d.length-1].acum)} pts no total</span></div>`;
+    const d=S.data.filter(x=>x.allRank!=null);
+    if(!d.length)return '<div class="empty">Sem histórico de pontos para este ator.</div>';
+    const pior=Math.max(1,...d.map(x=>x.allRank));
+    const domMax=Math.max(100,pior),fim=d[d.length-1];
+    return profLineSVG(d,{invert:true,domMax,ref:100,ticks:[1,10,25,50,100,domMax],
+      tick:t=>'#'+t,value:x=>x.allRank,
+      tip:x=>`#${x.allRank} de ${x.universo} · ${fmtNum(x.acum)} pts acumulados`,aria:'posição histórica por mês'})
+      +`<div class="legend"><span>Posição dele no ranking de pontos acumulados, recalculada a cada mês.</span><span>hoje: <b>#${fim.allRank}</b> de ${fim.universo} · ${fmtNum(fim.acum)} pts</span>${domMax>100?'<span><i class="rfi"></i>linha do top 100</span>':''}</div>`;
   }
   let months=S.full;const cut=months.length>24;const data=cut?S.data.slice(-24):S.data;if(cut)months=months.slice(-24);
   const vals=data.map(d=>profChartMode==='pct'?d.pct:d.a),max=Math.max(...vals,1);
@@ -1814,8 +1819,8 @@ function openActorProfile(name){
     <div><div class="v">${last==='—'?'—':last.slice(0,5)}</div><div class="lbl l">última atividade</div></div>
   </section>
   <section class="sec">
-    <div class="sec-head"><div><div class="sec-t">Evolução mensal</div><div class="muted" style="font-size:13px;margin-top:6px">${{'pct':'Fatia do total de cada mês.','rank':'Posição dele no ranking de cada mês, do #1 pra baixo.','acum':'Pontos somados desde a primeira pontuação.'}[profChartMode]||'Pontos por mês.'} Clique num mês pra ver as plataformas dele.</div></div>
-      <div class="seg" id="profChartSeg"><button data-cm="pts" class="${profChartMode==='pts'?'on':''}">Pontos</button><button data-cm="pct" class="${profChartMode==='pct'?'on':''}">% do mês</button><button data-cm="rank" class="${profChartMode==='rank'?'on':''}">Ranking</button><button data-cm="acum" class="${profChartMode==='acum'?'on':''}">Acumulado</button></div></div>
+    <div class="sec-head"><div><div class="sec-t">Evolução mensal</div><div class="muted" style="font-size:13px;margin-top:6px">${{'pct':'Fatia do total de cada mês.','rank':'Posição dele no ranking de cada mês, do #1 pra baixo.','acum':'Posição no ranking histórico, mês a mês.'}[profChartMode]||'Pontos por mês.'} Clique num mês pra ver as plataformas dele.</div></div>
+      <div class="seg" id="profChartSeg"><button data-cm="pts" class="${profChartMode==='pts'?'on':''}">Pontos</button><button data-cm="pct" class="${profChartMode==='pct'?'on':''}">% do mês</button><button data-cm="rank" class="${profChartMode==='rank'?'on':''}">Ranking</button><button data-cm="acum" class="${profChartMode==='acum'?'on':''}"># all time</button></div></div>
     ${profileChartHTML(name)}
   </section>
   <section class="two-col">
