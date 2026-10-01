@@ -164,6 +164,7 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .fp-count{color:var(--ink-2);white-space:nowrap}
 .fp-media{flex:1 1 auto;min-height:0;position:relative;background:#0d0d0b;display:grid;place-items:center;overflow:hidden}
 .fp-media img,.fp-media video{max-width:100%;max-height:100%;width:100%;height:100%;object-fit:contain;display:block}
+@media (min-width:900px){.fp-media{background:#0d0d0b}}
 .fp-media img{cursor:zoom-in}
 .fp-load{color:rgba(255,255,255,.6)}
 .fp-meta{color:var(--ink-2);text-align:center;min-height:12px}
@@ -172,6 +173,7 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .fp-btn svg{width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none}
 .fp-btn.primary{background:var(--ink);border-color:var(--ink);color:var(--paper)}
 .fp-btn:active{transform:scale(.97)}
+.fp-keys{display:none;grid-area:end;color:var(--ink-3);font:500 10px/1.6 var(--sans);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
 .fp-end{align-self:center;border:0;background:none;color:var(--ink-2);font:600 10px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase;padding:6px 10px}
 
 /* ELO de vídeo vs foto visível */
@@ -202,6 +204,12 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .ar-sort{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 4px}
 /* exportação */
 .exp-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.rg-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--hair)}
+.rg-row .d{font:500 11px var(--sans);color:var(--ink-3);white-space:nowrap}
+.rg-row .n{font:400 15px var(--serif);flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rg-row .p{font:400 15px var(--serif);color:var(--ok)}
+.rg-row .x{border:0;background:none;color:var(--ink-3);font-size:14px;padding:2px 6px}
 /* prévia do import de sessões */
 .imp-prev{margin-top:12px;display:none}
 .imp-prev .sum{font-size:12px;color:var(--ink-2);margin-bottom:8px;line-height:1.5}
@@ -258,6 +266,24 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
   }
   .vs{width:54px;height:54px;font-size:23px;}
   .gamebar{padding:10px 22px;}
+  /* fase do vencedor / sorteio: mídia alta à esquerda, controles numa coluna à direita */
+  .fphase{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 300px;
+    grid-template-rows:auto auto auto 1fr;
+    grid-template-areas:"media head" "media meta" "media acts" "media end";
+    gap:12px 20px;
+    padding:12px 16px 16px;
+  }
+  .fp-media{grid-area:media;min-height:0;min-width:0}
+  .fp-head{grid-area:head;flex-direction:column;align-items:flex-start;gap:4px}
+  .fp-name{font-size:32px}
+  .fp-count{align-self:flex-start}
+  .fp-meta{grid-area:meta;text-align:left}
+  .fp-acts{grid-area:acts;grid-template-columns:1fr;gap:10px}
+  .fp-btn{height:58px}
+  .fp-end{grid-area:end;align-self:start;justify-self:start;padding:0}
+  .fp-keys{display:block}
 }
 
 /* RANKING */
@@ -361,7 +387,8 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
 .v-top{position:absolute;left:0;right:0;top:0;z-index:5;display:flex;justify-content:space-between;gap:12px;padding:calc(12px + var(--st)) 14px 14px;color:#fff;background:linear-gradient(180deg,rgba(0,0,0,.5),transparent);transition:opacity .3s}
 .v-top .nm{font:400 21px/1 var(--serif)}.v-top .sub{color:rgba(255,255,255,.72);margin-top:6px;letter-spacing:.05em}
 .v-x{width:38px;height:38px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.1);display:grid;place-items:center;color:#fff;font-size:14px;backdrop-filter:blur(8px)}
-.v-dots{position:absolute;left:50%;top:calc(15px + var(--st));transform:translateX(-50%);z-index:6;display:flex;gap:7px}.v-dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4);transition:.3s}.v-dots i.on{background:#fff;width:20px;border-radius:99px}
+.v-dots{position:absolute;left:50%;top:calc(15px + var(--st));transform:translateX(-50%);z-index:6;display:flex;gap:7px}.v-dots i{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.4);transition:.3s}
+.v-dots .cnt{font:600 10px/1 var(--sans);letter-spacing:.14em;color:rgba(255,255,255,.85);background:rgba(0,0,0,.4);padding:6px 10px;border-radius:999px}.v-dots i.on{background:#fff;width:20px;border-radius:99px}
 .v-bottom{position:absolute;left:0;right:0;bottom:0;z-index:6;display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px 16px calc(18px + var(--sb));background:linear-gradient(0deg,rgba(0,0,0,.55),transparent);transition:opacity .3s}
 .v-hint{color:rgba(255,255,255,.6);font:500 9px/1 var(--sans);letter-spacing:.2em;text-transform:uppercase}
 .v-pick{width:100%;max-width:420px;height:52px;border:1px solid #fff;background:rgba(255,255,255,.95);color:#0d0d0b;font:600 12px/1 var(--sans);letter-spacing:.2em;text-transform:uppercase;display:flex;align-items:center;justify-content:center;gap:10px}
@@ -402,7 +429,6 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
       <button class="tab" data-v="ranking">Ranking</button>
       <button class="tab" data-v="biblioteca">Biblioteca</button>
       <button class="tab" data-v="lancar">Registrar</button>
-      <button class="tab" data-v="importar">Importar</button>
     </nav>
   </header>
 
@@ -431,6 +457,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
         <button class="fp-btn primary" id="fpScore"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Pontuar</span></button>
       </div>
       <button class="fp-end" id="fpEnd">Encerrar ator →</button>
+      <div class="fp-keys">← pular · → pontuar · clique amplia</div>
     </div>
     <div class="gamebar">
       <button class="nb" id="newRound" aria-label="Nova rodada"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" stroke-linecap="round"/><path d="M3 4v4h4"/></svg></button>
@@ -543,78 +570,55 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
   <!-- REGISTRAR (Lançar + Em andamento unificados) -->
   <section class="view" id="lancar"><div class="wrap">
     <span class="eyebrow micro">Pontos</span><div class="h2">Registrar</div>
-    <!-- modo pills -->
+    <div class="sub">Uma sessão por linha, nas colunas da planilha: Data · Produtora · Atores · Duração · Skip · Score · Plataforma. Os pontos saem da régua da plataforma.</div>
     <div class="filters" style="margin:12px 0 0">
-      <button class="fbtn on" data-reg="rapido">Entrada rápida</button>
-      <button class="fbtn" data-reg="andamento">Em andamento</button>
+      <button class="fbtn on" data-reg="uma">Uma sessão</button>
+      <button class="fbtn" data-reg="colar">Colar planilha</button>
     </div>
 
-    <!-- MODO RÁPIDO -->
-    <div id="regRapido">
-      <div class="sub" style="margin-top:10px">Régua automática da plataforma. Entrada de uma vez, vai direto pro ledger.</div>
+    <!-- UMA SESSÃO -->
+    <div id="regUma">
       <div class="card" style="margin-top:12px"><div class="card-b">
-        <div class="fld"><label class="flabel micro">Ator</label><input id="lvName" list="lvNames" placeholder="Nome do ator" autocomplete="off"><datalist id="lvNames"></datalist></div>
-        <div class="two"><div class="fld"><label class="flabel micro">Plataforma</label><select id="lvPlat"></select></div><div class="fld"><label class="flabel micro">Data</label><input id="lvDate" placeholder="dd/mm/aaaa"></div></div>
-        <div class="two"><div class="fld"><label class="flabel micro" id="lvDurLabel">Tempo assistido</label><input id="lvDur" placeholder="42 ou 01:20"></div><div class="fld" id="lvSkipWrap"><label class="flabel micro">Skip (opcional)</label><input id="lvSkip" placeholder="0 ou 00:30"></div></div>
-        <div class="fld" id="lvRankWrap"><label class="flabel micro">Bônus de posição</label><select id="lvRank"><option value="none">sem bônus</option><option value="second">2º lugar ×2</option><option value="first">1º lugar ×3</option></select></div>
-        <div class="preview" id="lvPreview">Preencha pra ver os pontos.</div>
-        <button class="cta" id="lvAdd" disabled>+ Adicionar</button>
-        <div class="status" id="lvStatus"></div>
+        <div class="two"><div class="fld"><label class="flabel micro">Data</label><input id="rgData" placeholder="dd/mm/aaaa"></div>
+          <div class="fld"><label class="flabel micro">Plataforma</label><select id="rgPlat"></select></div></div>
+        <div class="fld"><label class="flabel micro">Atores (separe por ;)</label><input id="rgAtores" list="rgNames" placeholder="Angel Elias; Marcus McNeill" autocomplete="off"><datalist id="rgNames"></datalist></div>
+        <div class="fld"><label class="flabel micro">Produtora</label><input id="rgProd" list="rgProds" placeholder="MEN, Belami… (ou vazio)" autocomplete="off"><datalist id="rgProds"></datalist></div>
+        <div class="three"><div class="fld"><label class="flabel micro">Duração</label><input id="rgDur" placeholder="26:31 ou 0:26:31"></div>
+          <div class="fld"><label class="flabel micro">Skip</label><input id="rgSkip" placeholder="15:10 ou -"></div>
+          <div class="fld"><label class="flabel micro">Score</label><input id="rgScore" placeholder="48 ou -"></div></div>
+        <div class="preview" id="rgPreview">Preencha duração e plataforma pra ver os pontos.</div>
+        <button class="cta" id="rgAdd" disabled>+ Adicionar</button>
+        <div class="status" id="rgStatus"></div>
+      </div></div>
+      <div class="sub" style="margin-top:14px">Últimas sessões registradas</div>
+      <div id="rgRecent"></div>
+    </div>
+
+    <!-- COLAR PLANILHA -->
+    <div id="regColar" style="display:none">
+      <div class="card" style="margin-top:12px"><div class="card-b">
+        <div class="fld"><textarea id="impText" placeholder="Cole aqui direto da planilha, com ou sem o cabeçalho."></textarea></div>
+        <div class="fld" style="margin-top:10px">
+          <label class="flabel micro">Ou abrir um arquivo CSV/TSV</label>
+          <input id="impFile" type="file" accept=".txt,.csv,.tsv,text/plain,text/csv,*/*" style="background:#fff;border:1px solid var(--hair-2);padding:10px;width:100%">
+        </div>
+        <div class="two" style="margin-top:10px"><button class="cta ghost" id="impFileBtn" type="button">Abrir seletor</button><button class="cta ghost" id="impClear" type="button">Limpar</button></div>
+        <div class="ex">Data	Produtora	Atores	Duracao	Skip	Score	Plataforma
+12/08/2026	MEN	Angel Elias; Marcus McNeill	0:26:31	0:15:10	48	PC-OFF
+18/08/2026	-	Angel Elias	0:24:00	-	-	Twitter</div>
+        <div class="imp-prev" id="impPreview"></div>
+        <div class="two" style="margin-top:12px"><button class="cta ghost" id="impReplace" disabled>Substituir base</button><button class="cta" id="impAdd" disabled>Adicionar ao ledger</button></div>
+        <div class="status" id="impStatus"></div>
       </div></div>
     </div>
 
-    <!-- MODO EM ANDAMENTO -->
-    <div id="regAndamento" style="display:none">
-      <div class="sub" style="margin-top:10px">Vídeos ou pastas que levam dias. Pontos entram no ledger com a data certa de cada sessão.</div>
-      <div class="wnewbar">
-        <button class="cta ghost mini-new" id="wNewToggle" type="button">+ Novo</button>
-        <span class="lib-count" id="wFilterCount">—</span>
-      </div>
-      <div class="card wformbox" id="wFormBox" style="margin-top:12px"><div class="card-b">
-        <div class="fld"><label class="flabel micro">Atores (separe por ;)</label><input id="wActors" placeholder="Vega; Cassel; Marlow" autocomplete="off"></div>
-        <div class="fld"><label class="flabel micro">Título / nome da pasta</label><input id="wTitle" placeholder="ex: Intense anal action ou Telegram 12/06 · pasta full"></div>
-        <div class="fld" id="wLinkWrap" style="display:none"><label class="flabel micro">Link temporário</label><input id="wLink" placeholder="https://... só para abrir enquanto está em andamento"></div>
-        <div class="two">
-          <div class="fld"><label class="flabel micro">Plataforma</label><select id="wPlat"></select></div>
-          <div class="fld"><label class="flabel micro">Total de itens (opcional)</label><input id="wTotalDur" placeholder="ex: 360"></div>
-        </div>
-        <div class="fld"><label class="flabel micro">Bônus de posição</label>
-          <select id="wRank"><option value="none">sem bônus</option><option value="second">2º lugar ×2</option><option value="first">1º lugar ×3</option></select>
-        </div>
-        <div class="preview" id="wPreview" style="margin-top:4px">Preencha ator e plataforma.</div>
-        <button class="cta" id="wCreate" style="margin-top:8px">+ Iniciar</button>
-        <div class="status" id="wCreateStatus"></div>
-      </div></div>
-      <div class="wplatbar" id="wPlatformFilters"></div>
-      <div id="wList" style="margin-top:10px"></div>
-    </div>
-  </div></section>
-
-  <!-- IMPORTAR -->
-  <section class="view" id="importar"><div class="wrap">
-    <span class="eyebrow micro">Migrar dados</span><div class="h2">Importar TXT / CSV</div>
-    <div class="sub">Cole as sessões da planilha (com o cabeçalho) ou o histórico no formato antigo. Sessões mostram a prévia dos pontos antes de gravar.</div>
-    <div class="card"><div class="card-b">
-      <div class="fld"><textarea id="impText" placeholder="@data 11/05/2026&#10;@plataforma PornMedia&#10;&#10;Vega; Ator; 8; -; -"></textarea></div>
-      <div class="fld" style="margin-top:10px">
-        <label class="flabel micro">Selecionar arquivo TXT/CSV</label>
-        <input id="impFile" type="file" accept=".txt,.csv,text/plain,text/csv,*/*" style="background:#fff;border:1px solid var(--hair-2);padding:10px;width:100%">
-      </div>
-      <div class="two" style="margin-top:10px"><button class="cta ghost" id="impFileBtn" type="button">Abrir seletor</button><button class="cta ghost" id="impClear" type="button">Limpar texto</button></div>
-      <div class="ex">Data	Plataforma	Produtora	Ator	Duração	Skip	Score
-12/08/2026	PC-OFF	MEN	Angel Elias	0:26:31	0:15:10	48
-18/08/2026	Twitter	-	Angel Elias	0:24:00	-	-</div>
-      <div class="imp-prev" id="impPreview"></div>
-      <div class="two" style="margin-top:12px"><button class="cta ghost" id="impAdd" disabled>Adicionar ao ledger</button><button class="cta" id="impReplace" disabled>Substituir base</button></div>
-      <div class="status" id="impStatus"></div>
-      <div class="log" id="log">pronto.</div>
-    </div></div>
-    <span class="eyebrow micro" style="display:block;margin-top:22px">Levar pra fora</span><div class="h2">Exportar</div>
-    <div class="sub">Todo o ledger (o que foi assistido e pontuado), no formato NOME;TIPO;PONTO;DATA;PLATAFORMA;SCORE — o mesmo do pontos.csv e da Pasta.xlsx. Volta pra cá pelo Importar sem perder nada.</div>
+    <span class="eyebrow micro" style="display:block;margin-top:26px">Levar pra fora</span><div class="h2">Exportar</div>
+    <div class="sub">O ledger inteiro nas mesmas colunas, pra voltar pra cá sem perder nada.</div>
     <div class="card"><div class="card-b">
       <div class="fld"><label class="flabel micro">Período</label><select id="expPeriod" style="background:#fff;border:1px solid var(--hair-2);padding:9px;font:500 13px var(--sans);width:100%"></select></div>
-      <div class="exp-row"><button class="cta ghost" id="expCopy" type="button">Copiar p/ planilha</button><button class="cta" id="expCsv" type="button">Baixar pontos.csv</button></div>
+      <div class="exp-row"><button class="cta ghost" id="expCopy" type="button">Copiar p/ planilha</button><button class="cta" id="expCsv" type="button">Baixar sessoes.csv</button></div>
       <div class="status" id="expStatus"></div>
+      <div class="log" id="log">pronto.</div>
     </div></div>
   </div></section>
 </div>
@@ -746,7 +750,7 @@ function todayBR(){const d=new Date();return `${String(d.getDate()).padStart(2,'
 function parseDateBR(s){const m=String(s||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);if(!m)return null;let[,d,mo,y]=m;if(y.length===2)y='20'+y;return new Date(+y,+mo-1,+d);}
 function monthKey(b){const d=parseDateBR(b);return d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`:'';}
 function fmtNum(n){const x=Number(n);return Number.isInteger(x)?String(x):String(x.toFixed(1)).replace('.',',');}
-function canonicalPlatform(v){const raw=cleanCell(v).replace(/\s+/g,' ');const k=raw.toLowerCase();const map={'pc off':'pc-off','pcoff':'pc-off','pc-off':'pc-off','pc on':'pc-on','pcon':'pc-on','pc-on':'pc-on','pc onr':'pc-onr','pconr':'pc-onr','pc-onr':'pc-onr','telegram':'telegram','telegram full':'telegram full','telegram-only':'telegram only','telegram only':'telegram only','tv full':'tv full','tv live':'tv live','aloha':'aloha','foto':'fotos','fotos':'fotos','photo':'fotos','photos':'fotos','twitter':'twitter','x':'twitter','pornmedia':'PornMedia'};return map[k]||raw||'—';}
+function canonicalPlatform(v){const raw=cleanCell(v).replace(/\s+/g,' ');const k=raw.toLowerCase();const map={'pc off':'pc-off','pcoff':'pc-off','pc-off':'pc-off','pc on':'pc-on','pcon':'pc-on','pc-on':'pc-on','pc onr':'pc-onr','pconr':'pc-onr','pc-onr':'pc-onr','telegram':'telegram','telegram full':'telegram full','telegram-only':'telegram only','telegram only':'telegram only','tv full':'tv full','tv live':'tv live','aloha':'aloha','foto':'fotos','fotos':'fotos','photo':'fotos','photos':'fotos','twitter':'twitter','x':'twitter','pornmedia':'PornMedia','mobile':'mobile','celular':'mobile','cel':'mobile','tv':'tv full','telegram-full':'telegram full'};return map[k]||(LIVE_RULES[k]?k:(raw||'—'));}
 function platformGroupName(v){const p=canonicalPlatform(v);const k=String(p||'').toLowerCase();if(k==='telegram'||k==='telegram full'||k==='telegram only'||k==='telegram-only')return 'telegram';return p;}
 /* Régua PONTO — quantos segundos valem 1 ponto. */
 const LIVE_RULES={
@@ -757,6 +761,7 @@ const LIVE_RULES={
   'pc-onr':{kind:'secondsDivisor',value:15,label:'15s = 1 ponto',rankBonus:true,skip:true},
   'telegram only':{kind:'secondsDivisor',value:15,label:'15s = 1 ponto',skip:true},
   'twitter':{kind:'secondsDivisor',value:20,label:'20s = 1 ponto',skip:true},
+  'mobile':{kind:'secondsDivisor',value:20,label:'20s = 1 ponto',skip:true},
   'tv live':{kind:'pointsPerMinute',value:20,label:'20 pts/min'},
   'aloha':{kind:'pointsPerMinute',value:2,label:'2 pts/min'},
   'fotos':{kind:'manualPoints',value:1,label:'pontos manuais'}
@@ -829,13 +834,15 @@ function actorName(id){return GAME.actors[id]?.name||'—';}
    ELO do Pontuar/Pular é Elo de verdade contra uma referência:
      média do acervo do ator (duelo) ou média geral (sorteio).
    ===================================================================== */
-const MOSAIC_N=6,LOSER_PEN=4,K_FOCUS=16,LS_PHASE='pm2Phase';
+const MOSAIC_N=4,LOSER_PEN=4,K_FOCUS=16,LS_PHASE='pm2Phase';
 let phase=null,phaseBusy=false,phaseToken=0;
 function gKind(){return gameMode==='duel-video'?'video':'photo';}
 function usedSet(){return new Set(GAME.sessions.current.usedMediaIds||[]);}
 function markUsed(ids){GAME.sessions.current.usedMediaIds=[...new Set([...(GAME.sessions.current.usedMediaIds||[]),...ids])];}
 function availMedia(kind,actorId=null){const used=usedSet();return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&!m.skipped&&(kind==='video'?m.type==='video':m.type!=='video')&&!used.has(m.id)&&(actorId==null||m.actorId===actorId));}
 function topMosaic(aid,kind){return availMedia(kind,aid).sort((x,y)=>(y.elo||1500)-(x.elo||1500)).slice(0,MOSAIC_N);}
+/* acervo inteiro do ator (inclusive o que já saiu nesta rodada) — é o que abre ao tocar no mosaico */
+function allOfActor(aid,kind){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId===aid&&(kind==='video'?m.type==='video':m.type!=='video')).sort((x,y)=>(y.elo||1500)-(x.elo||1500));}
 function duelActors(kind){const s=new Set();availMedia(kind).forEach(m=>s.add(m.actorId));return[...s].filter(id=>GAME.actors[id]);}
 function actorCool(id){const gap=count-(actorSeen[id]??-99);return gap>=4?1:0.15+0.85*(gap/4);}
 function wpickBy(list,wf){if(!list.length)return null;const ws=list.map(wf);let r=Math.random()*ws.reduce((a,b)=>a+b,0);for(let i=0;i<list.length;i++){r-=ws[i];if(r<=0)return list[i];}return list[list.length-1];}
@@ -862,10 +869,12 @@ async function setStageActor(side,aid,kind){
   el.querySelector('.nm').textContent=actorName(aid);
   el.querySelector('.ac').textContent=`ELO ${Math.round(a?.elo||1500)} · ${a?.wins||0}V/${a?.losses||0}D`;
   el.querySelector('.rk').textContent='#'+(actorEloPos(aid)||'—');
-  el.querySelector('.tier').textContent=`${tot} ${kind==='video'?'vídeo':'foto'}${tot!==1?'s':''}`;
+  const totAll=allOfActor(aid,kind).length;
+  el.querySelector('.tier').textContent=`${totAll} ${kind==='video'?'vídeo':'foto'}${totAll!==1?'s':''}`;
   const mo=el.querySelector('.mosaic');mo.dataset.n=list.length;
   mo.innerHTML=list.map(m=>`<div class="mt${m.type==='video'?' vid':''}" data-mid="${m.id}"></div>`).join('');
-  mo.querySelectorAll('.mt').forEach((t,i)=>t.onclick=e=>{e.stopPropagation();openMediaViewer(list,i);});
+  const full=allOfActor(aid,kind);
+  mo.querySelectorAll('.mt').forEach(t=>t.onclick=e=>{e.stopPropagation();const k=Math.max(0,full.findIndex(m=>m.id===t.dataset.mid));openMediaViewer(full,k);});
   list.forEach(async m=>{try{const u=m.type==='video'?await thumbUrl(m):await blobUrl(m);const t=mo.querySelector(`[data-mid="${m.id}"]`);if(u&&t&&t.isConnected)t.style.backgroundImage=`url("${u}")`;}catch(e){}});
 }
 function showDuelUI(){$('#fphase').style.display='none';$('#jogoEmpty').style.display='none';$('#stage').style.display='flex';}
@@ -898,7 +907,7 @@ async function decide(side){
   setTimeout(()=>{stg.classList.remove('deciding');$('#cA').classList.remove('win','lose');$('#cB').classList.remove('win','lose');deciding=false;startWinnerPhase(wId,kind);},520);
 }
 function startWinnerPhase(aid,kind){
-  const mine=availMedia(kind,aid).sort((x,y)=>(y.elo||1500)-(x.elo||1500));
+  const mine=allOfActor(aid,kind);   // venceu => vejo o acervo inteiro dele
   if(!mine.length){nextDuel();return;}
   phase={type:'winner',actorId:aid,kind,ref:avgElo(mine),queue:mine.map(m=>m.id),cur:null};
   nextPhaseItem();
@@ -920,7 +929,7 @@ function nextPhaseItem(){
   savePhase();renderPhaseItem();
 }
 function endWinnerPhase(){
-  if(phase?.type==='winner'){markUsed(availMedia(phase.kind,phase.actorId).map(m=>m.id));saveSessionNow();}
+  if(phase?.type==='winner'){markUsed(allOfActor(phase.actorId,phase.kind).map(m=>m.id));saveSessionNow();}
   phase=null;savePhase();nextDuel();
 }
 async function renderPhaseItem(){
@@ -984,7 +993,19 @@ function nextPhaseItemRestore(){if(phase.type==='winner'){phase.cur=phase.queue[
 $$('#gameModeFilters [data-game]').forEach(b=>b.onclick=async()=>{if(b.dataset.game===gameMode&&!phase)return;gameMode=b.dataset.game;setModeButtons();phase=null;savePhase();await nextDuel();});
 
 /* viewer zoom/swipe */
-const viewer=$('#viewer'),track=$('#vTrack'),slides=$$('.v-slide');
+const viewer=$('#viewer'),track=$('#vTrack');let slides=$$('.v-slide');
+const dotsBox=$('.v-dots'),MAX_DOTS=10;
+/* O viewer passou a aceitar N mídias (antes eram fixos 2 slides do duelo).
+   Os slides são remontados a cada abertura e só a janela em volta do índice é pintada. */
+function rebuildSlides(n){
+  n=Math.max(1,n);
+  if(slides.length!==n){
+    track.innerHTML=Array.from({length:n},(_,i)=>`<div class="v-slide" data-i="${i}"><div class="vimg"></div></div>`).join('');
+    slides=$$('.v-slide');
+  }
+  if(n<=MAX_DOTS)dotsBox.innerHTML=Array.from({length:n},(_,i)=>`<i data-d="${i}"></i>`).join('');
+  else dotsBox.innerHTML=`<b class="cnt" id="vCount"></b>`;
+}
 let vIdx=0,vOpen=false,zoom=false,scale=1,panX=0,panY=0,lastTap=0;
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const touchList=e=>Array.from(e.touches||[]);
@@ -993,17 +1014,20 @@ const touchCenter=ts=>({x:(ts[0].clientX+ts[1].clientX)/2,y:(ts[0].clientY+ts[1]
 let viewerMode='duel',viewerItems=[];
 function activeMedia(){return viewerMode==='duel'?(vIdx===0?duel.a:duel.b):viewerItems[vIdx];}
 function currentImg(){return slides[vIdx]?.querySelector('.vimg');}
+function paintWindow(){return viewerMode==='duel'?[0,1]:[vIdx-1,vIdx,vIdx+1].filter(k=>k>=0&&k<viewerItems.length);}
+function clearSlide(sl){sl.querySelectorAll('video.vmedia').forEach(v=>{try{v.pause();v.removeAttribute('src');v.load();}catch(e){}v.remove();});const vi=sl.querySelector('.vimg');if(vi){vi.style.transform='';vi.style.backgroundImage='';}sl.dataset.painted='';}
 async function paintViewerSlides(){
   // pinta primeiro o slide ATIVO (o que foi aberto), depois o outro — em paralelo, sem bloquear um no outro
-  const tasks=slides.map((sl,k)=>({k,sl}));
+  const win=paintWindow();
+  slides.forEach((sl,k)=>{if(!win.includes(k)&&sl.dataset.painted)clearSlide(sl);});
+  const tasks=win.map(k=>({k,sl:slides[k]})).filter(t=>t.sl&&t.sl.dataset.painted!=='1');
   tasks.sort((a,b)=>(a.k===vIdx?-1:b.k===vIdx?1:0));
   await Promise.all(tasks.map(async ({k,sl})=>{
     const m=viewerMode==='duel'?(k===0?duel.a:duel.b):viewerItems[k];
     const vi=sl.querySelector('.vimg');
-    sl.querySelectorAll('video.vmedia').forEach(v=>v.remove());
-    vi.style.transform='';vi.style.backgroundImage='';
+    clearSlide(sl);
     if(!m){sl.style.visibility='hidden';return;}
-    sl.style.visibility='visible';
+    sl.style.visibility='visible';sl.dataset.painted='1';
     try{
       const src=await blobUrl(m);
       if(m.type==='video'){const v=document.createElement('video');v.className='vmedia';v.src=src;v.controls=true;v.playsInline=true;v.addEventListener('webkitendfullscreen',()=>{resetViewerGesture(true);setTrack(false);},{passive:true});v.addEventListener('fullscreenchange',()=>{resetViewerGesture(true);setTrack(false);},{passive:true});sl.appendChild(v);}
@@ -1035,7 +1059,7 @@ function desktopViewerFullscreen(){if(matchMedia('(hover:hover) and (pointer:fin
 async function openViewer(i){
   if(!duel.a)return;
   viewerClosing=false;viewerMode='duel';viewerItems=[duel.a,duel.b];vIdx=i;vOpen=true;
-  neutralizeViewer();
+  rebuildSlides(2);neutralizeViewer();
   await paintViewerSlides();
   viewer.classList.add('on');viewer.classList.remove('zoomed');
   desktopViewerFullscreen();
@@ -1047,8 +1071,8 @@ async function openViewer(i){
 }
 async function openMediaViewer(items,start=0){
   const arr=(items||[]).filter(Boolean);if(!arr.length)return;
-  viewerClosing=false;viewerMode='media';viewerItems=[arr[start]||arr[0]];vIdx=0;vOpen=true;
-  neutralizeViewer();
+  viewerClosing=false;viewerMode='media';viewerItems=arr;vIdx=Math.min(Math.max(0,start),arr.length-1);vOpen=true;
+  rebuildSlides(arr.length);neutralizeViewer();
   await paintViewerSlides();
   viewer.classList.add('on');viewer.classList.remove('zoomed');
   desktopViewerFullscreen();
@@ -1080,7 +1104,9 @@ function vmeta(){
   const m=activeMedia();if(!m)return;
   $('#vName').textContent=m.name;
   $('#vSub').textContent=`${actorName(m.actorId)} · #${mediaPos(m)||'—'} · Tier ${mediaTier(m)}`;
-  $$('.v-dots i').forEach((d,k)=>{const show=viewerMode==='duel'||k<viewerItems.length;d.style.display=show?'':'none';d.classList.toggle('on',k===vIdx);});
+  const cnt=$('#vCount');
+  if(cnt)cnt.textContent=`${vIdx+1} / ${viewerItems.length}`;
+  else $$('.v-dots i').forEach((d,k)=>d.classList.toggle('on',k===vIdx));
   if(viewerMode==='duel'){$('#vPick').style.display='flex';$('#vPick').querySelector('span').textContent=(vIdx===0?'A':'B')+' vence';}
   else{$('#vPick').style.display='none';}
 }
@@ -1089,11 +1115,11 @@ function maxIdx(){return viewerMode==='duel'?1:viewerItems.length-1;}
 function goSlide(i,animated=true){
   if(i<0||i>maxIdx()){setTrack(true);return;}
   if(i!==vIdx)clearZoomState(false);
-  vIdx=i;resetGesture();setTrack(animated);vmeta();
+  vIdx=i;resetGesture();setTrack(animated);vmeta();paintViewerSlides();
 }
 $('#vClose').onclick=()=>closeViewer();
 $('#vPick').onclick=()=>{if(viewerMode==='duel')decide(vIdx===0?'a':'b');};
-$$('.v-dots i').forEach(d=>d.onclick=()=>goSlide(+d.dataset.d,true));
+dotsBox.addEventListener('click',e=>{const d=e.target.closest('i[data-d]');if(d)goSlide(+d.dataset.d,true);});
 
 viewer.addEventListener('touchstart',e=>{
   if(!vOpen)return;
@@ -1195,7 +1221,7 @@ document.addEventListener('fullscreenchange',()=>{if(vOpen){fullReset();setTrack
 document.addEventListener('webkitfullscreenchange',()=>{if(vOpen){fullReset();setTrack(false);}},false);
 document.addEventListener('visibilitychange',()=>{if(vOpen&&!document.hidden){fullReset();setTrack(false);}},false);
 function toggleZoom(cx,cy){const m=activeMedia();if(!m||m.type==='video')return;if(zoom){clearZoomState(true);resetGesture();setTrack(false);return;}scale=matchMedia('(hover:hover) and (pointer:fine)').matches?3.2:2.4;const r=slides[vIdx].getBoundingClientRect();panX=(r.width/2-(cx-r.left))*(scale-1)/scale;panY=(r.height/2-(cy-r.top))*(scale-1)/scale;zoom=true;viewer.classList.add('zoomed');applyZoom();}
-slides.forEach(s=>s.addEventListener('dblclick',e=>{if(matchMedia('(hover:hover) and (pointer:fine)').matches&&!e.target.closest('video'))toggleZoom(e.clientX,e.clientY);}));
+track.addEventListener('dblclick',e=>{if(e.target.closest('.v-slide')&&matchMedia('(hover:hover) and (pointer:fine)').matches&&!e.target.closest('video'))toggleZoom(e.clientX,e.clientY);});
 let mousePan=false,mouseSX=0,mouseSY=0,mouseStartX=0,mouseStartY=0;
 viewer.addEventListener('wheel',e=>{
   if(!vOpen||!matchMedia('(hover:hover) and (pointer:fine)').matches||e.target.closest('video'))return;
@@ -1725,300 +1751,6 @@ $('#libUploadToggle').onclick=()=>{const inner=$('#libUploadInner');inner.style.
 
 
 /* =====================================================================
-   LANÇAR (live entry)
-   ===================================================================== */
-function fillPlats(){$('#lvPlat').innerHTML=Object.keys(LIVE_RULES).map(p=>`<option value="${p}">${p}</option>`).join('');}
-/* =====================================================================
-   ASSISTINDO — vídeos em andamento com múltiplos atores e pontuação por dia
-   ===================================================================== */
-const W_PLATS=['pc-onr','pc-on','pc-off','telegram full','telegram only','twitter'];
-let wPlatformFilters=new Set(['all']);
-const W_LABELS={'all':'todos','pc-on':'pc-on','pc-onr':'pc-onr','pc-off':'pc-off','telegram full':'telegram full','telegram only':'telegram only','twitter':'twitter'};
-function wFilterIsOn(p){return wPlatformFilters.has('all')?p==='all':wPlatformFilters.has(p);}
-function wTogglePlatformFilter(p){
-  if(p==='all'){wPlatformFilters=new Set(['all']);return;}
-  if(wPlatformFilters.has('all'))wPlatformFilters=new Set();
-  if(wPlatformFilters.has(p))wPlatformFilters.delete(p); else wPlatformFilters.add(p);
-  if(!wPlatformFilters.size)wPlatformFilters=new Set(['all']);
-}
-function wFilteredRows(){
-  ensureWatches();
-  if(wPlatformFilters.has('all'))return LEDGER.watches;
-  return LEDGER.watches.filter(w=>wPlatformFilters.has(w.platform));
-}
-function wExtractUrl(w){const direct=cleanCell(w?.link||'');if(direct)return direct;const txt=String(w?.title||'');const m=txt.match(/https?:\/\/[^\s]+/i);return m?m[0]:'';}
-function wDisplayTitle(w){const stripped=String(w?.title||'').replace(/https?:\/\/[^\s]+/ig,'').replace(/\s+/g,' ').trim();return stripped||w?.actors?.join(', ')||'—';}
-function wLinkUI(){const wrap=$('#wLinkWrap');if(!wrap)return;const show=$('#wPlat')?.value==='pc-on';wrap.style.display=show?'block':'none';if(!show){const input=$('#wLink');if(input)input.value='';}}
-function wOpenLink(id){const w=(LEDGER.watches||[]).find(x=>x.id===id);const url=wExtractUrl(w);if(url)window.open(url,'_blank','noopener');}
-
-function wFillPlats(){
-  const sel=$('#wPlat');if(!sel)return;
-  sel.innerHTML=W_PLATS.map(p=>`<option value="${p}">${p}</option>`).join('');
-  wLinkUI();
-  wUpdPreview();
-}
-function wRule(){return LIVE_RULES[$('#wPlat')?.value||'pc-onr']||LIVE_RULES['pc-onr'];}
-function wUpdPreview(){
-  const actors=($('#wActors')?.value||'').split(';').map(s=>cleanCell(s)).filter(Boolean);
-  const rule=wRule();const mult=$('#wRank')?.value==='first'?3:$('#wRank')?.value==='second'?2:1;
-  const totalRaw=cleanCell($('#wTotalDur')?.value||'');
-  const totalSec=totalRaw?parseLiveDuration(totalRaw,$('#wPlat')?.value).seconds:0;
-  let txt=`${$('#wPlat')?.value} · ${rule.label}`;
-  if(mult>1)txt+=` · ×${mult} bônus`;
-  if(totalSec>0)txt+=` · duração total ${fmtSec(totalSec)}`;
-  if(actors.length>1)txt+=` · ${actors.length} atores`;
-  $('#wPreview').textContent=actors.length?txt:'Preencha ator e plataforma pra ver a régua.';
-}
-$('#wPlat')?.addEventListener('change',()=>{wLinkUI();wUpdPreview();});
-$('#wRank')?.addEventListener('change',wUpdPreview);
-['#wActors','#wTotalDur'].forEach(s=>$(s)?.addEventListener('input',wUpdPreview));
-
-// estrutura: {id, actors[], platform, rankMult, title, link, totalItems, sessions:[{date, pts, position}], createdAt}
-function ensureWatches(){if(!Array.isArray(LEDGER.watches))LEDGER.watches=[];}
-
-function wTotalPts(w){
-  const sessPts=(w.sessions||[]).reduce((s,x)=>s+(Number(x.pts)||0),0);
-  const vidPts=w.openVideo?(w.openVideo.sessions||[]).reduce((s,x)=>{
-    const net=Math.max(0,(x.seconds||0)-(x.skip||0));
-    return s+(x.pts!=null?Number(x.pts):wVideoEntryPoints(x.seconds||0,x.skip||0,w.platform,x.rankMult||w.rankMult||1,x.finishMult||1));
-  },0):0;
-  return sessPts+vidPts;
-}
-function wBasePoints(seconds,platform,mult=1){
-  const r=LIVE_RULES[platform];if(!r)return 0;
-  let base=0;
-  if(r.kind==='secondsDivisor')base=seconds/r.value;
-  else if(r.kind==='pointsPerMinute')base=(seconds/60)*r.value;
-  else base=seconds;
-  return Math.round(base*mult);
-}
-function wRankMultFromValue(v){return v==='first'?3:v==='second'?2:1;}
-function wRankValueFromMult(v){return Number(v)===3?'first':Number(v)===2?'second':'none';}
-function wFinishMultFromValue(v){return v==='plus'?1.2:v==='minus'?0.8:1;}
-function wFinishLabel(v){return v==='plus'?'+20%':v==='minus'?'-20%':'sem 20%';}
-function wVideoEntryPoints(seconds,skip,platform,rankMult=1,finishMult=1){
-  const net=Math.max(0,(Number(seconds)||0)-(Number(skip)||0));
-  return Math.round(wBasePoints(net,platform,rankMult)*finishMult);
-}
-function wLastPos(w){
-  if(w.openVideo)return w.openVideo.position;
-  const s=w.sessions||[];return s.length?s[s.length-1].position:null;
-}
-
-$('#wNewToggle')?.addEventListener('click',()=>{const box=$('#wFormBox');box?.classList.toggle('on');if(box?.classList.contains('on'))$('#wActors')?.focus();});
-
-$('#wCreate').onclick=()=>{
-  const actors=($('#wActors').value||'').split(';').map(s=>cleanCell(s)).filter(Boolean);
-  if(!actors.length){$('#wCreateStatus').textContent='Digite pelo menos um ator.';return;}
-  ensureWatches();
-  const platform=$('#wPlat').value;
-  const rankMult=$('#wRank').value==='first'?3:$('#wRank').value==='second'?2:1;
-  const title=cleanCell($('#wTitle').value);
-  const link=platform==='pc-on'?cleanCell($('#wLink')?.value||''):'';
-  const totalItems=parseInt($('#wTotalDur').value)||0;
-  const w={id:uid('w'),actors,platform,rankMult,title,link,totalItems,sessions:[],createdAt:new Date().toISOString()};
-  LEDGER.watches.push(w);savePontoSoon();
-  $('#wActors').value='';$('#wTitle').value='';if($('#wLink'))$('#wLink').value='';$('#wTotalDur').value='';$('#wCreateStatus').textContent='';
-  const box=$('#wFormBox'); if(box) box.classList.remove('on');
-  wPlatformFilters=new Set([platform]);
-  renderWatches();
-};
-
-function renderWatches(){
-  ensureWatches();
-  const list=$('#wList');if(!list)return;
-  const bar=$('#wPlatformFilters');
-  if(bar){
-    const counts=LEDGER.watches.reduce((o,w)=>{o[w.platform]=(o[w.platform]||0)+1;o.all=(o.all||0)+1;return o;},{all:LEDGER.watches.length});
-    const plats=['all',...W_PLATS.filter(p=>counts[p])];
-    bar.innerHTML=plats.map(p=>`<button class="fbtn ${wFilterIsOn(p)?'on':''}" data-wpf="${p}">${W_LABELS[p]||p}${counts[p]?` · ${counts[p]}`:''}</button>`).join('');
-    bar.querySelectorAll('[data-wpf]').forEach(b=>b.onclick=()=>{wTogglePlatformFilter(b.dataset.wpf);renderWatches();});
-  }
-  const rows=wFilteredRows();
-  const cnt=$('#wFilterCount');if(cnt)cnt.textContent=rows.length?`${rows.length} em andamento`:'nenhum em andamento';
-  if(!LEDGER.watches.length){list.innerHTML='<div class="empty">Nenhum registro em andamento.</div>';return;}
-  if(!rows.length){list.innerHTML='<div class="empty">Nenhum registro nesta plataforma.</div>';return;}
-  list.innerHTML=rows.map(w=>wCardHTML(w)).join('');
-  rows.forEach(w=>{
-    list.querySelector(`[data-w="${w.id}"] .wact-add`)?.addEventListener('click',()=>wToggleAdd(w.id));
-    list.querySelector(`[data-w="${w.id}"] .wact-sess`)?.addEventListener('click',()=>wToggleSessions(w.id));
-    list.querySelector(`[data-w="${w.id}"] .wact-finish`)?.addEventListener('click',()=>wFinish(w.id));
-    list.querySelector(`[data-w="${w.id}"] .wact-delete`)?.addEventListener('click',()=>wDelete(w.id));
-    list.querySelector(`[data-w="${w.id}"] .wadd-submit`)?.addEventListener('click',()=>wAddSession(w.id));
-    list.querySelector(`[data-w="${w.id}"] .wact-openvid`)?.addEventListener('click',()=>wOpenVideo(w.id));
-    list.querySelector(`[data-w="${w.id}"] .wvid-submit`)?.addEventListener('click',()=>wAddVideoTime(w.id));
-    list.querySelector(`[data-w="${w.id}"] .wvid-close`)?.addEventListener('click',()=>wCloseVideo(w.id));
-    list.querySelector(`[data-w="${w.id}"] .wact-link`)?.addEventListener('click',()=>wOpenLink(w.id));
-  });
-}
-
-function wCardHTML(w){
-  const total=wTotalPts(w);
-  const lastPos=wLastPos(w);
-  const pct=w.totalItems>0&&lastPos?Math.min(100,Math.round(lastPos/w.totalItems*100)):null;
-  const rule=LIVE_RULES[w.platform];
-  const ruleHint=rule?rule.label:'pontos manuais';
-  const hasVideo=!!w.openVideo;
-  const linkUrl=w.platform==='pc-on'?wExtractUrl(w):'';
-  const vidSessions=hasVideo?(w.openVideo.sessions||[]).reduce((s,x)=>s+(x.seconds||0),0):0;
-  const vidPts=hasVideo?(w.openVideo.sessions||[]).reduce((s,x)=>s+(x.pts!=null?Number(x.pts):wVideoEntryPoints(x.seconds||0,x.skip||0,w.platform,x.rankMult||w.rankMult||1,x.finishMult||1)),0):0;
-  const sessRows=(w.sessions||[]).slice().reverse().map(s=>
-    `<div class="wsess-row"><span class="wsdate">${s.date}</span><span>${s.position?`#${s.position}${w.totalItems?'/'+w.totalItems:''}`:''}</span><b>+${s.pts} pts</b></div>`
-  ).join('');
-  const progress=pct!==null?`<div style="height:3px;background:var(--hair);margin:0 14px 10px"><div style="height:100%;width:${pct}%;background:var(--ink);transition:width .4s"></div></div>`:'';
-  const openVidHTML=hasVideo?`
-    <div class="wvid-open">
-      <div class="wvid-head">
-        <span class="wvid-label">Vídeo em aberto — item #${w.openVideo.position||'?'}</span>
-        <span class="wvid-pts">${fmtSec(vidSessions)} · ${vidPts} pts parciais</span>
-      </div>
-      <div class="wvid-form">
-        <div class="wadd-row">
-          <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Assistido hoje</label><input class="wvid-sec" placeholder="ex: 40 ou 01:20" autocomplete="off"></div>
-          <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Skip (opcional)</label><input class="wvid-skip" placeholder="0 ou 00:30" autocomplete="off"></div>
-        </div>
-        <div class="wadd-row">
-          <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Bônus posição</label><select class="wvid-rank"><option value="none" ${wRankValueFromMult(w.rankMult)==='none'?'selected':''}>sem bônus</option><option value="second" ${wRankValueFromMult(w.rankMult)==='second'?'selected':''}>#2 ×2</option><option value="first" ${wRankValueFromMult(w.rankMult)==='first'?'selected':''}>#1 ×3</option></select></div>
-          <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Bônus final</label><select class="wvid-finish"><option value="none">sem 20%</option><option value="plus">+20%</option><option value="minus">-20%</option></select></div>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="cta wvid-submit" style="flex:2">+ Adicionar tempo</button>
-          <button class="cta ghost wvid-close" style="flex:1">✓ Fechar (+${vidPts}pts)</button>
-        </div>
-      </div>
-    </div>`:'';
-  return `<div class="wcard" data-w="${w.id}">
-    <div class="wcard-head"><div class="winfo">
-      <div class="wname">${escapeHtml(wDisplayTitle(w))}</div>
-      <div class="wplat">${w.platform}${w.rankMult>1?` · ×${w.rankMult}`:''} · ${ruleHint}</div>
-      <div class="wmeta">${w.actors.map(escapeHtml).join(' · ')}${lastPos?` · #${lastPos}${w.totalItems?'/'+w.totalItems:''}`:''}</div>
-    </div></div>
-    ${progress}
-    <div class="wcard-score">
-      <div class="wscore-cell"><div class="v ok">${total}</div><div class="l">pts acum.</div></div>
-      <div class="wscore-cell"><div class="v">${w.sessions.length}</div><div class="l">sessões</div></div>
-      <div class="wscore-cell"><div class="v">${pct!==null?pct+'%':'—'}</div><div class="l">progresso</div></div>
-    </div>
-    ${openVidHTML}
-    ${w.sessions.length?`<div class="wcard-sessions" id="wsess-${w.id}">${sessRows}</div>`:''}
-    <div class="wcard-add" id="wadd-${w.id}" ${hasVideo?'style="display:none"':''}>
-      <div class="wadd-row">
-        <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Pontos hoje</label><input class="wadd-pts" type="number" min="0" placeholder="ex: 14" autocomplete="off"></div>
-        <div style="flex:1"><label class="flabel micro" style="margin-bottom:6px">Item # parado</label><input class="wadd-pos" type="number" min="0" placeholder="${w.totalItems?'ex: '+(Math.round((lastPos||0)+10)):'ex: 42'}" autocomplete="off"></div>
-      </div>
-      <button class="cta wadd-submit">+ Adicionar sessão</button>
-    </div>
-    <div class="wcard-actions">
-      <button class="wact wact-add" ${hasVideo?'disabled style="opacity:.4"':''}><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8" stroke-linecap="round"/></svg>Sessão</button>
-      ${linkUrl?`<button class="wact wact-link wlink"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1-1"/></svg>Link</button>`:''}
-      <button class="wact wact-openvid" style="${hasVideo?'color:var(--warn)':''}"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>${hasVideo?'Vídeo aberto':'Vídeo longo'}</button>
-      ${w.sessions.length?`<button class="wact wact-sess"><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13" stroke-linecap="round"/></svg>Hist.</button>`:''}
-      <button class="wact wact-finish primary" ${hasVideo?'disabled style="opacity:.4"':''}><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>Finalizar</button>
-      <button class="wact wact-delete danger"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>
-    </div>
-  </div>`;
-}
-
-function wToggleAdd(id){if($(`[data-w="${id}"]`)?.querySelector('.wact-add')?.disabled)return;const el=$(`#wadd-${id}`);el.classList.toggle('on');if(el.classList.contains('on'))el.querySelector('.wadd-pts')?.focus();}
-function wToggleSessions(id){const el=$(`#wsess-${id}`);if(el)el.classList.toggle('on');}
-
-function wOpenVideo(id){
-  ensureWatches();
-  const w=LEDGER.watches.find(x=>x.id===id);if(!w)return;
-  if(w.openVideo){// already open — scroll to it
-    document.querySelector(`[data-w="${id}"] .wvid-sec`)?.focus();return;
-  }
-  const lastPos=wLastPos(w);
-  w.openVideo={position:lastPos,sessions:[]};
-  savePontoSoon();renderWatches();
-}
-function wAddVideoTime(id){
-  ensureWatches();
-  const w=LEDGER.watches.find(x=>x.id===id);if(!w||!w.openVideo)return;
-  const card=document.querySelector(`[data-w="${id}"]`);
-  const secRaw=cleanCell(card.querySelector('.wvid-sec')?.value||'');
-  const skipRaw=cleanCell(card.querySelector('.wvid-skip')?.value||'');
-  const parsed=parseLiveDuration(secRaw,w.platform);
-  if(!parsed.ok||parsed.seconds<=0){alert('Digite uma duração válida.');return;}
-  const skipSec=skipRaw&&skipRaw!=='0'?parseLiveDuration(skipRaw,w.platform).seconds:0;
-  const rankVal=card.querySelector('.wvid-rank')?.value||'none';
-  const finishVal=card.querySelector('.wvid-finish')?.value||'none';
-  const rankMult=wRankMultFromValue(rankVal);
-  const finishMult=wFinishMultFromValue(finishVal);
-  const pts=wVideoEntryPoints(parsed.seconds,skipSec||0,w.platform,rankMult,finishMult);
-  const sess={date:todayBR(),seconds:parsed.seconds,skip:skipSec||0,pts,rankBonus:rankVal,rankMult,finishBonus:finishVal,finishMult,released:true};
-  w.openVideo.sessions.push(sess);
-
-  // Vídeo longo agora libera no ledger a cada nova entrada,
-  // em vez de acumular tudo para o fechamento/finalização.
-  w.actors.forEach(actor=>{
-    LEDGER.events.push({
-      id:uid('wv'),nome:actor,tipo:'Ator',ponto:pts,dataBR:sess.date,
-      plataforma:w.platform,score:null,titulo:w.title||'',modo:'assistindo-video',rankBonus:rankVal,finishBonus:finishVal,source:'watch-video'
-    });
-  });
-
-  card.querySelector('.wvid-sec').value='';if(card.querySelector('.wvid-skip'))card.querySelector('.wvid-skip').value='';
-  savePontoSoon();renderWatches();renderRanking();
-  toast(`+${fmtNum(pts)}`,`${w.actors.join(', ')} · ${w.platform}${rankVal!=='none'?' · '+(rankVal==='first'?'#1':'#2'):''}${finishVal!=='none'?' · '+wFinishLabel(finishVal):''}`);
-}
-function wCloseVideo(id){
-  ensureWatches();
-  const w=LEDGER.watches.find(x=>x.id===id);if(!w||!w.openVideo)return;
-  const nextPos=w.openVideo.position!=null?w.openVideo.position+1:null;
-
-  // As entradas de vídeo longo já foram lançadas no ledger em wAddVideoTime.
-  // Ao fechar, apenas transferimos o histórico para o card e avançamos a posição,
-  // sem liberar pontos de novo.
-  (w.openVideo.sessions||[]).forEach(s=>{
-    const net=Math.max(0,(s.seconds||0)-(s.skip||0));
-    const pts=s.pts!=null?s.pts:wVideoEntryPoints(s.seconds||0,s.skip||0,w.platform,s.rankMult||w.rankMult||1,s.finishMult||1);
-    w.sessions.push({date:s.date,pts,position:null,video:true,released:true,seconds:s.seconds||0,skip:s.skip||0});
-  });
-
-  delete w.openVideo;
-  if(nextPos&&w.sessions.length){const last=w.sessions[w.sessions.length-1];if(!last.position)last.position=nextPos;}
-  savePontoSoon();renderWatches();
-}
-
-function wAddSession(id){
-  ensureWatches();
-  const w=LEDGER.watches.find(x=>x.id===id);if(!w)return;
-  const card=document.querySelector(`[data-w="${id}"]`);
-  const pts=parseInt(card.querySelector('.wadd-pts').value)||0;
-  const pos=parseInt(card.querySelector('.wadd-pos').value)||null;
-  if(pts<=0){alert('Digite os pontos da sessão de hoje.');return;}
-  w.sessions.push({date:todayBR(),pts,position:pos});
-  card.querySelector('.wadd-pts').value='';card.querySelector('.wadd-pos').value='';
-  savePontoSoon();renderWatches();
-}
-
-function wFinish(id){
-  ensureWatches();
-  const w=LEDGER.watches.find(x=>x.id===id);
-  if(!w||!w.sessions.length){alert('Adicione pelo menos uma sessão antes de finalizar.');return;}
-  if(w.openVideo){alert('Feche o vídeo em aberto antes de finalizar.');return;}
-  const byDate={};
-  w.sessions.filter(s=>!s.released).forEach(s=>{byDate[s.date]=(byDate[s.date]||0)+(Number(s.pts)||0);});
-  const totalPts=wTotalPts(w);const days=new Set((w.sessions||[]).map(s=>s.date)).size;
-  w.actors.forEach(actor=>{
-    Object.entries(byDate).forEach(([dataBR,ptsDay])=>{
-      if(ptsDay<=0)return;
-      LEDGER.events.push({id:uid('wa'),nome:actor,tipo:'Ator',ponto:ptsDay,dataBR,plataforma:w.platform,score:null,titulo:w.title||'',modo:'assistindo',source:'watch'});
-    });
-  });
-  LEDGER.watches=LEDGER.watches.filter(x=>x.id!==id);
-  savePontoSoon();renderWatches();renderRanking();
-  toast(`✓ ${w.actors.join(', ')} · ${totalPts} pts em ${days} dia(s)`);
-}
-
-function wDelete(id){
-  if(!confirm('Apagar este registro sem lançar pontos?'))return;
-  ensureWatches();LEDGER.watches=LEDGER.watches.filter(x=>x.id!==id);savePontoSoon();renderWatches();
-}
-
-
-/* =====================================================================
    F5 FIX — localStorage como backup imediato de usedMediaIds
    (garante que mídia não repete mesmo se Drive save não completou)
    ===================================================================== */
@@ -2039,73 +1771,75 @@ const _origSaveSessionNow=saveSessionNow;
 window.saveSessionNow=async function(){lsSaveUsed();await _origSaveSessionNow();}
 
 
-function lvCompute(){const plat=$('#lvPlat').value,rule=LIVE_RULES[plat];if(rule.kind==='manualPoints'){const p=Math.round(parseNumber($('#lvDur').value));return{ok:!!p&&isFinite(p),points:p,text:p?`${plat} · manual = ${fmtNum(p)} pts`:'Digite uma pontuação.',modo:'manual'};}const dur=parseLiveDuration($('#lvDur').value,plat);if(!dur.ok)return{ok:false,points:0,text:'Digite uma duração válida.'};let skipSec=0,prov=false;if(rule.skip){const sv=cleanCell($('#lvSkip').value);if(sv&&sv!=='-'){if(sv==='0'){skipSec=0;prov=true;}else{const sp=parseLiveDuration(sv,plat);if(sp.ok){skipSec=sp.seconds;prov=true;}}}}const net=Math.max(0,dur.seconds-skipSec);let mult=1;if(rule.rankBonus){const r=$('#lvRank').value;mult=r==='first'?3:r==='second'?2:1;}const pts=Math.round(liveBasePoints(net,plat)*mult);const skTxt=rule.skip?(prov?` · líquido ${net}s`:' · skip não informado'):'';return{ok:pts!==0,points:pts,text:`${plat} · ${dur.seconds}s${skTxt} · ${rule.label}${mult!==1?` · ×${mult}`:''} = ${fmtNum(pts)} pts`,modo:'round:'+plat};}
-function lvRule(){return LIVE_RULES[$('#lvPlat')?.value]||LIVE_RULES['pc-onr'];}
-function lvUI(){const r=lvRule(),man=r.kind==='manualPoints';$('#lvDurLabel').textContent=man?'Pontos':(r.kind==='pointsPerMinute'?'Minutos assistidos':'Segundos assistidos');$('#lvDur').placeholder=man?'Ex.: 10':(r.kind==='pointsPerMinute'?'5 ou 01:20':'42 ou 01:20');$('#lvSkipWrap').style.display=r.skip?'block':'none';$('#lvRankWrap').style.display=r.rankBonus?'block':'none';lvPrev();}
-function lvPrev(){const name=cleanCell($('#lvName').value),c=lvCompute();$('#lvPreview').innerHTML=c.text+(c.ok?`<br><b>${fmtNum(c.points)} pts</b>`:'');const ok=!!name&&c.ok;$('#lvAdd').disabled=!ok;$('#lvAdd').textContent=ok?`+ Adicionar ${fmtNum(c.points)} pts`:'+ Adicionar';}
-$('#lvAdd').onclick=()=>{const name=cleanCell($('#lvName').value),plat=canonicalPlatform($('#lvPlat').value),c=lvCompute();if(!name||!c.ok){$('#lvStatus').textContent='Confira ator e pontuação.';return;}const dataBR=cleanCell($('#lvDate').value)||todayBR();LEDGER.events.push({id:uid('lv'),nome:name,tipo:'Ator',ponto:c.points,dataBR,plataforma:plat,score:null,titulo:'',modo:c.modo,source:'live'});$('#lvStatus').textContent=`✓ ${name} · ${fmtNum(c.points)} pts em ${plat}.`;$('#lvDur').value='';$('#lvSkip').value='';savePontoSoon();refreshAll();lvPrev();};
-['lvPlat'].forEach(id=>$('#'+id).addEventListener('change',lvUI));['lvName','lvDur','lvSkip','lvRank'].forEach(id=>$('#'+id).addEventListener('input',lvPrev));
+/* =====================================================================
+   REGISTRAR — uma sessão por linha, nas colunas da planilha
+   Data · Produtora · Atores · Duracao · Skip · Score · Plataforma
+   ===================================================================== */
+function regPlats(){return Object.keys(LIVE_RULES).filter(k=>LIVE_RULES[k].kind!=='manualPoints');}
+function fillPlats(){
+  const sel=$('#rgPlat');if(!sel)return;const cur=sel.value;
+  sel.innerHTML=regPlats().map(k=>`<option value="${k}">${k} · ${LIVE_RULES[k].label}</option>`).join('');
+  if(cur&&regPlats().includes(cur))sel.value=cur;
+  const dl=$('#rgProds');
+  if(dl)dl.innerHTML=[...new Set(LEDGER.events.map(e=>cleanCell(e.titulo)).filter(x=>x&&x!=='-'))].sort()
+    .map(x=>`<option value="${escapeHtml(x)}">`).join('');
+}
+function splitActors(s){return cleanCell(s).split(/[;,/]|\s+e\s+/).map(x=>cleanCell(x)).filter(x=>x&&x!=='-');}
+function regCompute(){
+  const data=sessDate($('#rgData').value),plat=$('#rgPlat').value;
+  const atores=splitActors($('#rgAtores').value),prod=cleanCell($('#rgProd').value);
+  const d=sessDur($('#rgDur').value),sk=sessDur($('#rgSkip').value);
+  const sc=cleanCell($('#rgScore').value);
+  const nomes=atores.length?atores:(prod&&prod!=='-'?[prod]:[]);
+  const tipo=atores.length?'Ator':'Studio';
+  const net=Math.max(0,(d.sec||0)-(sk.sec||0));
+  const pts=d.sec==null?null:sessPoints(net,plat);
+  return{data,plat,nomes,tipo,prod:prod==='-'?'':prod,dur:d.sec,durFlag:d.flag,skip:sk.sec,
+    score:(!sc||sc==='-')?null:parseNumber(sc),net,pts,
+    ok:!!(data&&nomes.length&&d.sec!=null&&pts>0)};
+}
+function regPreview(){
+  const c=regCompute(),box=$('#rgPreview');
+  const bits=[];
+  if(c.dur==null)bits.push('Informe a duração.');
+  else{
+    bits.push(`${fmtHMS(c.net)} líquido${c.skip?` (${fmtHMS(c.dur)} − ${fmtHMS(c.skip)})`:''} · ${LIVE_RULES[c.plat]?.label||'sem régua'}`);
+    if(c.pts!=null)bits.push(`<b>${fmtNum(c.pts)} pts</b> por ator${c.nomes.length>1?` · ${c.nomes.length} atores · ${fmtNum(c.pts*c.nomes.length)} pts no total`:''}`);
+  }
+  if(!c.data)bits.push('<span style="color:var(--danger)">Data inválida.</span>');
+  if(!c.nomes.length)bits.push('<span style="color:var(--danger)">Informe ator ou produtora.</span>');
+  if(c.durFlag)bits.push(`<span style="color:var(--warn)">${escapeHtml(c.durFlag)}</span>`);
+  box.innerHTML=bits.join('<br>');
+  $('#rgAdd').disabled=!c.ok;
+}
+function regUI(){fillPlats();if(!cleanCell($('#rgData').value))$('#rgData').value=todayBR();regPreview();renderRecent();}
+$('#rgAdd').onclick=()=>{
+  const c=regCompute();if(!c.ok)return;
+  c.nomes.forEach(nome=>LEDGER.events.push({id:uid('ss'),nome,tipo:c.tipo,ponto:c.pts,dataBR:c.data,
+    plataforma:c.plat,score:c.score,titulo:c.prod,modo:'sessao',
+    assistido_seg:c.dur,skipado_seg:c.skip,duracao_video_seg:c.dur,score_aplicavel:'',source:'import-sessao'}));
+  $('#rgStatus').textContent=`✓ ${c.nomes.length} entrada(s) · ${fmtNum(c.pts*c.nomes.length)} pts.`;
+  toast('+'+fmtNum(c.pts*c.nomes.length),c.nomes.join(', '));
+  ['rgAtores','rgDur','rgSkip','rgScore'].forEach(id=>$('#'+id).value='');
+  savePontoSoon();refreshAll();regPreview();
+};
+['rgPlat'].forEach(id=>$('#'+id).addEventListener('change',regPreview));
+['rgData','rgAtores','rgProd','rgDur','rgSkip','rgScore'].forEach(id=>$('#'+id).addEventListener('input',regPreview));
+function renderRecent(){
+  const box=$('#rgRecent');if(!box)return;
+  const rows=LEDGER.events.filter(e=>e.modo==='sessao').slice(-14).reverse();
+  if(!rows.length){box.innerHTML='<div class="empty">Nada registrado ainda.</div>';return;}
+  box.innerHTML=rows.map(e=>`<div class="rg-row"><span class="d">${escapeHtml(e.dataBR)}</span><span class="n">${escapeHtml(e.nome)}<span class="micro" style="color:var(--ink-3)"> · ${escapeHtml(e.plataforma)}${e.titulo?' · '+escapeHtml(e.titulo):''}</span></span><span class="p">+${fmtNum(e.ponto)}</span><button class="x" data-del="${e.id}" title="Apagar">✕</button></div>`).join('');
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{
+    LEDGER.events=LEDGER.events.filter(x=>x.id!==b.dataset.del);savePontoSoon();refreshAll();
+  });
+}
+
 
 /* =====================================================================
    IMPORTAR
    ===================================================================== */
 function splitDelimited(line,sep){const r=[];let cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(q&&line[i+1]==='"'){cur+='"';i++;}else q=!q;}else if(c===sep&&!q){r.push(cur);cur='';}else cur+=c;}r.push(cur);return r;}
-function safeDateBR(v){const s=cleanCell(v);return parseDateBR(s)?s:todayBR();}
-function normRow(r){
-  const nome=cleanCell(r.nome),rawPts=cleanCell(r.ponto);
-  if(!nome||!rawPts)return null;
-  const ponto=parseNumber(rawPts);
-  if(!isFinite(ponto)||ponto===0)return null;
-  const sc=cleanCell(r.score);
-  return {
-    id:uid('im'),
-    nome,
-    tipo:cleanCell(r.tipo)||'Ator',
-    ponto,
-    dataBR:safeDateBR(r.data),
-    plataforma:canonicalPlatform(r.plataforma||'PornMedia'),
-    score:(!sc||sc==='-')?null:parseNumber(sc),
-    titulo:cleanCell(r.titulo)==='-'?'':cleanCell(r.titulo),
-    modo:cleanCell(r.modo),
-    assistido_seg:parseNumber(r.assistido_seg)||0,
-    skipado_seg:cleanCell(r.skipado_seg)===''?null:(parseNumber(r.skipado_seg)||0),
-    duracao_video_seg:parseNumber(r.duracao_video_seg)||0,
-    score_aplicavel:cleanCell(r.score_aplicavel),
-    source:'import'
-  };
-}
-function parseTXT(raw){
-  const rows=[],errors=[];let cd=null,cp=null,ct=null,cm=null;
-  raw.replace(/^\uFEFF/,'').split(/\r?\n/).forEach((o,idx)=>{
-    const line=o.trim(); if(!line)return;
-    if(line.startsWith('//'))return;
-    if(line.startsWith('#')){const m=line.match(/^#\s*(\d{1,2}\/\d{1,2}\/\d{2,4})\s*[—-]\s*(.+)$/);if(m){cd=m[1];cp=m[2].trim();}return;}
-    const meta=line.match(/^@(data|plataforma|platform|site|titulo|title|video|modo|mode)\s*[:=]?\s*(.+)$/i);
-    if(meta){const k=meta[1].toLowerCase();const v=meta[2].trim();if(k==='data')cd=v;else if(['titulo','title','video'].includes(k))ct=v;else if(['modo','mode'].includes(k))cm=v;else cp=v;return;}
-    const sep=line.includes(';')?';':(line.includes('|')?'|':null);
-    if(!sep){errors.push(`linha ${idx+1}: sem separador ; ou |`);return;}
-    const v=splitDelimited(line,sep).map(cleanCell);
-    let row=null;
-    // Formato completo: nome; tipo; ponto; data; plataforma; score; titulo; modo; assistido_seg; skipado_seg; duracao_video_seg; score_aplicavel
-    if(v.length>=6){row=normRow({nome:v[0],tipo:v[1],ponto:v[2],data:v[3],plataforma:v[4],score:v[5],titulo:v[6]||ct,modo:v[7]||cm,assistido_seg:v[8],skipado_seg:v[9],duracao_video_seg:v[10],score_aplicavel:v[11]});}
-    // Formato contextual canônico: nome; tipo; ponto; score; titulo
-    else if(v.length>=3){row=normRow({nome:v[0],tipo:v[1]||'Ator',ponto:v[2],data:cd,plataforma:cp||'PornMedia',score:v[3],titulo:v[4]||ct,modo:cm});}
-    // Formato rápido: nome; ponto (assume Ator + contexto)
-    else if(v.length===2){row=normRow({nome:v[0],tipo:'Ator',ponto:v[1],data:cd,plataforma:cp||'PornMedia',score:'-',titulo:ct,modo:cm});}
-    if(row)rows.push(row);else errors.push(`linha ${idx+1}: inválida (${line})`);
-  });
-  parseTXT.lastErrors=errors;return rows;
-}
-function parseCSV(raw){
-  const lines=raw.replace(/^\uFEFF/,'').split(/\r?\n/).filter(l=>l.trim());if(!lines.length)return[];
-  const delimiter=(lines[0].includes(';')&&!lines[0].includes(','))?';':',';
-  const h=splitDelimited(lines[0],delimiter).map(x=>cleanCell(x).toLowerCase());
-  const hasH=h.includes('nome')||h.includes('ponto')||h.includes('plataforma');
-  const idx=(names,f)=>{for(const n of Array.isArray(names)?names:[names]){const i=h.indexOf(n);if(i>=0)return i;}return f;};
-  const errors=[];
-  const rows=lines.slice(hasH?1:0).map((l,i)=>{const v=splitDelimited(l,delimiter);const row=normRow({nome:v[idx('nome',0)],tipo:v[idx('tipo',1)],ponto:v[idx(['ponto','pontos'],2)],data:v[idx(['data','databr'],3)],plataforma:v[idx(['plataforma','platform','site'],4)],score:v[idx('score',5)],titulo:v[idx(['titulo','title','video'],6)],modo:v[idx(['modo','mode'],7)],assistido_seg:v[idx('assistido_seg',8)],skipado_seg:v[idx('skipado_seg',9)],duracao_video_seg:v[idx('duracao_video_seg',10)],score_aplicavel:v[idx('score_aplicavel',11)]});if(!row)errors.push(`linha ${i+1}: inválida`);return row;}).filter(Boolean);
-  parseCSV.lastErrors=errors;return rows;
-}
 /* ---------- sessões da planilha (Data · Plataforma · Produtora · Ator · Duração · Skip · Score) ----------
    Colunas lidas pelo cabeçalho; Código e colunas desconhecidas são ignoradas.
    Plataforma sem cabeçalho (coluna vazia no fim) também é aceita. */
@@ -2134,19 +1868,25 @@ function parseSessions(raw){
   const sep=lines[0].includes('\t')?'\t':';';
   const head=splitDelimited(lines[0],sep).map(x=>cleanCell(x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''));
   const col=pre=>head.findIndex(x=>x.startsWith(pre));
-  const iA=col('ator'),iD=col('dura');if(iA<0||iD<0)return null;
-  const iData=col('data'),iProd=col('produt'),iSkip=col('skip'),iScore=col('score');
-  let iPlat=col('plataf');
-  const cells=lines.slice(1).map(l=>splitDelimited(l,sep).map(cleanCell));
+  let iA=col('ator'),iD=col('dura'),iData=col('data'),iProd=col('produt'),iSkip=col('skip'),iScore=col('score'),iPlat=col('plataf');
+  let cells;
+  if(iA<0||iD<0){
+    // sem cabeçalho: assume a ordem canônica Data · Produtora · Atores · Duracao · Skip · Score · Plataforma
+    if(!sessDate(splitDelimited(lines[0],sep)[0]||''))return null;
+    [iData,iProd,iA,iD,iSkip,iScore,iPlat]=[0,1,2,3,4,5,6];
+    cells=lines.map(l=>splitDelimited(l,sep).map(cleanCell));
+  }else cells=lines.slice(1).map(l=>splitDelimited(l,sep).map(cleanCell));
+  const off=(iA===2&&head.findIndex(x=>x.startsWith('ator'))<0)?1:2;
   if(iPlat<0){for(let k=Math.max(head.length,...cells.map(c=>c.length))-1;k>=0;k--){if(!head[k]&&cells.some(c=>c[k])){iPlat=k;break;}}}
   const out=[],errors=[];
   cells.forEach((c,li)=>{
-    const L=li+2,r={line:L,flags:[]};
+    const L=li+off,r={line:L,flags:[]};
     r.data=sessDate(c[iData]);if(!r.data){r.flags.push('data inválida');}
-    const ator=c[iA]||'',prod=iProd>=0?(c[iProd]||''):'';
-    const isStudio=!ator||ator==='-';
-    r.nome=isStudio?(prod&&prod!=='-'?prod:''):ator;r.tipo=isStudio?'Studio':'Ator';r.prod=prod==='-'?'':prod;
-    if(!r.nome)r.flags.push('sem ator nem produtora');
+    const atores=splitActors(c[iA]||''),prod=iProd>=0?(c[iProd]||''):'';
+    r.nomes=atores.length?atores:((prod&&prod!=='-')?[prod]:[]);
+    r.tipo=atores.length?'Ator':'Studio';r.prod=prod==='-'?'':prod;
+    r.nome=r.nomes.join('; ');
+    if(!r.nomes.length)r.flags.push('sem ator nem produtora');
     r.platRaw=iPlat>=0?(c[iPlat]||''):'';r.plat=canonicalPlatform(r.platRaw);
     const d=sessDur(c[iD]),sk=iSkip>=0?sessDur(c[iSkip]):{sec:null};
     r.dur=d.sec;r.skip=sk.sec;if(d.flag)r.flags.push(d.flag);if(sk.flag)r.flags.push('skip '+sk.flag);
@@ -2156,12 +1896,12 @@ function parseSessions(raw){
     r.pts=r.dur==null?null:sessPoints(r.net,r.plat);
     if(r.dur!=null&&r.pts==null)r.flags.push(`sem régua pra "${r.platRaw||'—'}"`);
     else if(r.pts===0)r.flags.push('0 pontos');
-    r.ok=!!(r.data&&r.nome&&r.dur!=null&&r.pts>0);
+    r.ok=!!(r.data&&r.nomes.length&&r.dur!=null&&r.pts>0);
     r.warn=r.ok&&r.flags.length>0;
     if(!r.ok)errors.push(`linha ${L}: ${r.flags.join(', ')}`);
     out.push(r);
   });
-  return{list:out,errors,rows:out.filter(r=>r.ok).map(r=>({id:uid('ss'),nome:r.nome,tipo:r.tipo,ponto:r.pts,dataBR:r.data,plataforma:r.plat,score:r.score,titulo:r.prod,modo:'sessao',assistido_seg:r.dur,skipado_seg:r.skip,duracao_video_seg:r.dur,score_aplicavel:'',source:'import-sessao'}))};
+  return{list:out,errors,rows:out.filter(r=>r.ok).flatMap(r=>r.nomes.map(nome=>({id:uid('ss'),nome,tipo:r.tipo,ponto:r.pts,dataBR:r.data,plataforma:r.plat,score:r.score,titulo:r.prod,modo:'sessao',assistido_seg:r.dur,skipado_seg:r.skip,duracao_video_seg:r.dur,score_aplicavel:'',source:'import-sessao'})))};
 }
 function sessKey(e){return[e.nome,e.dataBR,e.plataforma,Math.round(e.assistido_seg||0),Math.round(e.skipado_seg||0)].join('|').toLowerCase();}
 function renderImpPreview(){
@@ -2171,37 +1911,29 @@ function renderImpPreview(){
   const ok=S.list.filter(r=>r.ok),warn=S.list.filter(r=>r.warn),bad=S.list.filter(r=>!r.ok);
   const have=new Set(LEDGER.events.filter(e=>e.source==='import-sessao').map(sessKey));
   const dup=S.rows.filter(e=>have.has(sessKey(e))).length;
-  const tot=ok.reduce((s,r)=>s+r.pts,0);
+  const tot=ok.reduce((s,r)=>s+r.pts*r.nomes.length,0);
   box.style.display='block';
   box.innerHTML=`<div class="sum"><b>${ok.length}</b> linha(s) entram · <b>${fmtNum(tot)} pts</b>${warn.length?` · <span style="color:var(--warn)">${warn.length} pra conferir</span>`:''}${bad.length?` · <span style="color:var(--danger)">${bad.length} não entram</span>`:''}${dup?` · ${dup} já estão no ledger (Adicionar pula)`:''}</div>
   <div class="tw"><table><thead><tr><th>Linha</th><th>Data</th><th>Ator</th><th>Plataforma</th><th>Duração</th><th>Skip</th><th>Líquido</th><th>Pts</th><th>Aviso</th></tr></thead><tbody>${
-    S.list.map(r=>`<tr class="${!r.ok?'err':r.warn?'warn':''}"><td class="n">${r.line}</td><td>${r.data||'?'}</td><td>${escapeHtml(r.nome||'—')}${r.tipo==='Studio'?' <span class="micro">(studio)</span>':''}</td><td>${escapeHtml(r.plat)}</td><td class="n">${fmtHMS(r.dur)}</td><td class="n">${fmtHMS(r.skip)}</td><td class="n">${fmtHMS(r.net)}</td><td class="n"><b>${r.pts==null?'—':fmtNum(r.pts)}</b></td><td class="fl">${escapeHtml(r.flags.join(' · '))}</td></tr>`).join('')
+    S.list.map(r=>`<tr class="${!r.ok?'err':r.warn?'warn':''}"><td class="n">${r.line}</td><td>${r.data||'?'}</td><td>${escapeHtml(r.nome||'—')}${r.tipo==='Studio'?' <span class="micro">(studio)</span>':r.nomes.length>1?` <span class="micro">(×${r.nomes.length})</span>`:''}</td><td>${escapeHtml(r.plat)}</td><td class="n">${fmtHMS(r.dur)}</td><td class="n">${fmtHMS(r.skip)}</td><td class="n">${fmtHMS(r.net)}</td><td class="n"><b>${r.pts==null?'—':fmtNum(r.pts)}</b></td><td class="fl">${escapeHtml(r.flags.join(' · '))}</td></tr>`).join('')
   }</tbody></table></div>`;
 }
 let impPrevT=null;
-function parseAny(raw){
-  const txt=raw.trim(); if(!txt)return[];
-  // Se começa com @/# ou tem ; em várias linhas, usa o parser TXT/canônico.
-  // CSV separado por vírgula continua indo para o parser CSV.
-  if(txt.startsWith('@')||txt.startsWith('#')||txt.includes(';')||txt.includes('|'))return parseTXT(txt);
-  return parseCSV(txt);
-}
 function importDo(mode){
-  const raw=$('#impText').value||'';
-  const S=parseSessions(raw);
-  let rows,errs;
-  if(S){
-    rows=S.rows;errs=S.errors.slice(0,6);
-    if(mode!=='replace'){const have=new Set(LEDGER.events.filter(e=>e.source==='import-sessao').map(sessKey));const before=rows.length;rows=rows.filter(e=>!have.has(sessKey(e)));if(before!==rows.length)log(`${before-rows.length} sessão(ões) já estavam no ledger e foram puladas.`);}
-  }else{
-    parseTXT.lastErrors=[];parseCSV.lastErrors=[];
-    rows=parseAny(raw);
-    errs=[...(parseTXT.lastErrors||[]),...(parseCSV.lastErrors||[])].slice(0,6);
+  const S=parseSessions($('#impText').value||'');
+  if(!S){$('#impStatus').textContent='Não reconheci as colunas. Cole com o cabeçalho Data · Produtora · Atores · Duracao · Skip · Score · Plataforma.';return;}
+  let rows=S.rows;
+  if(!rows.length){$('#impStatus').textContent='Nenhuma linha válida. Veja os avisos na prévia.';return;}
+  if(mode!=='replace'){
+    const have=new Set(LEDGER.events.filter(e=>e.source==='import-sessao').map(sessKey));
+    const before=rows.length;rows=rows.filter(e=>!have.has(sessKey(e)));
+    if(before!==rows.length)log(`${before-rows.length} linha(s) já estavam no ledger e foram puladas.`);
+    if(!rows.length){$('#impStatus').textContent='Tudo isso já estava no ledger.';return;}
   }
-  if(!rows.length){$('#impStatus').textContent='Nenhuma entrada válida encontrada.';log('Importação falhou. Exemplo: @data 31/05/2026 / @plataforma PornMedia / Nome; Ator; 8; -');return;}
   LEDGER.events=mode==='replace'?rows:LEDGER.events.concat(rows);
-  $('#impStatus').textContent=`✓ ${rows.length} entrada(s) ${mode==='replace'?'como nova base':'adicionada(s)'}.`+(errs.length?` ${errs.length} linha(s) ignorada(s).`:'' );
-  if(errs.length)log('Importação com avisos:\n'+errs.join('\n'));
+  const errs=S.errors.slice(0,6);
+  $('#impStatus').textContent=`✓ ${rows.length} linha(s) ${mode==='replace'?'como nova base':'adicionada(s)'}.`+(errs.length?` ${S.errors.length} recusada(s).`:'');
+  if(errs.length)log('Linhas recusadas:\n'+errs.join('\n'));
   savePontoSoon();refreshAll();renderImpPreview();
 }
 $('#impText').addEventListener('input',()=>{const has=$('#impText').value.trim().length>0;$('#impAdd').disabled=!has;$('#impReplace').disabled=!has;clearTimeout(impPrevT);impPrevT=setTimeout(renderImpPreview,250);});
@@ -2210,21 +1942,21 @@ $('#impFile')?.addEventListener('change',e=>{const f=e.target.files?.[0];if(!f)r
 $('#impClear')?.addEventListener('click',()=>{$('#impText').value='';renderImpPreview();$('#impAdd').disabled=true;$('#impReplace').disabled=true;$('#impStatus').textContent='Texto limpo.';});
 $('#impAdd').onclick=()=>importDo('add');$('#impReplace').onclick=()=>importDo('replace');
 /* ---------- exportação do ledger ---------- */
-const EXP_COLS=['NOME','TIPO','PONTO','DATA','PLATAFORMA','SCORE','TITULO','MODO'];
+const EXP_COLS=['Data','Produtora','Atores','Duracao','Skip','Score','Plataforma','Pontos'];
 function fillExpPeriod(){const sel=$('#expPeriod');if(!sel)return;const cur=sel.value||'all';const ms=monthsWithData().slice().reverse();sel.innerHTML='<option value="all">Tudo</option>'+ms.map(k=>`<option value="${k}">${keyLabel(k)}</option>`).join('');sel.value=[...sel.options].some(o=>o.value===cur)?cur:'all';}
 function expNum(v){const x=Number(v)||0;return Number.isInteger(x)?String(x):String(+x.toFixed(2)).replace('.',',');}   // vírgula: o parser do Importar lê ponto como milhar
 function expRows(){
   const k=$('#expPeriod')?.value||'all';
   return LEDGER.events.filter(e=>k==='all'||monthKey(e.dataBR)===k)
     .slice().sort((a,b)=>(parseDateBR(a.dataBR)||0)-(parseDateBR(b.dataBR)||0))
-    .map(e=>[e.nome,e.tipo||'Ator',expNum(e.ponto),e.dataBR,e.plataforma||'',e.score==null?'-':expNum(e.score),e.titulo||'',e.modo||'']);
+    .map(e=>[e.dataBR,e.titulo||'-',e.nome,fmtHMS(e.assistido_seg),fmtHMS(e.skipado_seg),e.score==null?'-':expNum(e.score),e.plataforma||'',expNum(e.ponto)]);
 }
 function csvCell(v,sep){const s=String(v??'');return(s.includes(sep)||s.includes('"')||/\n/.test(s))?'"'+s.replace(/"/g,'""')+'"':s;}
 $('#expCsv').onclick=()=>{
   const rows=expRows();if(!rows.length){$('#expStatus').textContent='Nada pra exportar nesse período.';return;}
   const txt='\uFEFF'+[EXP_COLS,...rows].map(r=>r.map(c=>csvCell(c,';')).join(';')).join('\r\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
-  const k=$('#expPeriod').value;a.download=k==='all'?'pontos.csv':`pontos_${k}.csv`;document.body.appendChild(a);a.click();
+  const k=$('#expPeriod').value;a.download=k==='all'?'sessoes.csv':`sessoes_${k}.csv`;document.body.appendChild(a);a.click();
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);
   $('#expStatus').textContent=`✓ ${rows.length} linha(s) em ${a.download}.`;
 };
@@ -2241,18 +1973,18 @@ $('#expCopy').onclick=async()=>{
 // mode pills for Registrar tab
 $$('[data-reg]').forEach(b=>b.onclick=()=>{
   $$('[data-reg]').forEach(x=>x.classList.remove('on'));b.classList.add('on');
-  $('#regRapido').style.display=b.dataset.reg==='rapido'?'block':'none';
-  $('#regAndamento').style.display=b.dataset.reg==='andamento'?'block':'none';
-  if(b.dataset.reg==='andamento'){wFillPlats();renderWatches();}
+  $('#regUma').style.display=b.dataset.reg==='uma'?'block':'none';
+  $('#regColar').style.display=b.dataset.reg==='colar'?'block':'none';
+  if(b.dataset.reg==='colar')renderImpPreview();else regUI();
 });
-$$('.tab').forEach(t=>t.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('on'));$$('.view').forEach(v=>v.classList.remove('on'));t.classList.add('on');$('#'+t.dataset.v).classList.add('on');const v=t.dataset.v;if(v==='ranking')renderRanking();if(v==='spotlight'){fillNames();}if(v==='atores')renderActors();if(v==='biblioteca'){fillUpActors();fillLibActorFilter();renderLibrary();}if(v==='lancar'){fillNames();lvUI();}});
-function fillNames(){const names=allActorNames();const html=names.map(n=>`<option value="${escapeHtml(n)}">`).join('');$('#spotNames').innerHTML=html;$('#lvNames').innerHTML=html;const rn=$('#rankNames');if(rn)rn.innerHTML=html;}
+$$('.tab').forEach(t=>t.onclick=()=>{$$('.tab').forEach(x=>x.classList.remove('on'));$$('.view').forEach(v=>v.classList.remove('on'));t.classList.add('on');$('#'+t.dataset.v).classList.add('on');const v=t.dataset.v;if(v==='ranking')renderRanking();if(v==='spotlight'){fillNames();}if(v==='atores')renderActors();if(v==='biblioteca'){fillUpActors();fillLibActorFilter();renderLibrary();}if(v==='lancar'){fillNames();regUI();}});
+function fillNames(){const names=allActorNames();const html=names.map(n=>`<option value="${escapeHtml(n)}">`).join('');$('#spotNames').innerHTML=html;$('#rgNames').innerHTML=html;const rn=$('#rankNames');if(rn)rn.innerHTML=html;}
 function refreshLight(){const today=todayBR();$('#livePts').textContent=fmtNum(LEDGER.events.filter(e=>e.plataforma==='PornMedia'&&e.dataBR===today).reduce((a,b)=>a+b.ponto,0))+' pts';}
-function refreshAll(){fillExpPeriod();renderRanking();renderActors();fillUpActors();fillLibActorFilter();fillNames();fillPlats();renderLibrary();refreshLight();wFillPlats();renderWatches();}
+function refreshAll(){fillExpPeriod();renderRanking();renderActors();fillUpActors();fillLibActorFilter();fillNames();fillPlats();renderLibrary();refreshLight();renderRecent();}
 let toastT2=null;function toast(b,t){$('#toastB').textContent=b;$('#toastT').textContent=t;const el=$('#toast');el.classList.add('on');clearTimeout(toastT2);toastT2=setTimeout(()=>el.classList.remove('on'),1700);}
-addEventListener('keydown',e=>{if(vOpen){if(e.key==='Escape')closeViewer();if(e.key==='ArrowRight'&&vIdx<(viewerMode==='duel'?1:viewerItems.length-1)&&!zoom){vIdx++;setTrack(1);vmeta();}if(e.key==='ArrowLeft'&&vIdx>0&&!zoom){vIdx--;setTrack(1);vmeta();}return;}if($('#jogo').classList.contains('on')&&!e.target.closest?.('input,textarea,select')){if(phase){if(e.key==='ArrowLeft')phaseAct(false);if(e.key==='ArrowRight')phaseAct(true);}else if(duel.a){if(e.key==='ArrowLeft')decide('a');if(e.key==='ArrowRight')decide('b');}}});
+addEventListener('keydown',e=>{if(vOpen){if(e.key==='Escape')closeViewer();if(e.key==='ArrowRight'&&!zoom)goSlide(vIdx+1,true);if(e.key==='ArrowLeft'&&!zoom)goSlide(vIdx-1,true);return;}if($('#jogo').classList.contains('on')&&!e.target.closest?.('input,textarea,select')){if(phase){if(e.key==='ArrowLeft')phaseAct(false);if(e.key==='ArrowRight')phaseAct(true);}else if(duel.a){if(e.key==='ArrowLeft')decide('a');if(e.key==='ArrowRight')decide('b');}}});
 
-fillPlats();lvUI();$('#lvDate').value=todayBR();
+regUI();
 log('PornMedia 2.0 pronto. Conecte o Drive (precisa estar no domínio autorizado).');
 </script>
 </body>
