@@ -1007,8 +1007,9 @@ function startWinnerPhase(aid,info={}){
 function drawSorteio(){
   const pool=sorteioPool();
   if(!pool.length)return null;
-  const recentes=(phase?.items||[]).slice(-2);
-  const livres=pool.length>2?pool.filter(m=>!recentes.includes(m.id)):pool;
+  const ult=phase?.cur,recentes=(phase?.items||[]).slice(-2);
+  let livres=pool.length>2?pool.filter(m=>!recentes.includes(m.id)):[];
+  if(!livres.length&&pool.length>1)livres=pool.filter(m=>m.id!==ult);
   const esc=(livres.length?livres:pool);
   return esc[Math.floor(Math.random()*esc.length)].id;
 }
@@ -1175,16 +1176,29 @@ function phaseDismissId(id){
 }
 function phaseScore(){
   if(!phase)return;
-  if(!phaseScoreId(phase.cur))return;
+  const atual=phase.cur;
+  if(!phaseScoreId(atual))return;
   if(phase.type==='sorteio')return nextSorteio();   // pontuou, sorteia outra
+  phase.cur=proximaNaFase(atual);                   // pontuou, passa pra próxima
   renderPhase();
+}
+/* próxima não-dispensada da lista, dando a volta — a pontuada volta a aparecer
+   numa próxima passagem, e só sai de vez quando você dispensa */
+function proximaNaFase(id){
+  const list=phaseList();if(!list.length)return id;
+  const i=list.indexOf(id);
+  for(let k=1;k<=list.length;k++){
+    const c=list[(i+k+list.length)%list.length];
+    if(!phase.dismissed[c])return c;
+  }
+  return id;
 }
 function phaseDismiss(){
   if(!phase)return;
   const list=phaseList(),i=list.indexOf(phase.cur);
   if(!phaseDismissId(phase.cur))return;
   if(phase.type==='sorteio')return nextSorteio();
-  const next=list[i+1]||list[i-1];if(next)phase.cur=next;renderPhase();
+  phase.cur=proximaNaFase(phase.cur);renderPhase();
 }
 function endWinnerPhase(){
   if(phase?.type==='winner'){markUsed(allOfActor(phase.actorId).map(m=>m.id));saveSessionNow();}
