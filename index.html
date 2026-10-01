@@ -1500,10 +1500,15 @@ function viewerKey(e){
 let periodFilter='month',platFilter='all',pickMonthVal='',pickYearVal='',rankSearch='',rankMode='pontos',arSort='elo';
 const HIDDEN_PLATS=new Set(['studio']);
 const isHiddenPlat=p=>HIDDEN_PLATS.has(String(p||'').toLowerCase());
+/* Linha sem ator entra no ledger com o nome da produtora e tipo "Studio".
+   Ela é uma sessão de verdade e continua no histórico e na exportação,
+   mas não é um ator: fica fora do ranking e de tudo que deriva dele. */
+const isStudioEvent=e=>String(e?.tipo||'').toLowerCase()==='studio';
+const rankableEvent=e=>!isHiddenPlat(e.plataforma)&&!isStudioEvent(e);
 function ledgerActive(ignorePlat=false){
   const today=localDay(),mk=currentMonthKey(),yr=String(new Date().getFullYear());
   return LEDGER.events.filter(e=>{
-    if(isHiddenPlat(e.plataforma))return false;
+    if(!rankableEvent(e))return false;
     if(!ignorePlat&&platFilter!=='all'&&platformGroupName(e.plataforma)!==platFilter)return false;
     const d=parseDateBR(e.dataBR);
     if(periodFilter==='today'){return d&&`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`===today;}
@@ -1524,7 +1529,7 @@ const rankMonthMemo=new Map();
 function rankMonthData(k){
   if(rankMonthMemo.has(k))return rankMonthMemo.get(k);
   const by={};
-  LEDGER.events.forEach(e=>{if(monthKey(e.dataBR)!==k||isHiddenPlat(e.plataforma))return;by[e.nome]=(by[e.nome]||0)+(Number(e.ponto)||0);});
+  LEDGER.events.forEach(e=>{if(monthKey(e.dataBR)!==k||!rankableEvent(e))return;by[e.nome]=(by[e.nome]||0)+(Number(e.ponto)||0);});
   const rows=Object.entries(by).map(([nome,total])=>({nome,total})).sort((a,b)=>b.total-a.total);
   const map={};rows.forEach((r,i)=>map[r.nome]={rank:i+1,total:r.total});
   const out={rows,map};rankMonthMemo.set(k,out);setTimeout(()=>rankMonthMemo.clear(),0);return out;
@@ -1543,7 +1548,7 @@ function fallAnalysis(name){
 }
 const RAMP=['#1D1B17','#4A453C','#7A7266','#A69D8E','#C9BFAE','#DDD4C5','#E9E3D8'];
 let platColorMap={};
-function rebuildPlatColors(){const by={};LEDGER.events.forEach(e=>{if(isHiddenPlat(e.plataforma))return;const p=platformGroupName(e.plataforma);by[p]=(by[p]||0)+(Number(e.ponto)||0);});platColorMap={};Object.keys(by).sort((a,b)=>a==='PornMedia'?-1:b==='PornMedia'?1:by[b]-by[a]).forEach((p,i)=>platColorMap[p]=RAMP[Math.min(i,RAMP.length-1)]);}
+function rebuildPlatColors(){const by={};LEDGER.events.forEach(e=>{if(!rankableEvent(e))return;const p=platformGroupName(e.plataforma);by[p]=(by[p]||0)+(Number(e.ponto)||0);});platColorMap={};Object.keys(by).sort((a,b)=>a==='PornMedia'?-1:b==='PornMedia'?1:by[b]-by[a]).forEach((p,i)=>platColorMap[p]=RAMP[Math.min(i,RAMP.length-1)]);}
 const platColor=p=>platColorMap[p]||RAMP[RAMP.length-1];
 function allPlatforms(){return Object.keys(platColorMap);}
 function fillPickSelects(){
@@ -1565,7 +1570,7 @@ function aggregate(){
   return Object.values(by).sort((a,b)=>b.total-a.total);
 }
 function normSearch(v){return String(v||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();}
-function allActorNames(){return [...new Set([...(LEDGER.events||[]).map(e=>e.nome),...Object.values(GAME.actors||{}).map(a=>a.name)].filter(Boolean))].sort((a,b)=>a.localeCompare(b));}
+function allActorNames(){return [...new Set([...(LEDGER.events||[]).filter(e=>!isStudioEvent(e)).map(e=>e.nome),...Object.values(GAME.actors||{}).map(a=>a.name)].filter(Boolean))].sort((a,b)=>a.localeCompare(b));}
 function viewMonthKey(){if(periodFilter==='month')return currentMonthKey();if(periodFilter==='pick'&&pickMonthVal&&pickYearVal)return `${pickYearVal}-${pickMonthVal}`;return null;}
 function prevMonthWithData(k){const ms=monthsWithData().filter(x=>x<k);return ms[ms.length-1]||null;}
 function periodLabel(){return {today:'hoje','7d':'últimos 7 dias',month:keyLabel(currentMonthKey()),year:String(new Date().getFullYear()),all:'tudo',pick:keyLabel(viewMonthKey())}[periodFilter]||'';}
@@ -1684,21 +1689,29 @@ function buildMonthRange(s,e){const[sy,sm]=s.split('-').map(Number),[ey,em]=e.sp
 /* séries mensais do ator: pontos, fatia do mês, posição no ranking e acumulado */
 function profSeries(name){
   const totalByMonth={},actorByMonth={},namesByMonth={};
-  LEDGER.events.forEach(e=>{const k=monthKey(e.dataBR);if(!k||isHiddenPlat(e.plataforma))return;const pts=Number(e.ponto)||0;
+  LEDGER.events.forEach(e=>{const k=monthKey(e.dataBR);if(!k||!rankableEvent(e))return;const pts=Number(e.ponto)||0;
     totalByMonth[k]=(totalByMonth[k]||0)+pts;(namesByMonth[k]=namesByMonth[k]||{})[e.nome]=(namesByMonth[k][e.nome]||0)+pts;
     if(e.nome===name)actorByMonth[k]=(actorByMonth[k]||0)+pts;});
   const allM=Object.keys(totalByMonth).sort(),actM=Object.keys(actorByMonth).sort();
   if(!actM.length)return null;
   const full=buildMonthRange(actM[0],allM[allM.length-1]);
-  let acum=0;const soma={};   // soma corrente de TODOS, pra posição histórica
-  const data=full.map(k=>{
-    const a=actorByMonth[k]||0,t=totalByMonth[k]||0;acum+=a;
+  /* A posição histórica tem que acumular desde o PRIMEIRO mês do ledger, não desde a
+     estreia do ator — senão os pontos que os outros já tinham antes dele somem e ele
+     aparece melhor colocado do que é de verdade. */
+  const allRange=buildMonthRange(allM[0],allM[allM.length-1]);
+  const soma={},allRankBy={},univBy={},acumBy={};let acum=0;
+  allRange.forEach(k=>{
     Object.entries(namesByMonth[k]||{}).forEach(([nm,v])=>{soma[nm]=(soma[nm]||0)+v;});
-    const idx=Object.entries(namesByMonth[k]||{}).sort((x,y)=>y[1]-x[1]).findIndex(([nm])=>nm===name);
+    acum+=(actorByMonth[k]||0);
     const ordem=Object.entries(soma).sort((x,y)=>y[1]-x[1]);
     const ia=ordem.findIndex(([nm])=>nm===name);
-    return{k,a,acum,pct:t?a/t*100:0,rank:idx>=0&&a>0?idx+1:null,
-           allRank:(ia>=0&&acum>0)?ia+1:null,universo:ordem.length};
+    allRankBy[k]=(ia>=0&&acum>0)?ia+1:null;univBy[k]=ordem.length;acumBy[k]=acum;
+  });
+  const data=full.map(k=>{
+    const a=actorByMonth[k]||0,t=totalByMonth[k]||0;
+    const idx=Object.entries(namesByMonth[k]||{}).sort((x,y)=>y[1]-x[1]).findIndex(([nm])=>nm===name);
+    return{k,a,acum:acumBy[k]||0,pct:t?a/t*100:0,rank:idx>=0&&a>0?idx+1:null,
+           allRank:allRankBy[k]??null,universo:univBy[k]||0};
   });
   return{data,full};
 }
@@ -1775,9 +1788,9 @@ function openActorProfile(name){
   const month=events.filter(e=>monthKey(e.dataBR)===mk).reduce((s,e)=>s+(Number(e.ponto)||0),0);
   const byMonth={};events.forEach(e=>{const k=monthKey(e.dataBR);if(k)byMonth[k]=(byMonth[k]||0)+(Number(e.ponto)||0);});
   const peak=Object.entries(byMonth).sort((a,b)=>b[1]-a[1])[0];
-  const globalByMonth={};LEDGER.events.forEach(e=>{const k=monthKey(e.dataBR);if(!k||isHiddenPlat(e.plataforma))return;(globalByMonth[k]=globalByMonth[k]||{})[e.nome]=(globalByMonth[k][e.nome]||0)+(Number(e.ponto)||0);});
+  const globalByMonth={};LEDGER.events.forEach(e=>{const k=monthKey(e.dataBR);if(!k||!rankableEvent(e))return;(globalByMonth[k]=globalByMonth[k]||{})[e.nome]=(globalByMonth[k][e.nome]||0)+(Number(e.ponto)||0);});
   let top10=0,curRank=null;Object.entries(globalByMonth).forEach(([k,acts])=>{const idx=Object.entries(acts).sort((a,b)=>b[1]-a[1]).findIndex(([n])=>n===name);if(idx>=0&&idx<10)top10++;if(k===mk&&idx>=0)curRank=idx+1;});
-  const allTot={};LEDGER.events.forEach(e=>{if(isHiddenPlat(e.plataforma))return;allTot[e.nome]=(allTot[e.nome]||0)+(Number(e.ponto)||0);});
+  const allTot={};LEDGER.events.forEach(e=>{if(!rankableEvent(e))return;allTot[e.nome]=(allTot[e.nome]||0)+(Number(e.ponto)||0);});
   const allRankArr=Object.entries(allTot).sort((a,b)=>b[1]-a[1]);
   const allRank=allRankArr.findIndex(([nm])=>nm===name)+1||null;
   const sorted=[...events].sort((a,b)=>(parseDateBR(b.dataBR)||0)-(parseDateBR(a.dataBR)||0));
@@ -2075,7 +2088,7 @@ function renderImpPreview(){
   box.style.display='block';
   box.innerHTML=`<div class="sum"><b>${ok.length}</b> linha(s) entram · <b>${fmtNum(tot)} pts</b>${warn.length?` · <span style="color:var(--gold)">${warn.length} pra conferir</span>`:''}${bad.length?` · <span style="color:var(--clay)">${bad.length} não entram</span>`:''}${dup?` · ${dup} já estão no ledger (Adicionar pula)`:''}</div>
   <div class="tw"><table><thead><tr><th>Linha</th><th>Data</th><th>Ator</th><th>Plataforma</th><th>Duração</th><th>Skip</th><th>Líquido</th><th>Pts</th><th>Aviso</th></tr></thead><tbody>${
-    S.list.map(r=>`<tr class="${!r.ok?'err':r.warn?'warn':''}"><td class="n">${r.line}</td><td>${r.data||'?'}</td><td>${escapeHtml(r.nome||'—')}${r.tipo==='Studio'?' <small>(studio)</small>':r.nomes.length>1?` <small>(×${r.nomes.length})</small>`:''}</td><td>${escapeHtml(r.plat)}</td><td class="n">${fmtHMS(r.dur)}</td><td class="n">${fmtHMS(r.skip)}</td><td class="n">${fmtHMS(r.net)}</td><td class="n"><b>${r.pts==null?'—':fmtNum(r.pts)}</b></td><td class="fl">${escapeHtml(r.flags.join(' · '))}</td></tr>`).join('')
+    S.list.map(r=>`<tr class="${!r.ok?'err':r.warn?'warn':''}"><td class="n">${r.line}</td><td>${r.data||'?'}</td><td>${escapeHtml(r.nome||'—')}${r.tipo==='Studio'?' <small>(produtora, fora do ranking)</small>':r.nomes.length>1?` <small>(×${r.nomes.length})</small>`:''}</td><td>${escapeHtml(r.plat)}</td><td class="n">${fmtHMS(r.dur)}</td><td class="n">${fmtHMS(r.skip)}</td><td class="n">${fmtHMS(r.net)}</td><td class="n"><b>${r.pts==null?'—':fmtNum(r.pts)}</b></td><td class="fl">${escapeHtml(r.flags.join(' · '))}</td></tr>`).join('')
   }</tbody></table></div>`;
 }
 let impPrevT=null;
