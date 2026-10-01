@@ -109,6 +109,8 @@ main{min-width:0}
 .gpts .l{font-size:11px;color:var(--ink-2)}
 .empty .big{font-size:20px;line-height:1.3}
 .empty .rl{display:inline-block;margin:8px 0;font-size:12px;color:var(--ink-2)}
+.fphase.solo .car-nav,.fphase.solo .car-strip,.fphase.solo #carStrip{display:none}
+.fphase.solo .car-stage{padding:14px 0}
 .jogo-empty{flex:1;display:grid;place-items:center;padding:24px}
 .jogo-empty .empty{max-width:520px;display:flex;flex-direction:column;align-items:center;gap:16px}
 .stage{flex:1 1 auto;min-height:0;position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:88px;padding:24px 36px 18px}
@@ -1000,6 +1002,27 @@ function startWinnerPhase(aid,info={}){
   phase=newPhase('winner',mine.map(m=>m.id),{actorId:aid,loser:info.loser||'',gain:info.gain||0});
   savePhase();renderPhase();
 }
+/* Sorteio: uma mídia por vez, tirada na hora.
+   foto dispensada some · foto pontuada volta pro bolo · vídeo sai pontuado ou não. */
+function drawSorteio(){
+  const pool=sorteioPool();
+  if(!pool.length)return null;
+  const recentes=(phase?.items||[]).slice(-2);
+  const livres=pool.length>2?pool.filter(m=>!recentes.includes(m.id)):pool;
+  const esc=(livres.length?livres:pool);
+  return esc[Math.floor(Math.random()*esc.length)].id;
+}
+function nextSorteio(){
+  const id=drawSorteio();
+  if(!id){endSorteio();return;}
+  phase.items.push(id);phase.cur=id;
+  savePhase();renderPhase();
+}
+function endSorteio(){
+  phase=null;savePhase();
+  if(duelActors().length>=2)showEmpty(`Sorteio esgotado nesta rodada.<br>Ainda há <b>${duelActors().length}</b> atores no Duelo.`+roundLine());
+  else showRoundEnd();
+}
 function startSorteio(){
   const pool=sorteioPool();
   if(!pool.length){
@@ -1010,8 +1033,8 @@ function startSorteio(){
     else showRoundEnd();
     return;
   }
-  phase=newPhase('sorteio',shuffle(pool.map(m=>m.id)));
-  savePhase();renderPhase();
+  phase=newPhase('sorteio',[]);
+  nextSorteio();
 }
 function phaseValid(id){const m=GAME.media[id];return !!(m&&!m.deleted);}
 function phaseList(){
@@ -1054,14 +1077,13 @@ function renderStrip(box,ids,curId,opts){
 function renderPhase(){
   if(!phase)return;
   // cada mídia compete uma vez: quando todas já foram pontuadas/dispensadas, a fase fecha sozinha
-  if(phase.type==='sorteio'&&!phase.items.some(id=>phaseValid(id)&&!usedSet().has(id))){
-    phase=null;savePhase();
-    if(duelActors().length>=2)showEmpty(`Sorteio esgotado nesta rodada.<br>Ainda há <b>${duelActors().length}</b> atores no Duelo.`+roundLine());
-    else showRoundEnd();
-    return;
+  if(phase.type==='sorteio'){
+    if(!sorteioPool().length)return endSorteio();
+    if(!phaseValid(phase.cur)||usedSet().has(phase.cur))return nextSorteio();
   }
   if(phase.type==='winner'&&phase.items.every(id=>!phaseValid(id)||phase.dismissed[id]))return endWinnerPhase();
-  const list=phaseList();
+  const sorteio=phase.type==='sorteio';
+  const list=sorteio?[phase.cur]:phaseList();
   if(!list.length){
     if(phase.filter!=='all'){phase.filter='all';return renderPhase();}
     if(phase.type==='winner')return endWinnerPhase();
@@ -1069,6 +1091,7 @@ function renderPhase(){
   }
   if(!list.includes(phase.cur))phase.cur=list[0];
   const i=list.indexOf(phase.cur),m=GAME.media[phase.cur];
+  $('#fphase').classList.toggle('solo',sorteio);
   phase.seen[phase.cur]=true;
   setGameChrome(phase.type);
   if(phase.type==='winner'){
@@ -1078,15 +1101,17 @@ function renderPhase(){
     $('#gKick').textContent=`Sorteio · atores com menos de ${DUEL_MIN} mídias · ${actorName(m.actorId)}`;
     $('#gTitle').textContent='Sorteio';
   }
-  const valid=phase.items.filter(phaseValid);
-  const nPh=valid.filter(id=>GAME.media[id].type!=='video').length,nV=valid.length-nPh,nUn=valid.filter(id=>!phase.seen[id]).length;
-  const fl=[['all',`Todas · ${valid.length}`],['photo',`Fotos · ${nPh}`],['video',`Vídeos · ${nV}`],['unseen',`Não vistas · ${nUn}`]].filter(([k])=>k==='all'||k==='unseen'||(k==='photo'?nPh&&nV:nV&&nPh));
-  $('#phaseFilters').innerHTML=fl.map(([k,l])=>`<button data-pf="${k}" class="${phase.filter===k?'on':''}">${l}</button>`).join('');
+  if(!sorteio){
+    const valid=phase.items.filter(phaseValid);
+    const nPh=valid.filter(id=>GAME.media[id].type!=='video').length,nV=valid.length-nPh,nUn=valid.filter(id=>!phase.seen[id]).length;
+    const fl=[['all',`Todas · ${valid.length}`],['photo',`Fotos · ${nPh}`],['video',`Vídeos · ${nV}`],['unseen',`Não vistas · ${nUn}`]].filter(([k])=>k==='all'||k==='unseen'||(k==='photo'?nPh&&nV:nV&&nPh));
+    $('#phaseFilters').innerHTML=fl.map(([k,l])=>`<button data-pf="${k}" class="${phase.filter===k?'on':''}">${l}</button>`).join('');
+  }else $('#phaseFilters').innerHTML='';
   $('#phasePtsV').textContent='+'+fmtNum(phase.pts)+' pts';
   // cartas
   const tok=++phaseTok,st=$('#carStage');
   stopVideos(st);st.querySelectorAll('.cc').forEach(c=>c.remove());
-  st.insertAdjacentHTML('afterbegin',[-2,-1,0,1,2].map(o=>cardHTML(list[i+o],o)).join(''));
+  st.insertAdjacentHTML('afterbegin',(sorteio?[0]:[-2,-1,0,1,2]).map(o=>cardHTML(list[i+o],o)).join(''));
   st.querySelectorAll('.cc[data-id]').forEach(card=>{
     const id=card.dataset.id,o=+card.dataset.o,mm=GAME.media[id];
     if(o!==0)card.onclick=()=>phaseGoTo(id);
@@ -1102,11 +1127,18 @@ function renderPhase(){
     }
   });
   const fs=st.querySelector('.fsbtn');if(fs)fs.onclick=e=>{e.stopPropagation();openPhaseViewer();};
-  $('#carPrev').disabled=i<=0;$('#carNext').disabled=i>=list.length-1;
   phaseMeta();
-  renderStrip($('#carStrip'),list,phase.cur,{go:phaseGoTo,sc:phase.scored,ds:phase.dismissed,seen:phase.seen});
-  const sc=Object.keys(phase.scored).length,ds=Object.keys(phase.dismissed).length,seen=valid.filter(id=>phase.seen[id]).length;
-  $('#carProg').innerHTML=`<b>${seen}</b> de ${valid.length} vistas · <b class="okc">${sc}</b> pontuada${sc===1?'':'s'} · ${ds} dispensada${ds===1?'':'s'}`;
+  if(sorteio){
+    const pool=sorteioPool(),pf=pool.filter(x=>x.type!=='video').length,pv=pool.length-pf;
+    $('#carStrip').innerHTML='';$('#carStrip')._key='';
+    $('#carProg').innerHTML=`sorteio <b>${phase.items.length}</b> · restam <b>${pf}</b> foto${pf===1?'':'s'}${pv?` e <b>${pv}</b> vídeo${pv===1?'':'s'}`:''}`;
+  }else{
+    $('#carPrev').disabled=i<=0;$('#carNext').disabled=i>=list.length-1;
+    renderStrip($('#carStrip'),list,phase.cur,{go:phaseGoTo,sc:phase.scored,ds:phase.dismissed,seen:phase.seen});
+    const valid=phase.items.filter(phaseValid);
+    const sc=Object.keys(phase.scored).length,ds=Object.keys(phase.dismissed).length,seen=valid.filter(id=>phase.seen[id]).length;
+    $('#carProg').innerHTML=`<b>${seen}</b> de ${valid.length} vistas · <b class="okc">${sc}</b> pontuada${sc===1?'':'s'} · ${ds} dispensada${ds===1?'':'s'}`;
+  }
   savePhase();
 }
 function phaseMeta(){
@@ -1119,18 +1151,17 @@ function phaseMeta(){
 }
 $('#phaseFilters').onclick=e=>{const b=e.target.closest('[data-pf]');if(!b||!phase)return;phase.filter=b.dataset.pf;renderPhase();};
 function phaseGoTo(id){if(!phase||id===phase.cur)return;phase.cur=id;renderPhase();}
-function phaseGo(d){if(!phase)return;const list=phaseList(),i=list.indexOf(phase.cur),j=clamp(i+d,0,list.length-1);if(j!==i)phaseGoTo(list[j]);}
+function phaseGo(d){if(!phase||phase.type==='sorteio')return;const list=phaseList(),i=list.indexOf(phase.cur),j=clamp(i+d,0,list.length-1);if(j!==i)phaseGoTo(list[j]);}
 function phaseScoreId(id){
   if(!phase||phaseBusy)return false;const m=GAME.media[id];if(!m)return false;
   if(phase.dismissed[id]){toast('—','Essa mídia foi dispensada');return false;}
   if(m.type==='video'&&phase.scored[id]){toast('—','Vídeo já pontuado nesta fase');return false;}
-  if(phase.type==='sorteio'&&phase.scored[id]){toast('—','No sorteio cada mídia conta uma vez');return false;}
   phaseBusy=true;setTimeout(()=>phaseBusy=false,220);
   eloFocus(m,1,phase.ref||1500);m.wins=(m.wins||0)+1;
   phase.scored[id]=(phase.scored[id]||0)+1;
   const pts=mediaPts(m);phase.pts+=pts;
   creditPonto(actorName(m.actorId),pts);
-  if(m.type==='video'||phase.type==='sorteio')markUsed([id]);   // vídeo e sorteio: uma vez só
+  if(m.type==='video')markUsed([id]);   // vídeo aparece uma vez só; foto pontuada volta pro bolo
   saveGameSoon();savePhase();
   return true;
 }
@@ -1142,10 +1173,17 @@ function phaseDismissId(id){
   saveGameSoon();saveSessionNow();savePhase();
   return true;
 }
-function phaseScore(){if(phase&&phaseScoreId(phase.cur))renderPhase();}
+function phaseScore(){
+  if(!phase)return;
+  if(!phaseScoreId(phase.cur))return;
+  if(phase.type==='sorteio')return nextSorteio();   // pontuou, sorteia outra
+  renderPhase();
+}
 function phaseDismiss(){
-  if(!phase)return;const list=phaseList(),i=list.indexOf(phase.cur);
+  if(!phase)return;
+  const list=phaseList(),i=list.indexOf(phase.cur);
   if(!phaseDismissId(phase.cur))return;
+  if(phase.type==='sorteio')return nextSorteio();
   const next=list[i+1]||list[i-1];if(next)phase.cur=next;renderPhase();
 }
 function endWinnerPhase(){
@@ -1159,8 +1197,8 @@ function openPhaseViewer(){if(!phase)return;const list=phaseList();stopVideos($(
 $('#fpScore').onclick=phaseScore;
 $('#fpSkip').onclick=phaseDismiss;
 $('#fpEnd').onclick=endWinnerPhase;
-$('#carPrev').onclick=()=>phaseGo(-1);
-$('#carNext').onclick=()=>phaseGo(1);
+$('#carPrev').onclick=()=>{if(phase?.type!=='sorteio')phaseGo(-1);};
+$('#carNext').onclick=()=>{if(phase?.type!=='sorteio')phaseGo(1);};
 $('[data-pick="a"]').onclick=e=>{e.stopPropagation();decide('a');};
 $('[data-pick="b"]').onclick=e=>{e.stopPropagation();decide('b');};
 $('#skip').onclick=()=>{
