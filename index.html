@@ -247,6 +247,21 @@ main{min-width:0}
 .bar.peak.cur .f{background:var(--ink);border-color:var(--ink)}
 .bar .m{position:absolute;bottom:-24px;left:-6px;right:-6px;text-align:center;font-size:11px;color:var(--ink-2);white-space:nowrap}
 .legend{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)}
+.legend .rfi{display:inline-block;width:14px;height:0;border-top:1.5px dashed var(--clay);vertical-align:middle;margin-right:6px}
+/* gráfico de linha do perfil */
+.lchart{padding:4px 0 0;overflow-x:auto}
+.lchart svg{width:100%;min-width:360px;height:auto;display:block}
+.lchart .gl{stroke:var(--line);stroke-width:1}
+.lchart .gt,.lchart .gx{font:500 10px var(--sans);fill:var(--ink-3)}
+.lchart .rf{stroke:var(--clay);stroke-width:1.4;stroke-dasharray:5 4;opacity:.8}
+.lchart .rt{font:600 9px var(--sans);fill:var(--clay);letter-spacing:.08em;text-transform:uppercase}
+.lchart .ln{fill:none;stroke:var(--ink);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+.lchart .dot{fill:var(--ink);cursor:pointer;transition:r .15s}
+.lchart .dot.sel{fill:var(--clay)}
+.lchart .dot.solo{stroke:var(--paper);stroke-width:2}
+.bar{cursor:pointer;border:0;background:none;padding:0;font:inherit;color:inherit}
+.bar.sel .f{background:var(--clay)}
+.bar.sel .rk{color:var(--clay);font-weight:700}
 .legend span{display:flex;align-items:center;gap:6px}
 .legend i{width:10px;height:10px;border-radius:2px}
 .two-col{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
@@ -1662,22 +1677,79 @@ $('#platSelect').addEventListener('change',e=>{platFilter=e.target.value;renderR
 /* =====================================================================
    PERFIL DO ATOR
    ===================================================================== */
-let currentProfile=null,profChartMode='pts',profTab='photo',profHistAll=false;
-function showActorProfile(name){profTab='photo';profHistAll=false;switchView('atores');openActorProfile(name);}
+let currentProfile=null,profChartMode='pts',profTab='photo',profHistAll=false,profMonth=null;
+function showActorProfile(name){profTab='photo';profHistAll=false;profMonth=null;switchView('atores');openActorProfile(name);}
 function buildMonthRange(s,e){const[sy,sm]=s.split('-').map(Number),[ey,em]=e.split('-').map(Number);const out=[];let y=sy,m=sm;while(y<ey||(y===ey&&m<=em)){out.push(`${y}-${String(m).padStart(2,'0')}`);if(++m>12){m=1;y++;}}return out;}
-function profileChartHTML(name){
+/* séries mensais do ator: pontos, fatia do mês, posição no ranking e acumulado */
+function profSeries(name){
   const totalByMonth={},actorByMonth={},namesByMonth={};
-  LEDGER.events.forEach(e=>{const k=monthKey(e.dataBR);if(!k||isHiddenPlat(e.plataforma))return;const pts=Number(e.ponto)||0;totalByMonth[k]=(totalByMonth[k]||0)+pts;(namesByMonth[k]=namesByMonth[k]||{})[e.nome]=(namesByMonth[k][e.nome]||0)+pts;if(e.nome===name)actorByMonth[k]=(actorByMonth[k]||0)+pts;});
+  LEDGER.events.forEach(e=>{const k=monthKey(e.dataBR);if(!k||isHiddenPlat(e.plataforma))return;const pts=Number(e.ponto)||0;
+    totalByMonth[k]=(totalByMonth[k]||0)+pts;(namesByMonth[k]=namesByMonth[k]||{})[e.nome]=(namesByMonth[k][e.nome]||0)+pts;
+    if(e.nome===name)actorByMonth[k]=(actorByMonth[k]||0)+pts;});
   const allM=Object.keys(totalByMonth).sort(),actM=Object.keys(actorByMonth).sort();
-  if(!actM.length)return '<div class="empty">Sem histórico de pontos para este ator.</div>';
-  let months=buildMonthRange(actM[0],allM[allM.length-1]);const cut=months.length>24;if(cut)months=months.slice(-24);
+  if(!actM.length)return null;
+  const full=buildMonthRange(actM[0],allM[allM.length-1]);
+  let acum=0;
+  const data=full.map(k=>{
+    const a=actorByMonth[k]||0,t=totalByMonth[k]||0;acum+=a;
+    const idx=Object.entries(namesByMonth[k]||{}).sort((x,y)=>y[1]-x[1]).findIndex(([nm])=>nm===name);
+    return{k,a,acum,pct:t?a/t*100:0,rank:idx>=0&&a>0?idx+1:null};
+  });
+  return{data,full};
+}
+/* gráfico de linha em SVG, com furo onde não houve ponto */
+function profLineSVG(data,o){
+  const W=Math.max(360,data.length*46),H=260,pL=38,pR=10,pT=14,pB=26;
+  const x=i=>pL+(data.length<2?(W-pL-pR)/2:i*(W-pL-pR)/(data.length-1));
+  const y=v=>o.invert
+    ? pT+((v-1)/Math.max(1,o.domMax-1))*(H-pT-pB)
+    : H-pB-((v-o.min)/Math.max(1e-9,o.domMax-o.min))*(H-pT-pB);
+  const pts=data.map((d,i)=>({i,d,v:o.value(d)}));
+  // quebra a linha nos meses sem valor
+  const segs=[];let cur=[];
+  pts.forEach(p=>{if(p.v==null){if(cur.length)segs.push(cur);cur=[];}else cur.push(p);});
+  if(cur.length)segs.push(cur);
+  const path=segs.filter(s=>s.length>1).map(s=>'M'+s.map(p=>`${x(p.i).toFixed(1)} ${y(p.v).toFixed(1)}`).join(' L')).join(' ');
+  const solos=segs.filter(s=>s.length===1).flat();
+  const ticks=o.ticks.filter(t=>o.invert?t<=o.domMax:(t>=o.min&&t<=o.domMax));
+  const step=Math.ceil(data.length/10);
+  return `<div class="lchart"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeHtml(o.aria||'gráfico')}">
+    ${ticks.map(t=>`<g><line class="gl" x1="${pL}" x2="${W-pR}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"/><text class="gt" x="${pL-6}" y="${(y(t)+3.5).toFixed(1)}" text-anchor="end">${o.tick(t)}</text></g>`).join('')}
+    ${o.ref&&o.domMax>o.ref?`<g><line class="rf" x1="${pL}" x2="${W-pR}" y1="${y(o.ref).toFixed(1)}" y2="${y(o.ref).toFixed(1)}"/><text class="rt" x="${W-pR}" y="${(y(o.ref)-5).toFixed(1)}" text-anchor="end">top ${o.ref}</text></g>`:''}
+    ${path?`<path class="ln" d="${path}"/>`:''}
+    ${solos.map(p=>`<circle class="dot solo" cx="${x(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="4"/>`).join('')}
+    ${pts.filter(p=>p.v!=null).map(p=>`<circle class="dot${p.d.k===profMonth?' sel':''}" data-k="${p.d.k}" cx="${x(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="11" opacity="0"/><circle class="dot${p.d.k===profMonth?' sel':''}" data-k="${p.d.k}" cx="${x(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="${p.d.k===profMonth?5:3.2}"><title>${keyLabel(p.d.k)} · ${o.tip(p.d)}</title></circle>`).join('')}
+    ${data.map((d,i)=>i%step===0||i===data.length-1?`<text class="gx" x="${x(i).toFixed(1)}" y="${H-7}" text-anchor="middle">${keyLabel(d.k)}</text>`:'').join('')}
+  </svg></div>`;
+}
+function profileChartHTML(name){
+  const S=profSeries(name);
+  if(!S)return '<div class="empty">Sem histórico de pontos para este ator.</div>';
   const cur=currentMonthKey();
-  const data=months.map(k=>{const a=actorByMonth[k]||0,t=totalByMonth[k]||0;const idx=Object.entries(namesByMonth[k]||{}).sort((x,y)=>y[1]-x[1]).findIndex(([n])=>n===name);return{k,a,pct:t?a/t*100:0,rank:idx>=0&&a>0?idx+1:null};});
+  if(profChartMode==='rank'){
+    const d=S.data.slice(-24);
+    const pior=Math.max(1,...d.map(x=>x.rank||0));
+    const domMax=Math.max(100,pior);
+    return profLineSVG(d,{invert:true,domMax,ref:100,ticks:[1,10,25,50,100,domMax],
+      tick:t=>'#'+t,value:x=>x.rank,
+      tip:x=>`#${x.rank} · ${fmtNum(x.a)} pts`,aria:'posição no ranking por mês'})
+      +`<div class="legend"><span>Posição no ranking de pontos de cada mês. A linha corta onde o ator não pontuou.</span>${domMax>100?'<span><i class="rfi"></i>linha do top 100</span>':'<span>escala até #100</span>'}</div>`;
+  }
+  if(profChartMode==='acum'){
+    const d=S.data,max=Math.max(1,...d.map(x=>x.acum));
+    const nice=Math.pow(10,Math.floor(Math.log10(max)));
+    const ticks=[0,max/4,max/2,max*3/4,max].map(v=>Math.round(v/nice)*nice).filter((v,i,a)=>a.indexOf(v)===i);
+    return profLineSVG(d,{invert:false,min:0,domMax:max,ref:0,ticks,
+      tick:t=>fmtNum(t),value:x=>x.acum,
+      tip:x=>`${fmtNum(x.acum)} acumulados · +${fmtNum(x.a)} no mês`,aria:'pontos acumulados'})
+      +`<div class="legend"><span>Tudo o que ele somou desde a primeira pontuação, mês a mês.</span><span>${fmtNum(d[d.length-1].acum)} pts no total</span></div>`;
+  }
+  let months=S.full;const cut=months.length>24;const data=cut?S.data.slice(-24):S.data;if(cut)months=months.slice(-24);
   const vals=data.map(d=>profChartMode==='pct'?d.pct:d.a),max=Math.max(...vals,1);
   const peakI=vals.indexOf(Math.max(...vals));
   const step=Math.ceil(months.length/12);
   const bars=data.map((d,i)=>{const v=vals[i];const lab=keyLabel(d.k);
-    return `<div class="bar${i===peakI&&v>0?' peak':''}${d.k===cur?' cur':''}" title="${lab} · ${fmtNum(d.a)} pts · ${d.pct.toFixed(1).replace('.',',')}% do mês${d.rank?' · #'+d.rank:''}"><span class="rk${d.rank===1?' one':''}">${d.rank?'#'+d.rank:''}</span><div class="f" style="height:${(v/max*230).toFixed(1)}px"></div>${i%step===0||i===data.length-1?`<span class="m">${lab}</span>`:''}</div>`;}).join('');
+    return `<button type="button" data-k="${d.k}" class="bar${i===peakI&&v>0?' peak':''}${d.k===cur?' cur':''}${d.k===profMonth?' sel':''}" title="${lab} · ${fmtNum(d.a)} pts · ${d.pct.toFixed(1).replace('.',',')}% do mês${d.rank?' · #'+d.rank:''}"><span class="rk${d.rank===1?' one':''}">${d.rank?'#'+d.rank:''}</span><div class="f" style="height:${(v/max*230).toFixed(1)}px"></div>${i%step===0||i===data.length-1?`<span class="m">${lab}</span>`:''}</button>`;}).join('');
   const pk=data[peakI];
   return `<div class="chart" style="grid-template-columns:repeat(${months.length},minmax(0,1fr))">${bars}</div>
   <div class="legend"><span><i style="background:var(--ink)"></i>pico · ${keyLabel(pk.k)} · ${profChartMode==='pct'?pk.pct.toFixed(1).replace('.',',')+'%':fmtNum(pk.a)+' pts'}</span>${data.some(d=>d.k===cur)?'<span><i style="background:var(--sand-2);border:1px dashed #8F877A"></i>mês em curso, parcial</span>':''}${cut?'<span>últimos 24 meses</span>':''}</div>`;
@@ -1696,9 +1768,15 @@ function openActorProfile(name){
   const peak=Object.entries(byMonth).sort((a,b)=>b[1]-a[1])[0];
   const globalByMonth={};LEDGER.events.forEach(e=>{const k=monthKey(e.dataBR);if(!k||isHiddenPlat(e.plataforma))return;(globalByMonth[k]=globalByMonth[k]||{})[e.nome]=(globalByMonth[k][e.nome]||0)+(Number(e.ponto)||0);});
   let top10=0,curRank=null;Object.entries(globalByMonth).forEach(([k,acts])=>{const idx=Object.entries(acts).sort((a,b)=>b[1]-a[1]).findIndex(([n])=>n===name);if(idx>=0&&idx<10)top10++;if(k===mk&&idx>=0)curRank=idx+1;});
+  const allTot={};LEDGER.events.forEach(e=>{if(isHiddenPlat(e.plataforma))return;allTot[e.nome]=(allTot[e.nome]||0)+(Number(e.ponto)||0);});
+  const allRankArr=Object.entries(allTot).sort((a,b)=>b[1]-a[1]);
+  const allRank=allRankArr.findIndex(([nm])=>nm===name)+1||null;
   const sorted=[...events].sort((a,b)=>(parseDateBR(b.dataBR)||0)-(parseDateBR(a.dataBR)||0));
   const last=sorted[0]?.dataBR||'—';
-  const plats={};events.forEach(e=>{const p=platformGroupName(e.plataforma);plats[p]=(plats[p]||0)+(Number(e.ponto)||0);});
+  if(profMonth&&!events.some(e=>monthKey(e.dataBR)===profMonth))profMonth=null;
+  const evPlat=profMonth?events.filter(e=>monthKey(e.dataBR)===profMonth):events;
+  const plats={};evPlat.forEach(e=>{const p=platformGroupName(e.plataforma);plats[p]=(plats[p]||0)+(Number(e.ponto)||0);});
+  const platLabel=profMonth?keyLabel(profMonth):'all time';
   rebuildPlatColors();
   const pEntries=Object.entries(plats).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
   const pMax=pEntries[0]?.[1]||1,pTot=pEntries.reduce((s,[,v])=>s+v,0)||1;
@@ -1715,6 +1793,7 @@ function openActorProfile(name){
       <h1 class="prof-name">${escapeHtml(name)}</h1>
       <div class="chips">
         <span class="chip ink">Tier ${ti.tier} · PornMedia</span>
+        ${allRank?`<span class="chip">#${allRank} all time · ${allRankArr.length} atores</span>`:''}
         ${actor.elo?`<span class="chip">ELO ${fmtInt(actor.elo)}</span>`:''}
         ${g?`<span class="chip">${w}V ${l}D · ${Math.round(w/g*100)}%</span>`:''}
         <span class="chip">${photos.length} foto${photos.length!==1?'s':''}${videos.length?` · ${videos.length} vídeo${videos.length!==1?'s':''}`:''} · limite ${ti.limit}</span>
@@ -1735,12 +1814,12 @@ function openActorProfile(name){
     <div><div class="v">${last==='—'?'—':last.slice(0,5)}</div><div class="lbl l">última atividade</div></div>
   </section>
   <section class="sec">
-    <div class="sec-head"><div><div class="sec-t">Evolução mensal</div><div class="muted" style="font-size:13px;margin-top:6px">${profChartMode==='pct'?'Fatia do total de cada mês.':'Pontos por mês.'} O número acima da barra é a posição no ranking daquele mês.</div></div>
-      <div class="seg" id="profChartSeg"><button data-cm="pts" class="${profChartMode==='pts'?'on':''}">Pontos</button><button data-cm="pct" class="${profChartMode==='pct'?'on':''}">% do mês</button></div></div>
+    <div class="sec-head"><div><div class="sec-t">Evolução mensal</div><div class="muted" style="font-size:13px;margin-top:6px">${{'pct':'Fatia do total de cada mês.','rank':'Posição dele no ranking de cada mês, do #1 pra baixo.','acum':'Pontos somados desde a primeira pontuação.'}[profChartMode]||'Pontos por mês.'} Clique num mês pra ver as plataformas dele.</div></div>
+      <div class="seg" id="profChartSeg"><button data-cm="pts" class="${profChartMode==='pts'?'on':''}">Pontos</button><button data-cm="pct" class="${profChartMode==='pct'?'on':''}">% do mês</button><button data-cm="rank" class="${profChartMode==='rank'?'on':''}">Ranking</button><button data-cm="acum" class="${profChartMode==='acum'?'on':''}">Acumulado</button></div></div>
     ${profileChartHTML(name)}
   </section>
   <section class="two-col">
-    <div class="card"><span class="lbl">Onde os pontos vêm · total</span>${pEntries.length?`<div class="pbars">${pEntries.map(([p,v])=>`<div class="pbar"><span class="sw" style="background:${platColor(p)}"></span><div style="min-width:0"><div class="nm">${escapeHtml(p)}</div><div class="track"><i style="width:${(v/pMax*100).toFixed(1)}%;background:${platColor(p)}"></i></div></div><span class="v"><b>${Math.round(v/pTot*100)}%</b> · ${fmtNum(v)}</span></div>`).join('')}</div>`:'<div class="muted" style="margin-top:12px;font-size:13px">Nenhum ponto ainda.</div>'}</div>
+    <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span class="lbl">Onde os pontos vêm · ${escapeHtml(platLabel)}</span>${profMonth?`<button class="btn ghost sm" id="profAllTime">all time</button>`:'<span class="chip">all time</span>'}</div>${pEntries.length?`<div class="pbars">${pEntries.map(([p,v])=>`<div class="pbar"><span class="sw" style="background:${platColor(p)}"></span><div style="min-width:0"><div class="nm">${escapeHtml(p)}</div><div class="track"><i style="width:${(v/pMax*100).toFixed(1)}%;background:${platColor(p)}"></i></div></div><span class="v"><b>${Math.round(v/pTot*100)}%</b> · ${fmtNum(v)}</span></div>`).join('')}</div>`:'<div class="muted" style="margin-top:12px;font-size:13px">Nenhum ponto ainda.</div>'}</div>
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px"><div><span class="lbl">Tier PornMedia</span><div class="muted" style="font-size:12px;margin-top:6px;max-width:260px">Pontos PornMedia do mês ponderados pelo ELO médio das fotos.</div></div><span class="tierbig">${ti.tier}</span></div>
       <div class="tiergrid">
@@ -1766,6 +1845,10 @@ function openActorProfile(name){
   $('#profCover').onclick=()=>openMediaViewer(allMedia,0);
   $('#profAll').onclick=()=>openMediaViewer(allMedia,0);
   $('#profChartSeg').onclick=e=>{const b=e.target.closest('[data-cm]');if(!b)return;profChartMode=b.dataset.cm;openActorProfile(name);};
+  $('#profAllTime')?.addEventListener('click',()=>{profMonth=null;openActorProfile(name);});
+  box.querySelectorAll('[data-k]').forEach(el=>el.addEventListener('click',()=>{
+    const k=el.dataset.k;profMonth=(profMonth===k)?null:k;openActorProfile(name);
+  }));
   $('#profTabs').onclick=e=>{const b=e.target.closest('[data-pt]');if(!b)return;profTab=b.dataset.pt;openActorProfile(name);};
   $('#histMore')?.addEventListener('click',()=>{profHistAll=true;openActorProfile(name);});
   box.querySelectorAll('.atile').forEach(t=>{t.querySelector('.open').onclick=()=>openMediaViewer(tabList,+t.dataset.i);});
