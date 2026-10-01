@@ -157,7 +157,8 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
 .cont .veil{z-index:1}
 @media (min-width:900px){.cont .mosaic{grid-template-columns:repeat(2,1fr)}.cont .mosaic[data-n="1"]{grid-template-columns:1fr}.cont .mosaic[data-n="3"]{grid-template-columns:1fr}}
 /* fase do vencedor / sorteio */
-.fphase{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:8px;padding:10px 12px}
+.fphase{display:none}
+.fphase.on{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:8px;padding:10px 12px}
 .fp-head{display:flex;align-items:flex-end;justify-content:space-between;gap:10px}
 .fp-kick{color:var(--ink-3)}
 .fp-name{font:400 26px/1.05 var(--serif);margin-top:4px}
@@ -267,7 +268,7 @@ nav{display:flex;padding:0 8px;overflow-x:auto;scrollbar-width:none}nav::-webkit
   .vs{width:54px;height:54px;font-size:23px;}
   .gamebar{padding:10px 22px;}
   /* fase do vencedor / sorteio: mídia alta à esquerda, controles numa coluna à direita */
-  .fphase{
+  .fphase.on{
     display:grid;
     grid-template-columns:minmax(0,1fr) 300px;
     grid-template-rows:auto auto auto 1fr;
@@ -434,7 +435,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
 
   <!-- JOGO -->
   <section class="view on" id="jogo">
-    <div class="filters" id="gameModeFilters" style="padding:8px 12px 0;margin:0;justify-content:center;gap:6px"><button class="fbtn on" data-game="duel-photo">Duelo · Fotos</button><button class="fbtn" data-game="duel-video">Duelo · Vídeos</button><button class="fbtn" data-game="sorteio">Sorteio</button></div>
+    <div class="filters" id="gameModeFilters" style="padding:8px 12px 0;margin:0;justify-content:center;gap:6px"><button class="fbtn on" data-game="duelo">Duelo de atores</button><button class="fbtn" data-game="sorteio">Sorteio dos pequenos</button></div>
     <div class="jogo-empty" id="jogoEmpty"><div class="empty" style="border:0">Conecte o Drive e cadastre fotos pra começar.<br>O ranking do PONTO sobe a cada foto pontuada.</div></div>
     <div class="stage" id="stage" style="display:none">
       <div class="cont a" id="cA"><div class="mosaic"></div><div class="veil"></div><span class="ltr">A</span>
@@ -448,7 +449,7 @@ input:focus,select:focus,textarea:focus{border-color:var(--ink)}
       <div class="divider"><div class="vs">vs</div><button class="skip" id="skip">Outro duelo</button></div>
     </div>
     <!-- fase do vencedor / sorteio -->
-    <div class="fphase" id="fphase" style="display:none">
+    <div class="fphase" id="fphase">
       <div class="fp-head"><div><span class="micro fp-kick" id="fpKicker">—</span><div class="fp-name" id="fpName">—</div></div><div class="fp-count micro" id="fpCount"></div></div>
       <div class="fp-media" id="fpMedia"></div>
       <div class="fp-meta micro" id="fpMeta"></div>
@@ -785,7 +786,7 @@ function creditPonto(actorName,pts){
 /* =====================================================================
    JOGO: duelo de fotos/vídeos separados + ELO + PONTO
    ===================================================================== */
-let duel={a:null,b:null},count=0,deciding=false,gameMode='duel-photo',pendingWinnerActorId=null;
+let duel={a:null,b:null},count=0,deciding=false,gameMode='duelo',pendingWinnerActorId=null;
 const momentum={},lastSeen={},actorSeen={};
 const BAL={sup:0.70,boost:0.80,decay:0.82};
 function photoPool(){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&!m.skipped&&m.type!=='video');}
@@ -835,15 +836,20 @@ function actorName(id){return GAME.actors[id]?.name||'—';}
      média do acervo do ator (duelo) ou média geral (sorteio).
    ===================================================================== */
 const MOSAIC_N=4,LOSER_PEN=4,K_FOCUS=16,LS_PHASE='pm2Phase';
+/* Corte de acervo: quem tem DUEL_MIN+ mídias vai pro duelo; quem tem menos vive no sorteio.
+   Conta o acervo inteiro do ator, não o que sobrou da rodada. */
+const DUEL_MIN=4;
 let phase=null,phaseBusy=false,phaseToken=0;
-function gKind(){return gameMode==='duel-video'?'video':'photo';}
 function usedSet(){return new Set(GAME.sessions.current.usedMediaIds||[]);}
 function markUsed(ids){GAME.sessions.current.usedMediaIds=[...new Set([...(GAME.sessions.current.usedMediaIds||[]),...ids])];}
-function availMedia(kind,actorId=null){const used=usedSet();return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&!m.skipped&&(kind==='video'?m.type==='video':m.type!=='video')&&!used.has(m.id)&&(actorId==null||m.actorId===actorId));}
-function topMosaic(aid,kind){return availMedia(kind,aid).sort((x,y)=>(y.elo||1500)-(x.elo||1500)).slice(0,MOSAIC_N);}
+function availMedia(actorId=null){const used=usedSet();return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&!m.skipped&&!used.has(m.id)&&(actorId==null||m.actorId===actorId));}
+function topMosaic(aid){return availMedia(aid).sort((x,y)=>(y.elo||1500)-(x.elo||1500)).slice(0,MOSAIC_N);}
 /* acervo inteiro do ator (inclusive o que já saiu nesta rodada) — é o que abre ao tocar no mosaico */
-function allOfActor(aid,kind){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId===aid&&(kind==='video'?m.type==='video':m.type!=='video')).sort((x,y)=>(y.elo||1500)-(x.elo||1500));}
-function duelActors(kind){const s=new Set();availMedia(kind).forEach(m=>s.add(m.actorId));return[...s].filter(id=>GAME.actors[id]);}
+function allOfActor(aid){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId===aid).sort((x,y)=>(y.elo||1500)-(x.elo||1500));}
+function actorSize(aid){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId===aid).length;}
+function isBig(aid){return actorSize(aid)>=DUEL_MIN;}
+function duelActors(){const s=new Set();availMedia().forEach(m=>s.add(m.actorId));return[...s].filter(id=>GAME.actors[id]&&isBig(id));}
+function sorteioPool(){return availMedia().filter(m=>!isBig(m.actorId));}
 function actorCool(id){const gap=count-(actorSeen[id]??-99);return gap>=4?1:0.15+0.85*(gap/4);}
 function wpickBy(list,wf){if(!list.length)return null;const ws=list.map(wf);let r=Math.random()*ws.reduce((a,b)=>a+b,0);for(let i=0;i<list.length;i++){r-=ws[i];if(r<=0)return list[i];}return list[list.length-1];}
 function actorEloPos(aid){return Object.values(GAME.actors).sort((x,y)=>(y.elo||1500)-(x.elo||1500)).findIndex(a=>a.id===aid)+1;}
@@ -856,63 +862,66 @@ function mediaPts(m){return m.type==='video'?videoPts(m.durationSec):1;}        
 const thumbCache=new Map();
 async function thumbUrl(m){if(!m?.fileId)return null;if(thumbCache.has(m.fileId))return thumbCache.get(m.fileId);let u=null;try{const j=await driveJson(`https://www.googleapis.com/drive/v3/files/${m.fileId}?fields=thumbnailLink`);if(j.thumbnailLink)u=j.thumbnailLink.replace(/=s\d+$/,'=s640');}catch(e){}thumbCache.set(m.fileId,u);return u;}
 
-function pickActorDuel(kind){
-  const ids=duelActors(kind);if(ids.length<2)return null;
+function pickActorDuel(){
+  const ids=duelActors();if(ids.length<2)return null;
   const a=wpickBy(ids,actorCool),ea=GAME.actors[a].elo||1500;
   const rest=ids.filter(id=>id!==a).sort((x,y)=>Math.abs((GAME.actors[x].elo||1500)-ea)-Math.abs((GAME.actors[y].elo||1500)-ea));
   const near=Math.random()<.7?rest.slice(0,Math.max(3,Math.ceil(rest.length*.25))):rest;
   return{a,b:wpickBy(near,actorCool)};
 }
-async function setStageActor(side,aid,kind){
+async function setStageActor(side,aid){
   const el=side==='a'?$('#cA'):$('#cB');el.className='cont '+side;
-  const list=topMosaic(aid,kind),a=GAME.actors[aid],tot=availMedia(kind,aid).length;
+  const list=topMosaic(aid),a=GAME.actors[aid];
   el.querySelector('.nm').textContent=actorName(aid);
   el.querySelector('.ac').textContent=`ELO ${Math.round(a?.elo||1500)} · ${a?.wins||0}V/${a?.losses||0}D`;
   el.querySelector('.rk').textContent='#'+(actorEloPos(aid)||'—');
-  const totAll=allOfActor(aid,kind).length;
-  el.querySelector('.tier').textContent=`${totAll} ${kind==='video'?'vídeo':'foto'}${totAll!==1?'s':''}`;
+  const full=allOfActor(aid),nv=full.filter(m=>m.type==='video').length,nf=full.length-nv;
+  el.querySelector('.tier').textContent=[nf?`${nf} foto${nf>1?'s':''}`:'',nv?`${nv} vídeo${nv>1?'s':''}`:''].filter(Boolean).join(' · ')||'—';
   const mo=el.querySelector('.mosaic');mo.dataset.n=list.length;
   mo.innerHTML=list.map(m=>`<div class="mt${m.type==='video'?' vid':''}" data-mid="${m.id}"></div>`).join('');
-  const full=allOfActor(aid,kind);
   mo.querySelectorAll('.mt').forEach(t=>t.onclick=e=>{e.stopPropagation();const k=Math.max(0,full.findIndex(m=>m.id===t.dataset.mid));openMediaViewer(full,k);});
   list.forEach(async m=>{try{const u=m.type==='video'?await thumbUrl(m):await blobUrl(m);const t=mo.querySelector(`[data-mid="${m.id}"]`);if(u&&t&&t.isConnected)t.style.backgroundImage=`url("${u}")`;}catch(e){}});
 }
-function showDuelUI(){$('#fphase').style.display='none';$('#jogoEmpty').style.display='none';$('#stage').style.display='flex';}
-function showPhaseUI(){$('#stage').style.display='none';$('#jogoEmpty').style.display='none';$('#fphase').style.display='flex';}
-function showEmpty(msg){$('#stage').style.display='none';$('#fphase').style.display='none';$('#jogoEmpty').style.display='grid';$('#jogoEmpty').querySelector('.empty').innerHTML=msg;}
+function showDuelUI(){$('#fphase').classList.remove('on');$('#jogoEmpty').style.display='none';$('#stage').style.display='flex';}
+function showPhaseUI(){$('#stage').style.display='none';$('#jogoEmpty').style.display='none';$('#fphase').classList.add('on');}
+function showEmpty(msg){$('#stage').style.display='none';$('#fphase').classList.remove('on');$('#jogoEmpty').style.display='grid';$('#jogoEmpty').querySelector('.empty').innerHTML=msg;}
 function savePhase(){try{localStorage.setItem(LS_PHASE,JSON.stringify({day:localDay(),mode:gameMode,phase}));}catch(e){}}
 function setModeButtons(){$$('#gameModeFilters [data-game]').forEach(x=>x.classList.toggle('on',x.dataset.game===gameMode));}
 
 async function nextDuel(){
   if(gameMode==='sorteio')return startSorteio();
   phase=null;savePhase();
-  const kind=gKind(),label=kind==='video'?'vídeos':'fotos';
-  const p=pickActorDuel(kind);
-  if(!p){showEmpty(duelActors(kind).length||!availMedia(kind).length?`Não sobraram 2 atores com ${label} disponíveis nesta rodada.<br>Toque em nova rodada.`:`Cadastre ${label} de pelo menos 2 atores (em Biblioteca).`);return;}
+  const p=pickActorDuel();
+  if(!p){
+    const grandes=[...new Set(Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId).map(m=>m.actorId))].filter(isBig).length;
+    showEmpty(grandes<2
+      ? `O duelo só aceita atores com ${DUEL_MIN} mídias ou mais, e só ${grandes} chega${grandes===1?'':'m'} lá.<br>Os outros estão no Sorteio.`
+      : 'Não sobraram 2 atores nesta rodada.<br>Toque em nova rodada.');
+    return;}
   duel=p;count++;actorSeen[p.a]=actorSeen[p.b]=count;
   showDuelUI();
   $('#counter').textContent=String(count).padStart(3,'0');
-  $('#gamebarLabel').textContent=kind==='video'?'Duelo · Vídeos':'Duelo · Fotos';
-  await setStageActor('a',p.a,kind);await setStageActor('b',p.b,kind);
+  $('#gamebarLabel').textContent='Duelo de atores';
+  await setStageActor('a',p.a);await setStageActor('b',p.b);
 }
 async function decide(side){
   if(deciding||phase||!duel.a||!duel.b)return;deciding=true;
-  const kind=gKind(),wId=duel[side],lId=duel[side==='a'?'b':'a'];
+  const wId=duel[side],lId=duel[side==='a'?'b':'a'];
   const aw=GAME.actors[wId],al=GAME.actors[lId];
   if(aw&&al){applyElo(aw,al,24);aw.wins=(aw.wins||0)+1;al.losses=(al.losses||0)+1;}
-  Object.values(GAME.media).filter(m=>m.actorId===lId&&!m.deleted&&mediaKind(m)===kind).forEach(m=>m.elo=(m.elo||1500)-LOSER_PEN);
+  Object.values(GAME.media).filter(m=>m.actorId===lId&&!m.deleted).forEach(m=>m.elo=(m.elo||1500)-LOSER_PEN);
   GAME.duels=(GAME.duels||0)+1;saveGameSoon();
   const stg=$('#stage');stg.classList.add('deciding');$('#cA').classList.add(side==='a'?'win':'lose');$('#cB').classList.add(side==='b'?'win':'lose');
   closeViewer(true);
-  setTimeout(()=>{stg.classList.remove('deciding');$('#cA').classList.remove('win','lose');$('#cB').classList.remove('win','lose');deciding=false;startWinnerPhase(wId,kind);},520);
+  setTimeout(()=>{stg.classList.remove('deciding');$('#cA').classList.remove('win','lose');$('#cB').classList.remove('win','lose');deciding=false;startWinnerPhase(wId);},520);
 }
-function startWinnerPhase(aid,kind){
-  const mine=allOfActor(aid,kind);   // venceu => vejo o acervo inteiro dele
+function startWinnerPhase(aid){
+  const mine=allOfActor(aid);   // venceu => vejo o acervo inteiro dele, foto e vídeo juntos
   if(!mine.length){nextDuel();return;}
-  phase={type:'winner',actorId:aid,kind,ref:avgElo(mine),queue:mine.map(m=>m.id),cur:null};
+  phase={type:'winner',actorId:aid,ref:avgElo(mine),queue:mine.map(m=>m.id),cur:null};
   nextPhaseItem();
 }
-function startSorteio(){phase={type:'sorteio',kind:'photo',queue:[],cur:null};nextPhaseItem();}
+function startSorteio(){phase={type:'sorteio',queue:[],cur:null};nextPhaseItem();}
 function nextPhaseItem(){
   if(!phase)return nextDuel();
   if(phase.type==='winner'){
@@ -920,25 +929,27 @@ function nextPhaseItem(){
     if(!phase.queue.length)return endWinnerPhase();
     phase.cur=phase.queue[0];
   }else{
-    const pool=availMedia('photo');
-    if(!pool.length){phase=null;savePhase();showEmpty('Sorteio esgotado: todas as fotos foram puladas.<br>Toque em nova rodada.');return;}
+    const pool=sorteioPool();
+    if(!pool.length){phase=null;savePhase();
+      const existe=Object.values(GAME.media).some(m=>!m.deleted&&m.actorId&&!isBig(m.actorId));
+      showEmpty(existe?'Sorteio esgotado nesta rodada.<br>Toque em nova rodada.':`O sorteio é dos atores com menos de ${DUEL_MIN} mídias, e no momento não há nenhum.`);return;}
     const opts=pool.length>1?pool.filter(m=>m.id!==phase.cur):pool;
     phase.cur=opts[Math.floor(Math.random()*opts.length)].id;
-    phase.ref=avgElo(Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&m.type!=='video'));
+    phase.ref=avgElo(sorteioPool());
   }
   savePhase();renderPhaseItem();
 }
 function endWinnerPhase(){
-  if(phase?.type==='winner'){markUsed(allOfActor(phase.actorId,phase.kind).map(m=>m.id));saveSessionNow();}
+  if(phase?.type==='winner'){markUsed(allOfActor(phase.actorId).map(m=>m.id));saveSessionNow();}
   phase=null;savePhase();nextDuel();
 }
 async function renderPhaseItem(){
   const m=GAME.media[phase.cur];if(!m)return nextPhaseItem();
   showPhaseUI();
   const tok=++phaseToken,isV=m.type==='video';
-  $('#fpKicker').textContent=phase.type==='winner'?`Vencedor · ${isV?'vídeos':'fotos'}`:'Sorteio · todos os atores';
+  $('#fpKicker').textContent=phase.type==='winner'?'Vencedor · acervo completo':`Sorteio · acervos de menos de ${DUEL_MIN}`;
   $('#fpName').textContent=actorName(m.actorId);
-  $('#fpCount').textContent=phase.type==='winner'?`${phase.queue.length} na fila`:`${availMedia('photo').length} disponíveis`;
+  $('#fpCount').textContent=phase.type==='winner'?`${phase.queue.length} na fila`:`${sorteioPool().length} disponíveis`;
   $('#gamebarLabel').textContent=phase.type==='winner'?'Vencedor':'Sorteio';
   $('#fpEnd').style.display=phase.type==='winner'?'':'none';
   const meta=()=>{$('#fpMeta').textContent=`${m.name} · #${mediaPos(m)||'—'} · Tier ${mediaTier(m)} · ELO ${Math.round(m.elo||1500)}${isV&&m.durationSec?' · '+fmtSec(m.durationSec):''}`;$('#fpScore').querySelector('span').textContent=`Pontuar +${mediaPts(m)}`;};
@@ -969,7 +980,7 @@ function phaseAct(score){
     phase.queue.shift();
     if(score&&m.type!=='video')phase.queue.push(m.id);   // foto pontuada volta pro fim da fila
     else markUsed([m.id]);                                // pulada, ou vídeo: sai da rodada
-  }else if(!score)markUsed([m.id]);
+  }else if(!score||m.type==='video')markUsed([m.id]);   // vídeo aparece uma vez só
   saveGameSoon();saveSessionNow();
   nextPhaseItem();
 }
@@ -982,9 +993,10 @@ $('#skip').onclick=()=>{if(!duel.a||phase)return;nextDuel();};
 $('#newRound').onclick=()=>{GAME.sessions.current.usedMediaIds=[];phase=null;savePhase();saveSessionNow();nextDuel();};
 async function startGameIfReady(){
   try{const s=JSON.parse(localStorage.getItem(LS_PHASE)||'null');
-    if(s&&s.day===localDay()&&s.phase&&['duel-photo','duel-video','sorteio'].includes(s.mode)){
+    if(s&&s.day===localDay()&&s.phase){
+      s.mode=s.mode==='sorteio'?'sorteio':'duelo';
       gameMode=s.mode;setModeButtons();phase=s.phase;
-      if(phase.type==='winner')phase.queue=(phase.queue||[]).filter(id=>GAME.media[id]&&!GAME.media[id].deleted&&!usedSet().has(id));
+      if(phase.type==='winner')phase.queue=(phase.queue||[]).filter(id=>GAME.media[id]&&!GAME.media[id].deleted);
       if(phase.type==='sorteio'||phase.queue.length){nextPhaseItemRestore();return;}
     }}catch(e){}
   phase=null;await nextDuel();
@@ -1003,6 +1015,8 @@ function rebuildSlides(n){
     track.innerHTML=Array.from({length:n},(_,i)=>`<div class="v-slide" data-i="${i}"><div class="vimg"></div></div>`).join('');
     slides=$$('.v-slide');
   }
+  // sempre zera: reusar slides já pintados de uma abertura anterior deixava a imagem velha presa
+  paintToken++;slides.forEach(clearSlide);
   if(n<=MAX_DOTS)dotsBox.innerHTML=Array.from({length:n},(_,i)=>`<i data-d="${i}"></i>`).join('');
   else dotsBox.innerHTML=`<b class="cnt" id="vCount"></b>`;
 }
@@ -1015,10 +1029,11 @@ let viewerMode='duel',viewerItems=[];
 function activeMedia(){return viewerMode==='duel'?(vIdx===0?duel.a:duel.b):viewerItems[vIdx];}
 function currentImg(){return slides[vIdx]?.querySelector('.vimg');}
 function paintWindow(){return viewerMode==='duel'?[0,1]:[vIdx-1,vIdx,vIdx+1].filter(k=>k>=0&&k<viewerItems.length);}
+let paintToken=0;
 function clearSlide(sl){sl.querySelectorAll('video.vmedia').forEach(v=>{try{v.pause();v.removeAttribute('src');v.load();}catch(e){}v.remove();});const vi=sl.querySelector('.vimg');if(vi){vi.style.transform='';vi.style.backgroundImage='';}sl.dataset.painted='';}
 async function paintViewerSlides(){
   // pinta primeiro o slide ATIVO (o que foi aberto), depois o outro — em paralelo, sem bloquear um no outro
-  const win=paintWindow();
+  const win=paintWindow();paintToken++;
   slides.forEach((sl,k)=>{if(!win.includes(k)&&sl.dataset.painted)clearSlide(sl);});
   const tasks=win.map(k=>({k,sl:slides[k]})).filter(t=>t.sl&&t.sl.dataset.painted!=='1');
   tasks.sort((a,b)=>(a.k===vIdx?-1:b.k===vIdx?1:0));
@@ -1030,6 +1045,9 @@ async function paintViewerSlides(){
     sl.style.visibility='visible';sl.dataset.painted='1';
     try{
       const src=await blobUrl(m);
+      // o download pode terminar depois do slide já ter saído da janela: aí não pinta nada
+      const aindaQuer=viewerMode==='duel'?(k===0?duel.a:duel.b)===m:viewerItems[k]===m;
+      if(!vOpen||!aindaQuer||!paintWindow().includes(k)){clearSlide(sl);return;}
       if(m.type==='video'){const v=document.createElement('video');v.className='vmedia';v.src=src;v.controls=true;v.playsInline=true;v.addEventListener('webkitendfullscreen',()=>{resetViewerGesture(true);setTrack(false);},{passive:true});v.addEventListener('fullscreenchange',()=>{resetViewerGesture(true);setTrack(false);},{passive:true});sl.appendChild(v);}
       else vi.style.backgroundImage=`url("${src}")`;
     }catch(e){}
@@ -1083,7 +1101,7 @@ async function openMediaViewer(items,start=0){
 }
 function closeViewer(sil){
   if(!vOpen||viewerClosing)return;
-  viewerClosing=true;
+  viewerClosing=true;paintToken++;
   track.querySelectorAll('video').forEach(v=>{try{v.pause();v.removeAttribute('src');v.load();}catch(e){}});
   vOpen=false;
   viewer.classList.remove('on','zoomed','dragging');
