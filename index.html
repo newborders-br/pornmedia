@@ -250,13 +250,14 @@ main{min-width:0}
 .legend .rfi{display:inline-block;width:14px;height:0;border-top:1.5px dashed var(--clay);vertical-align:middle;margin-right:6px}
 /* gráfico de linha do perfil */
 .lchart{padding:4px 0 0;overflow-x:auto}
-.lchart svg{width:100%;min-width:360px;height:auto;display:block}
-.lchart .gl{stroke:var(--line);stroke-width:1}
+.lchart svg{width:100%;height:auto;display:block}
+.lchart .hz{cursor:pointer}
+.lchart .hz:hover{fill:rgba(29,27,23,.035)}
 .lchart .gt,.lchart .gx{font:500 10px var(--sans);fill:var(--ink-3)}
 .lchart .rf{stroke:var(--clay);stroke-width:1.4;stroke-dasharray:5 4;opacity:.8}
 .lchart .rt{font:600 9px var(--sans);fill:var(--clay);letter-spacing:.08em;text-transform:uppercase}
 .lchart .ln{fill:none;stroke:var(--ink);stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
-.lchart .dot{fill:var(--ink);cursor:pointer;transition:r .15s}
+.lchart .dot{fill:var(--ink);transition:r .15s}
 .lchart .dot.sel{fill:var(--clay)}
 .lchart .dot.solo{stroke:var(--paper);stroke-width:2}
 .bar{cursor:pointer;border:0;background:none;padding:0;font:inherit;color:inherit}
@@ -1703,7 +1704,7 @@ function profSeries(name){
 }
 /* gráfico de linha em SVG, com furo onde não houve ponto */
 function profLineSVG(data,o){
-  const W=Math.max(360,data.length*46),H=260,pL=38,pR=10,pT=14,pB=26;
+  const W=900,H=300,pL=52,pR=18,pT=20,pB=30;   // tamanho fixo: não muda com a quantidade de meses
   const x=i=>pL+(data.length<2?(W-pL-pR)/2:i*(W-pL-pR)/(data.length-1));
   const y=v=>o.invert
     ? pT+((v-1)/Math.max(1,o.domMax-1))*(H-pT-pB)
@@ -1715,14 +1716,17 @@ function profLineSVG(data,o){
   if(cur.length)segs.push(cur);
   const path=segs.filter(s=>s.length>1).map(s=>'M'+s.map(p=>`${x(p.i).toFixed(1)} ${y(p.v).toFixed(1)}`).join(' L')).join(' ');
   const solos=segs.filter(s=>s.length===1).flat();
-  const ticks=o.ticks.filter(t=>o.invert?t<=o.domMax:(t>=o.min&&t<=o.domMax));
+  const ticks=[...new Set(o.ticks)].filter(t=>o.invert?t<=o.domMax:(t>=o.min&&t<=o.domMax)).sort((a,b)=>a-b);
   const step=Math.ceil(data.length/10);
   return `<div class="lchart"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeHtml(o.aria||'gráfico')}">
-    ${ticks.map(t=>`<g><line class="gl" x1="${pL}" x2="${W-pR}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}"/><text class="gt" x="${pL-6}" y="${(y(t)+3.5).toFixed(1)}" text-anchor="end">${o.tick(t)}</text></g>`).join('')}
+    ${ticks.map(t=>`<text class="gt" x="${pL-10}" y="${(y(t)+4).toFixed(1)}" text-anchor="end">${o.tick(t)}</text>`).join('')}
     ${o.ref&&o.domMax>o.ref?`<g><line class="rf" x1="${pL}" x2="${W-pR}" y1="${y(o.ref).toFixed(1)}" y2="${y(o.ref).toFixed(1)}"/><text class="rt" x="${W-pR}" y="${(y(o.ref)-5).toFixed(1)}" text-anchor="end">top ${o.ref}</text></g>`:''}
     ${path?`<path class="ln" d="${path}"/>`:''}
     ${solos.map(p=>`<circle class="dot solo" cx="${x(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="4"/>`).join('')}
-    ${pts.filter(p=>p.v!=null).map(p=>`<circle class="dot${p.d.k===profMonth?' sel':''}" data-k="${p.d.k}" cx="${x(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="11" opacity="0"/><circle class="dot${p.d.k===profMonth?' sel':''}" data-k="${p.d.k}" cx="${x(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="${p.d.k===profMonth?5:3.2}"><title>${keyLabel(p.d.k)} · ${o.tip(p.d)}</title></circle>`).join('')}
+    ${pts.map(p=>{const cw=data.length>1?(W-pL-pR)/(data.length-1):(W-pL-pR);const cx=x(p.i);
+      const txt=keyLabel(p.d.k)+' · '+(p.v==null?'sem pontos':o.tip(p.d));
+      return `<rect class="hz" data-k="${p.d.k}" x="${Math.max(0,cx-cw/2).toFixed(1)}" y="${pT}" width="${cw.toFixed(1)}" height="${H-pT-pB}" fill="transparent"><title>${escapeHtml(txt)}</title></rect>`;}).join('')}
+    ${pts.filter(p=>p.v!=null).map(p=>`<circle class="dot${p.d.k===profMonth?' sel':''}" data-k="${p.d.k}" cx="${x(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="${p.d.k===profMonth?6:4}" pointer-events="none"/>`).join('')}
     ${data.map((d,i)=>i%step===0||i===data.length-1?`<text class="gx" x="${x(i).toFixed(1)}" y="${H-7}" text-anchor="middle">${keyLabel(d.k)}</text>`:'').join('')}
   </svg></div>`;
 }
@@ -1734,7 +1738,7 @@ function profileChartHTML(name){
     const d=S.data.slice(-24);
     const pior=Math.max(1,...d.map(x=>x.rank||0));
     const domMax=Math.max(100,pior);
-    return profLineSVG(d,{invert:true,domMax,ref:100,ticks:[1,10,25,50,100,domMax],
+    return profLineSVG(d,{invert:true,domMax,ref:100,ticks:[1,100,domMax],
       tick:t=>'#'+t,value:x=>x.rank,
       tip:x=>`#${x.rank} · ${fmtNum(x.a)} pts`,aria:'posição no ranking por mês'})
       +`<div class="legend"><span>Posição no ranking de pontos de cada mês. A linha corta onde o ator não pontuou.</span>${domMax>100?'<span><i class="rfi"></i>linha do top 100</span>':'<span>escala até #100</span>'}</div>`;
@@ -1744,7 +1748,7 @@ function profileChartHTML(name){
     if(!d.length)return '<div class="empty">Sem histórico de pontos para este ator.</div>';
     const pior=Math.max(1,...d.map(x=>x.allRank));
     const domMax=Math.max(100,pior),fim=d[d.length-1];
-    return profLineSVG(d,{invert:true,domMax,ref:100,ticks:[1,10,25,50,100,domMax],
+    return profLineSVG(d,{invert:true,domMax,ref:100,ticks:[1,100,domMax],
       tick:t=>'#'+t,value:x=>x.allRank,
       tip:x=>`#${x.allRank} de ${x.universo} · ${fmtNum(x.acum)} pts acumulados`,aria:'posição histórica por mês'})
       +`<div class="legend"><span>Posição dele no ranking de pontos acumulados, recalculada a cada mês.</span><span>hoje: <b>#${fim.allRank}</b> de ${fim.universo} · ${fmtNum(fim.acum)} pts</span>${domMax>100?'<span><i class="rfi"></i>linha do top 100</span>':''}</div>`;
