@@ -677,20 +677,61 @@ let tokenClient=null, accessToken=null, folderId=localStorage.getItem('pm2Folder
 let gameFileId=null, pontoFileId=null;
 const blobCache=new Map();
 
+/* O token do Google vale ~1h. Em vez de exigir F5, o app guarda quando ele expira,
+   renova sozinho em silêncio antes disso e, se mesmo assim uma chamada voltar 401,
+   renova e repete a chamada uma vez. */
+let tokenExp=0,renovando=null,primeiroLogin=true;
+const MARGEM=5*60*1000;   // renova 5 min antes de vencer
+function tokenVencendo(){return !accessToken||Date.now()>tokenExp-MARGEM;}
 function ensureToken(){
   if(!window.google?.accounts?.oauth2){log('Google ainda carregando, tente de novo.');toast('…','Google ainda carregando');return false;}
   if(!tokenClient){
     tokenClient=google.accounts.oauth2.initTokenClient({client_id:CLIENT_ID,scope:SCOPES,callback:async r=>{
-      if(r.error){log('Erro no login: '+r.error);return;}
-      accessToken=r.access_token;setConn(true);
+      const resolver=renovando?.resolve;renovando=null;
+      if(r.error){log('Erro no login: '+r.error);setConn(false);resolver?.(false);return;}
+      accessToken=r.access_token;
+      tokenExp=Date.now()+((Number(r.expires_in)||3600)*1000);
+      setConn(true);agendarRenovacao();
+      if(!primeiroLogin){log('Sessão do Drive renovada.');resolver?.(true);return;}
+      primeiroLogin=false;
       try{const f=folderId?{id:folderId,name:APP_FOLDER}:await findOrCreateFolder();await openFolder(f.id,f.name);}
       catch(e){try{const f=await findOrCreateFolder();await openFolder(f.id,f.name);}catch(err){log('Falha ao abrir pasta: '+err.message);}}
+      resolver?.(true);
     }});
   }
   return true;
 }
-function connect(){if(accessToken)return;if(ensureToken())tokenClient.requestAccessToken({prompt:''});}
-async function driveFetch(url,opt={}){if(!accessToken)throw new Error('Sem login.');const res=await fetch(url,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+accessToken}});if(!res.ok)throw new Error('Drive '+res.status+': '+await res.text().catch(()=>res.status));return res;}
+let renovT=null;
+function agendarRenovacao(){
+  clearTimeout(renovT);
+  const falta=tokenExp-Date.now()-MARGEM;
+  if(falta>0&&falta<24*3600*1000)renovT=setTimeout(()=>renovarToken(),falta);
+}
+/* pede um token novo sem tela de login; só aparece algo se o Google exigir */
+function renovarToken(){
+  if(renovando)return renovando.p;
+  if(!ensureToken())return Promise.resolve(false);
+  let resolve;const p=new Promise(r=>resolve=r);
+  renovando={p,resolve};
+  setTimeout(()=>{if(renovando){const r=renovando.resolve;renovando=null;r(false);}},20000);   // não trava pra sempre
+  try{tokenClient.requestAccessToken({prompt:''});}catch(e){const r=renovando?.resolve;renovando=null;r?.(false);}
+  return p;
+}
+function connect(){if(accessToken&&!tokenVencendo())return;if(ensureToken())renovarToken();}
+// ao voltar pra aba, se o token já venceu enquanto estava longe, renova na hora
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&accessToken&&tokenVencendo())renovarToken();});
+addEventListener('online',()=>{if(accessToken&&tokenVencendo())renovarToken();});
+async function driveFetch(url,opt={},jaTentou=false){
+  if(!accessToken)throw new Error('Sem login.');
+  if(tokenVencendo()&&!jaTentou)await renovarToken();
+  const res=await fetch(url,{...opt,headers:{...(opt.headers||{}),Authorization:'Bearer '+accessToken}});
+  if((res.status===401||res.status===403)&&!jaTentou){
+    const ok=await renovarToken();
+    if(ok)return driveFetch(url,opt,true);   // uma única repetição, com o token novo
+  }
+  if(!res.ok)throw new Error('Drive '+res.status+': '+await res.text().catch(()=>res.status));
+  return res;
+}
 async function driveJson(url,opt={}){return (await driveFetch(url,opt)).json();}
 async function findOrCreateFolder(){
   const q=`mimeType='application/vnd.google-apps.folder' and trashed=false and name='${APP_FOLDER.replace(/'/g,"\\'")}'`;
@@ -885,6 +926,7 @@ function actorTierInfo(name){const t=actorPornTier(name);const sc=actorTierScore
 const LOSER_PEN=4,K_FOCUS=16,LS_PHASE='pm3Phase';
 const MOSAIC_N=4,DUEL_MIN=4;
 let phase=null,phaseBusy=false,phaseTok=0;
+const phaseStash={};   // guarda a fase de cada modo pra ir e voltar sem perder o fluxo
 function usedSet(){return new Set(GAME.sessions.current.usedMediaIds||[]);}
 function markUsed(ids){GAME.sessions.current.usedMediaIds=[...new Set([...(GAME.sessions.current.usedMediaIds||[]),...ids])];lsSaveUsed();}
 function availMedia(actorId=null){const used=usedSet();return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&!m.skipped&&!used.has(m.id)&&(actorId==null||m.actorId===actorId));}
@@ -1045,7 +1087,7 @@ function nextSorteio(){
   savePhase();renderPhase();
 }
 function endSorteio(){
-  phase=null;savePhase();
+  phase=null;phaseStash.sorteio=null;savePhase();
   if(duelActors().length>=2)showEmpty(`Sorteio esgotado nesta rodada.<br>Ainda há <b>${duelActors().length}</b> atores no Duelo.`+roundLine());
   else showRoundEnd();
 }
@@ -1060,6 +1102,7 @@ function startSorteio(){
     return;
   }
   phase=newPhase('sorteio',[]);
+  phase.ref=avgElo(pool);   // sem itens na criação, a média precisa vir do bolo
   nextSorteio();
 }
 function phaseValid(id){const m=GAME.media[id];return !!(m&&!m.deleted);}
@@ -1193,7 +1236,10 @@ function phaseScoreId(id){
 function phaseDismissId(id){
   if(!phase||phaseBusy)return false;const m=GAME.media[id];if(!m||phase.dismissed[id])return false;
   phaseBusy=true;setTimeout(()=>phaseBusy=false,220);
-  eloFocus(m,0,phase.ref||1500);m.losses=(m.losses||0)+1;
+  /* Aqui não há adversário: dispensar depois de já ter pontuado quer dizer "chega dessa",
+     não "essa é ruim". Então só tira de circulação, sem mexer no ELO nem contar derrota.
+     Dispensar sem ter pontuado continua sendo rejeição de verdade. */
+  if(!phase.scored[id]){eloFocus(m,0,phase.ref||1500);m.losses=(m.losses||0)+1;}
   phase.dismissed[id]=true;markUsed([id]);
   saveGameSoon();saveSessionNow();savePhase();
   return true;
@@ -1233,7 +1279,7 @@ function phaseDismiss(){
 function endWinnerPhase(){
   if(phase?.type==='winner'){markUsed(allOfActor(phase.actorId).map(m=>m.id));saveSessionNow();}
   stopVideos($('#carStage'));
-  phase=null;savePhase();
+  phase=null;phaseStash.duelo=null;savePhase();
   if(roundOver())return showRoundEnd();
   nextDuel();
 }
@@ -1252,8 +1298,16 @@ $('#skip').onclick=()=>{
   toast('—',`${a} e ${b} fora da rodada`);
   nextDuel();
 };
-$('#newRound').onclick=()=>{GAME.sessions.current.usedMediaIds=[];lsSaveUsed();phase=null;savePhase();saveSessionNow();nextDuel();};
-$$('#gameModeFilters [data-game]').forEach(b=>b.onclick=()=>{if(b.dataset.game===gameMode&&!phase)return;gameMode=b.dataset.game;setModeButtons();stopVideos($('#carStage'));phase=null;savePhase();nextDuel();});
+$('#newRound').onclick=()=>{GAME.sessions.current.usedMediaIds=[];lsSaveUsed();phase=null;phaseStash.duelo=phaseStash.sorteio=null;savePhase();saveSessionNow();nextDuel();};
+$$('#gameModeFilters [data-game]').forEach(b=>b.onclick=()=>{
+  const novo=b.dataset.game;
+  if(novo===gameMode)return;
+  phaseStash[gameMode]=phase;            // guarda o que estava rolando
+  gameMode=novo;setModeButtons();stopVideos($('#carStage'));
+  const salva=phaseStash[novo];
+  if(salva&&salva.items?.some(id=>phaseValid(id))){phase=salva;savePhase();renderPhase();return;}
+  phase=null;savePhase();nextDuel();
+});
 async function startGameIfReady(){
   try{
     const s=JSON.parse(localStorage.getItem(LS_PHASE)||'null');
