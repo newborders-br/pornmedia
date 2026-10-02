@@ -1283,7 +1283,24 @@ function endWinnerPhase(){
   if(roundOver())return showRoundEnd();
   nextDuel();
 }
-function openPhaseViewer(){if(!phase)return;const list=phaseList();stopVideos($('#carStage'));openMediaViewer(list.map(id=>GAME.media[id]),Math.max(0,list.indexOf(phase.cur)),{kind:'phase'});}
+function openPhaseViewer(){
+  if(!phase)return;
+  stopVideos($('#carStage'));
+  if(phase.type==='sorteio'){   // sorteio é uma de cada vez: nada de tira nem de navegar
+    const m=GAME.media[phase.cur];if(!m)return;
+    openMediaViewer([m],0,{kind:'phase'});
+    return;
+  }
+  const list=phaseList();
+  openMediaViewer(list.map(id=>GAME.media[id]),Math.max(0,list.indexOf(phase.cur)),{kind:'phase'});
+}
+/* troca a mídia do viewer sem fechar a tela cheia — usado a cada sorteio novo */
+function viewerSwapTo(m){
+  if(!vOpen||!m)return;
+  viewerItems=[m];vIdx=0;
+  rebuildSlides(1);neutralizeViewer();$('#vStrip')._key=null;
+  setTrack(false);vmeta();paintViewerSlides();bumpIdle();
+}
 $('#fpScore').onclick=phaseScore;
 $('#fpSkip').onclick=phaseDismiss;
 $('#fpEnd').onclick=endWinnerPhase;
@@ -1416,8 +1433,8 @@ function vmeta(){
   $('#vDel').onclick=()=>viewerDelete(m.id);
   // tira
   const ph=vCtx.kind==='phase'&&phase;
-  renderStrip($('#vStrip'),viewerItems.map(x=>x.id),m.id,{go:id=>goSlide(viewerItems.findIndex(x=>x.id===id)),sc:ph?phase.scored:null,ds:ph?phase.dismissed:null});
-  $('#vStrip').classList.toggle('hide',viewerItems.length<2);
+  if(!(ph&&phase.type==='sorteio'))renderStrip($('#vStrip'),viewerItems.map(x=>x.id),m.id,{go:id=>goSlide(viewerItems.findIndex(x=>x.id===id)),sc:ph?phase.scored:null,ds:ph?phase.dismissed:null});
+  $('#vStrip').classList.toggle('hide',viewerItems.length<2||(ph&&phase.type==='sorteio'));
   // ação
   const act=$('#vAct');
   if(ph){
@@ -1433,8 +1450,26 @@ function vmeta(){
   }else{act.innerHTML='';act.classList.add('hide');}
   updateZoomUI();
 }
-function viewerScore(){const m=activeMedia();if(!m||vCtx.kind!=='phase')return;if(phaseScoreId(m.id))vmeta();}
-function viewerDismiss(){const m=activeMedia();if(!m||vCtx.kind!=='phase')return;if(phaseDismissId(m.id)){vmeta();if(vIdx<viewerItems.length-1)setTimeout(()=>goSlide(vIdx+1,true),180);}}
+function viewerScore(){
+  const m=activeMedia();if(!m||vCtx.kind!=='phase'||!phase)return;
+  const sorteio=phase.type==='sorteio';
+  if(!phaseScoreId(m.id)){if(sorteio&&!phaseBusy&&resolvidaNaFase(m.id))viewerAvancaSorteio();return;}
+  if(sorteio)return viewerAvancaSorteio();
+  vmeta();
+}
+function viewerDismiss(){
+  const m=activeMedia();if(!m||vCtx.kind!=='phase'||!phase)return;
+  const sorteio=phase.type==='sorteio';
+  if(!phaseDismissId(m.id)){if(sorteio&&!phaseBusy)viewerAvancaSorteio();return;}
+  if(sorteio)return viewerAvancaSorteio();
+  vmeta();if(vIdx<viewerItems.length-1)setTimeout(()=>goSlide(vIdx+1,true),180);
+}
+/* sorteia a próxima mantendo a tela cheia; se o bolo acabou, fecha e mostra o fim */
+function viewerAvancaSorteio(){
+  nextSorteio();
+  if(!phase){closeViewer();return;}
+  viewerSwapTo(GAME.media[phase.cur]);
+}
 async function viewerDelete(id){
   if(!await deleteMedia(id))return;
   const items=viewerItems.filter(x=>x.id!==id);
@@ -1548,8 +1583,9 @@ addEventListener('popstate',()=>{if(vOpen)closeViewer(true);});
 function viewerKey(e){
   const k=e.key;bumpIdle();
   if(k==='Escape'){e.preventDefault();closeViewer();return;}
-  if(k==='ArrowLeft'){e.preventDefault();goSlide(vIdx-1);return;}
-  if(k==='ArrowRight'){e.preventDefault();goSlide(vIdx+1);return;}
+  const soloFase=vCtx.kind==='phase'&&phase&&phase.type==='sorteio';
+  if(k==='ArrowLeft'){e.preventDefault();if(!soloFase)goSlide(vIdx-1);return;}
+  if(k==='ArrowRight'){e.preventDefault();if(!soloFase)goSlide(vIdx+1);return;}
   if(k==='+'||k==='='){zoomAt(Math.max(1.5,scale*1.4));return;}
   if(k==='-'||k==='_'){zoomAt(scale/1.4);return;}
   if(k==='0'){clearZoomState(true);setTrack(false);return;}
