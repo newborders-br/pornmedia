@@ -1020,8 +1020,17 @@ function startWinnerPhase(aid,info={}){
 }
 /* Sorteio: uma mídia por vez, tirada na hora.
    foto dispensada some · foto pontuada volta pro bolo · vídeo sai pontuado ou não. */
+/* Mídia que já teve resposta nesta fase não volta a ser sorteada:
+   dispensada sai de vez, e vídeo pontuado também (vídeo aparece uma vez só).
+   Sem isso, o sorteio podia cair numa dispensada e o Pontuar virava um beco sem saída. */
+function resolvidaNaFase(id){
+  if(!phase)return false;
+  if(phase.dismissed[id])return true;
+  const m=GAME.media[id];
+  return !!(m&&m.type==='video'&&phase.scored[id]);
+}
 function drawSorteio(){
-  const pool=sorteioPool();
+  const pool=sorteioPool().filter(m=>!resolvidaNaFase(m.id));
   if(!pool.length)return null;
   const ult=phase?.cur,recentes=(phase?.items||[]).slice(-2);
   let livres=pool.length>2?pool.filter(m=>!recentes.includes(m.id)):[];
@@ -1095,8 +1104,7 @@ function renderPhase(){
   if(!phase)return;
   // cada mídia compete uma vez: quando todas já foram pontuadas/dispensadas, a fase fecha sozinha
   if(phase.type==='sorteio'){
-    if(!sorteioPool().length)return endSorteio();
-    if(!phaseValid(phase.cur)||usedSet().has(phase.cur))return nextSorteio();
+    if(!phaseValid(phase.cur)||usedSet().has(phase.cur)||resolvidaNaFase(phase.cur))return nextSorteio();
   }
   if(phase.type==='winner'&&phase.items.every(id=>!phaseValid(id)||phase.dismissed[id]))return endWinnerPhase();
   const sorteio=phase.type==='sorteio';
@@ -1146,7 +1154,7 @@ function renderPhase(){
   const fs=st.querySelector('.fsbtn');if(fs)fs.onclick=e=>{e.stopPropagation();openPhaseViewer();};
   phaseMeta();
   if(sorteio){
-    const pool=sorteioPool(),pf=pool.filter(x=>x.type!=='video').length,pv=pool.length-pf;
+    const pool=sorteioPool().filter(x=>!resolvidaNaFase(x.id)),pf=pool.filter(x=>x.type!=='video').length,pv=pool.length-pf;
     $('#carStrip').innerHTML='';$('#carStrip')._key='';
     $('#carProg').innerHTML=`sorteio <b>${phase.items.length}</b> · restam <b>${pf}</b> foto${pf===1?'':'s'}${pv?` e <b>${pv}</b> vídeo${pv===1?'':'s'}`:''}`;
   }else{
@@ -1193,7 +1201,10 @@ function phaseDismissId(id){
 function phaseScore(){
   if(!phase)return;
   const atual=phase.cur;
-  if(!phaseScoreId(atual))return;
+  if(!phaseScoreId(atual)){
+    if(phase.type==='sorteio'&&!phaseBusy&&resolvidaNaFase(atual))nextSorteio();   // nunca fica preso
+    return;
+  }
   if(phase.type==='sorteio')return nextSorteio();   // pontuou, sorteia outra
   phase.cur=proximaNaFase(atual);                   // pontuou, passa pra próxima
   renderPhase();
@@ -1212,7 +1223,10 @@ function proximaNaFase(id){
 function phaseDismiss(){
   if(!phase)return;
   const list=phaseList(),i=list.indexOf(phase.cur);
-  if(!phaseDismissId(phase.cur))return;
+  if(!phaseDismissId(phase.cur)){
+    if(phase.type==='sorteio'&&!phaseBusy)nextSorteio();
+    return;
+  }
   if(phase.type==='sorteio')return nextSorteio();
   phase.cur=proximaNaFase(phase.cur);renderPhase();
 }
