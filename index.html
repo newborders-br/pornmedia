@@ -274,6 +274,19 @@ main{min-width:0}
 .cmp-opt .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cmp-opt .pt{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
 .cmp-none{padding:14px 4px;font:500 13px var(--sans);color:var(--ink-3)}
+.obras{margin-top:4px}
+.obra{display:grid;grid-template-columns:96px minmax(160px,1.6fr) minmax(120px,1.2fr) 86px 136px 60px;gap:14px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line);font-size:13px}
+.obra.h{border-bottom:1px solid var(--line-2);padding-bottom:8px}
+.obra .cod{font:600 12px var(--mono,ui-monospace,monospace);color:var(--ink-2);letter-spacing:.02em}
+.obra .n{text-align:right;font-variant-numeric:tabular-nums}
+.obra .n small,.obra .ob-nome small{color:var(--ink-3);font-size:11px}
+.obra .ob-nome{display:flex;flex-direction:column;gap:2px;min-width:0}
+.obra .ob-nome input{width:100%;border:1px solid transparent;border-radius:6px;padding:4px 6px;background:transparent;font:600 13px var(--sans);color:var(--ink)}
+.obra .ob-nome input::placeholder{color:var(--ink-3);font-weight:500;font-style:italic}
+.obra .ob-nome input:hover{border-color:var(--line)}
+.obra .ob-nome input:focus{border-color:var(--field);background:var(--paper);outline:none}
+.obra .feat{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2)}
+@media(max-width:860px){.obra{grid-template-columns:1fr 1fr;gap:6px}.obra.h{display:none}.obra .feat,.obra .n{text-align:left}}
 .bar{cursor:pointer;border:0;background:none;padding:0;font:inherit;color:inherit}
 .bar.sel .f{background:var(--clay)}
 .bar.sel .rk{color:var(--clay);font-weight:700}
@@ -833,7 +846,7 @@ function lazyAll(root){root.querySelectorAll('img[data-mid]:not([src])').forEach
    ESTADO: jogo (media_ranker_state.json) + ledger (ponto_state.json)
    ===================================================================== */
 function localDay(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-function freshGame(){return{version:'2.0',app:'PornMedia',updatedAt:null,folderId:null,media:{},actors:{},duels:0,sessions:{current:newSession()},history:[]};}
+function freshGame(){return{version:'2.0',app:'PornMedia',updatedAt:null,folderId:null,media:{},actors:{},obras:{},duels:0,sessions:{current:newSession()},history:[]};}
 function newSession(){return{id:'s_'+Date.now(),date:localDay(),usedMediaIds:[]};}
 function ensureDailySession(){
   if(!GAME.sessions)GAME.sessions={current:newSession()};
@@ -859,11 +872,13 @@ function mergeUsed(){GAME.sessions.current.usedMediaIds=[...new Set([...lsLoadUs
 async function openFolder(fid){
   folderId=fid;localStorage.setItem('pm2FolderId',fid);
   const gf=await findFile(GAME_FILE,'application/json');
-  if(gf){gameFileId=gf.id;const loaded=await driveJson(`https://www.googleapis.com/drive/v3/files/${gf.id}?alt=media`);GAME={...freshGame(),...loaded,media:{...(loaded.media||{})},actors:{...(loaded.actors||{})},history:[...(loaded.history||[])]};const rolled=ensureDailySession();mergeUsed();log('Estado do jogo carregado.'+(rolled?' Novo dia: rodada renovada.':''));if(rolled)saveGameSoon();}
+  if(gf){gameFileId=gf.id;const loaded=await driveJson(`https://www.googleapis.com/drive/v3/files/${gf.id}?alt=media`);GAME={...freshGame(),...loaded,media:{...(loaded.media||{})},actors:{...(loaded.actors||{})},obras:{...(loaded.obras||{})},history:[...(loaded.history||[])]};const rolled=ensureDailySession();mergeUsed();log('Estado do jogo carregado.'+(rolled?' Novo dia: rodada renovada.':''));if(rolled)saveGameSoon();}
   else{gameFileId=null;GAME=freshGame();GAME.folderId=fid;log('Sem estado do jogo. Será criado ao salvar.');}
   const pf=await findFile(PONTO_FILE,'application/json');
   if(pf){pontoFileId=pf.id;const lj=await driveJson(`https://www.googleapis.com/drive/v3/files/${pf.id}?alt=media`);LEDGER={version:'2.0',events:Array.isArray(lj.events)?lj.events:[],watches:Array.isArray(lj.watches)?lj.watches:[]};log(`Ledger carregado: ${LEDGER.events.length} evento(s).`);}
   else{pontoFileId=null;LEDGER={version:'2.0',events:[],watches:[]};log('Sem ledger. Será criado ao salvar.');}
+  const nObras=ensureObraCodes();
+  if(nObras){log(`${nObras} obra(s) catalogada(s) a partir do histórico.`);savePontoSoon();}
   setSave('ok','salvo');
   prefetchThumbs();
   refreshAll();await startGameIfReady();
@@ -950,6 +965,78 @@ function mediaPos(m){const arr=mediaRanked(mediaKind(m));return arr.findIndex(x=
 function mediaTier(m){const tot=mediaPool(mediaKind(m)).length||1;const p=(mediaPos(m)||tot)/tot;return p<=.06?'S':p<=.2?'A':p<=.45?'B':p<=.75?'C':'D';}
 function mediaLabel(m){return mediaKind(m)==='video'?'Vídeo':'Foto';}
 function actorName(id){return GAME.actors[id]?.name||'—';}
+/* ---------- catálogo de obras ----------
+   Uma obra é um vídeo. O código é a chave: vem da coluna Código quando o usuário digita,
+   ou é gerado no import. Só vira obra o grupo que passa de OBRA_MIN_SEG, salvo código
+   existente ou '+' forçando. Abaixo disso é corte de preview e não entope o perfil. */
+const OBRA_MIN_SEG=15*60, OBRA_COMPLETA=0.5;
+function codigosUsados(){
+  const s=new Set();
+  LEDGER.events.forEach(e=>{if(e&&e.codigo)s.add(String(e.codigo));});
+  Object.keys(GAME.obras||{}).forEach(c=>s.add(String(c)));
+  return s;
+}
+/* AAMMDD + sequência do dia */
+function novoCodigo(dataBR,usados){
+  const m=String(dataBR||'').match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  const pre=m?(m[3].slice(2)+m[2]+m[1]):(new Date().toISOString().slice(2,10).replace(/-/g,''));
+  for(let i=1;i<100;i++){const c=pre+String(i).padStart(2,'0');if(!usados.has(c)){usados.add(c);return c;}}
+  return pre+'99';
+}
+function obraDur(e){return Number(e&&e.duracao_video_seg)||0;}
+/* carimba código nos eventos antigos que já qualificam, pra história não ficar sem obra */
+function ensureObraCodes(){
+  const usados=codigosUsados(),grupos=new Map();
+  LEDGER.events.forEach(e=>{
+    if(!e||e.codigo||!e.dataBR||!obraDur(e))return;
+    const k=e.dataBR+'|'+String(e.titulo||'').toLowerCase()+'|'+obraDur(e);
+    if(!grupos.has(k))grupos.set(k,[]);
+    grupos.get(k).push(e);
+  });
+  let n=0;
+  [...grupos.values()].forEach(evs=>{
+    if(Math.max(...evs.map(obraDur))<OBRA_MIN_SEG)return;
+    const c=novoCodigo(evs[0].dataBR,usados);
+    evs.forEach(e=>{e.codigo=c;});n++;
+  });
+  return n;
+}
+function obraNome(cod){return (GAME.obras&&GAME.obras[cod]&&GAME.obras[cod].nome)||'';}
+function setObraNome(cod,nome){
+  if(!GAME.obras)GAME.obras={};
+  nome=String(nome||'').replace(/\s+/g,' ').trim();
+  if(nome)GAME.obras[cod]={...(GAME.obras[cod]||{}),nome};
+  else if(GAME.obras[cod])delete GAME.obras[cod].nome;
+  saveGameSoon();
+}
+/* catálogo inteiro, agrupado por código */
+function obrasIndex(){
+  const by={};
+  LEDGER.events.forEach(e=>{
+    if(!e||!e.codigo)return;
+    const o=by[e.codigo]||(by[e.codigo]={codigo:e.codigo,produtora:'',atores:new Set(),durTotal:0,porData:{},scores:[]});
+    if(e.titulo&&e.titulo!=='-'&&!o.produtora)o.produtora=e.titulo;
+    if(e.nome)o.atores.add(e.nome);
+    o.durTotal=Math.max(o.durTotal,obraDur(e));
+    const d=e.dataBR||'?';
+    const s=o.porData[d]||(o.porData[d]={data:d,visto:0,plat:e.plataforma||'',score:null});
+    s.visto=Math.max(s.visto,Number(e.assistido_seg)||0);
+    if(e.score!=null&&e.score!=='')s.score=Number(e.score);
+  });
+  return Object.values(by).map(o=>{
+    const sess=Object.values(o.porData);
+    /* completa = viu metade ou mais da duração total. Proporção em vez de número fixo:
+       se calibra sozinha pro tamanho do filme e não precisa de parâmetro novo. */
+    const lim=o.durTotal*OBRA_COMPLETA;
+    const completas=sess.filter(x=>x.visto>=lim).length;
+    const scores=sess.map(x=>x.score).filter(x=>x!=null&&!isNaN(x));
+    return{...o,nome:obraNome(o.codigo),atores:[...o.atores],sessoes:sess,
+      completas,cortes:sess.length-completas,
+      score:scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:null,
+      ultima:sess.map(x=>x.data).sort((a,b)=>(parseDateBR(b)||0)-(parseDateBR(a)||0))[0]||''};
+  }).sort((a,b)=>(parseDateBR(b.ultima)||0)-(parseDateBR(a.ultima)||0));
+}
+function obrasDoAtor(nome){return obrasIndex().filter(o=>o.atores.includes(nome));}
 /* ---------- renomear / fundir atores ---------- */
 const semAcento=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
 function allKnownNames(){
@@ -2045,6 +2132,7 @@ function openActorProfile(name){
   /* candidatos a comparação: quem tem ponto, menos o próprio, mais pontuados primeiro */
   /* todo mundo que tem ponto, sem corte: a busca precisa alcançar o elenco inteiro */
   const parecidos=nomesParecidos(name);
+  const obras=obrasDoAtor(name);
   const cmpOpts=Object.entries(allTot).filter(([nm,v])=>nm!==name&&v>0).sort((a,b)=>b[1]-a[1]);
   const box=$('#actorProfile');
   box.innerHTML=`
@@ -2103,6 +2191,19 @@ function openActorProfile(name){
         <div><div class="v">${fmtInt(ti.avgElo)}</div><div class="lbl l">ELO médio</div></div>
       </div>
     </div>
+  </section>
+  <section class="sec">
+    <div class="sec-head"><div><div class="sec-t">Obras · ${obras.length}</div><div class="muted" style="font-size:13px;margin-top:6px">Vídeos de 15 min ou mais que ele aparece. Clique no nome pra escrever ou mudar — o nome vale pra obra inteira, aparece no perfil de todo mundo do elenco dela.</div></div></div>
+    ${obras.length?`<div class="obras">
+      <div class="obra h lbl"><span>Código</span><span>Obra</span><span>Elenco</span><span style="text-align:right">Duração</span><span style="text-align:right">Vistas</span><span style="text-align:right">Score</span></div>
+      ${obras.map(o=>{const feat=o.atores.filter(a=>a!==name);
+        return `<div class="obra"><span class="cod">${escapeHtml(o.codigo)}</span>
+        <span class="ob-nome"><input data-obra="${escapeHtml(o.codigo)}" value="${escapeHtml(o.nome)}" placeholder="sem nome" autocomplete="off">${o.produtora?`<small>${escapeHtml(o.produtora)}</small>`:''}</span>
+        <span class="feat">${feat.length?feat.map(escapeHtml).join(', '):'<span class="muted">solo</span>'}</span>
+        <span class="n">${fmtSec(o.durTotal)}</span>
+        <span class="n">${o.completas?`<b>${o.completas}</b> completa${o.completas>1?'s':''}`:'<span class="muted">—</span>'}${o.cortes?` <small>+${o.cortes} corte${o.cortes>1?'s':''}</small>`:''}</span>
+        <span class="n">${o.score==null?'<span class="muted">—</span>':fmtNum(Math.round(o.score*10)/10)}</span></div>`;}).join('')}
+    </div>`:`<div class="empty">Nenhuma obra ainda. Entram as sessões de 15 min ou mais — abaixo disso é corte, que pontua mas não vira obra.</div>`}
   </section>
   <section class="sec">
     <div class="sec-head"><div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap"><span class="sec-t">Acervo</span>
@@ -2177,6 +2278,13 @@ function openActorProfile(name){
   if(profCmpOpen)filtraCmp();
   $('#profAllTime')?.addEventListener('click',()=>{profMonth=null;openActorProfile(name);});
   bindMonthClicks(box,name);
+  box.querySelectorAll('[data-obra]').forEach(inp=>{
+    const salva=()=>{const c=inp.dataset.obra,v=inp.value;
+      if(v.replace(/\s+/g,' ').trim()===obraNome(c))return;
+      setObraNome(c,v);toast('Nome da obra salvo',c+(v.trim()?' · '+v.trim():' · sem nome'));};
+    inp.addEventListener('blur',salva);
+    inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();inp.blur();}});
+  });
   $('#profTabs').onclick=e=>{const b=e.target.closest('[data-pt]');if(!b)return;profTab=b.dataset.pt;openActorProfile(name);};
   $('#histMore')?.addEventListener('click',()=>{profHistAll=true;openActorProfile(name);});
   box.querySelectorAll('.atile').forEach(t=>{t.querySelector('.open').onclick=()=>openMediaViewer(tabList,+t.dataset.i);});
@@ -2408,7 +2516,26 @@ function parseSessions(raw){
     if(!r.ok)errors.push(`linha ${L}: ${r.flags.join(', ')}`);
     out.push(r);
   });
-  return{list:out,errors,temCod:iCod>=0,rows:out.filter(r=>r.ok).flatMap(r=>r.nomes.map(nome=>({id:uid('ss'),nome,tipo:r.tipo,ponto:r.pts,dataBR:r.data,plataforma:r.plat,score:r.score,titulo:r.prod,modo:'sessao',assistido_seg:r.net,skipado_seg:r.skip,duracao_video_seg:r.dur,fotos:r.fotos||0,score_aplicavel:'',codigo:r.codRef||'',cod_grupo:r.codGrupo||'',cod_forca:!!r.codForca,source:'import-sessao'})))};
+  /* Agrupa as linhas em obras: código existente manda, senão o marcador local,
+     senão data+produtora+duração. O teste dos 15 min roda no GRUPO, não na linha —
+     senão o passivo do gangbang abriria obra e os outros não. */
+  const usados=codigosUsados(),grupos=new Map();
+  out.forEach(r=>{
+    if(!r.ok)return;
+    const k=r.codRef?('C:'+r.codRef):r.codGrupo?('G:'+r.codGrupo)
+          :('A:'+r.data+'|'+String(r.prod||'').toLowerCase()+'|'+(r.dur||0));
+    if(!grupos.has(k))grupos.set(k,{rows:[],maxDur:0,ref:'',forca:false,data:r.data});
+    const g=grupos.get(k);
+    g.rows.push(r);g.maxDur=Math.max(g.maxDur,r.dur||0);
+    if(r.codRef)g.ref=r.codRef;
+    if(r.codForca)g.forca=true;
+  });
+  [...grupos.values()].forEach(g=>{
+    if(!(g.ref||g.forca||g.maxDur>=OBRA_MIN_SEG))return;
+    const cod=g.ref||novoCodigo(g.data,usados);
+    g.rows.forEach(r=>{r.obra=cod;r.obraNova=!g.ref;});
+  });
+  return{list:out,errors,temCod:iCod>=0,rows:out.filter(r=>r.ok).flatMap(r=>r.nomes.map(nome=>({id:uid('ss'),nome,tipo:r.tipo,ponto:r.pts,dataBR:r.data,plataforma:r.plat,score:r.score,titulo:r.prod,modo:'sessao',assistido_seg:r.net,skipado_seg:r.skip,duracao_video_seg:r.dur,fotos:r.fotos||0,score_aplicavel:'',codigo:r.obra||'',source:'import-sessao'})))};
 }
 function sessKey(e){return[e.nome,e.dataBR,e.plataforma,Math.round(e.assistido_seg||0),Math.round(e.skipado_seg||0)].join('|').toLowerCase();}
 function renderImpPreview(){
@@ -2421,8 +2548,8 @@ function renderImpPreview(){
   const tot=ok.reduce((s,r)=>s+r.pts*r.nomes.length,0);
   box.style.display='block';
   box.innerHTML=`<div class="sum"><b>${ok.length}</b> linha(s) entram · <b>${fmtNum(tot)} pts</b>${warn.length?` · <span style="color:var(--gold)">${warn.length} pra conferir</span>`:''}${bad.length?` · <span style="color:var(--clay)">${bad.length} não entram</span>`:''}${dup?` · ${dup} já estão no ledger (Adicionar pula)`:''}</div>
-  <div class="tw"><table><thead><tr><th>Linha</th><th>Data</th>${S.temCod?'<th>Código</th>':''}<th>Ator</th><th>Plataforma</th><th>Duração</th><th>Skip</th><th>Líquido</th><th>Pts</th><th>Aviso</th></tr></thead><tbody>${
-    S.list.map(r=>`<tr class="${!r.ok?'err':r.warn?'warn':''}"><td class="n">${r.line}</td><td>${r.data||'?'}</td>${S.temCod?`<td class="n">${r.codRef?`<b>${escapeHtml(r.codRef)}</b>`:r.codGrupo?`grupo ${escapeHtml(r.codGrupo)}`:r.codForca?'forçar':'<span class="muted">—</span>'}</td>`:''}<td>${escapeHtml(r.nome||'—')}${r.tipo==='Studio'?' <small>(produtora, fora do ranking)</small>':r.nomes.length>1?` <small>(×${r.nomes.length})</small>`:''}</td><td>${escapeHtml(r.plat)}</td><td class="n">${fmtHMS(r.dur)}</td><td class="n">${fmtHMS(r.skip)}</td><td class="n">${fmtHMS(r.net)}</td><td class="n"><b>${r.pts==null?'—':fmtNum(r.pts)}</b></td><td class="fl">${escapeHtml(r.flags.join(' · '))}</td></tr>`).join('')
+  <div class="tw"><table><thead><tr><th>Linha</th><th>Data</th><th>Obra</th><th>Ator</th><th>Plataforma</th><th>Duração</th><th>Skip</th><th>Líquido</th><th>Pts</th><th>Aviso</th></tr></thead><tbody>${
+    S.list.map(r=>`<tr class="${!r.ok?'err':r.warn?'warn':''}"><td class="n">${r.line}</td><td>${r.data||'?'}</td><td class="n">${r.obra?`<b>${escapeHtml(r.obra)}</b>${r.obraNova?' <small>nova</small>':''}`:'<span class="muted">—</span>'}</td><td>${escapeHtml(r.nome||'—')}${r.tipo==='Studio'?' <small>(produtora, fora do ranking)</small>':r.nomes.length>1?` <small>(×${r.nomes.length})</small>`:''}</td><td>${escapeHtml(r.plat)}</td><td class="n">${fmtHMS(r.dur)}</td><td class="n">${fmtHMS(r.skip)}</td><td class="n">${fmtHMS(r.net)}</td><td class="n"><b>${r.pts==null?'—':fmtNum(r.pts)}</b></td><td class="fl">${escapeHtml(r.flags.join(' · '))}</td></tr>`).join('')
   }</tbody></table></div>`;
 }
 let impPrevT=null;
