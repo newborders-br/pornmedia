@@ -573,6 +573,7 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
         <div class="three"><div class="fld"><span class="lbl">Duração</span><input id="rgDur" placeholder="26:31 ou 0:26:31"></div>
           <div class="fld"><span class="lbl">Skip</span><input id="rgSkip" placeholder="15:10 ou -"></div>
           <div class="fld"><span class="lbl">Score</span><input id="rgScore" placeholder="48 ou -"></div></div>
+        <div class="fld"><span class="lbl">Fotos · cada uma vale 10s na régua da plataforma</span><input id="rgFotos" placeholder="ex: 12" inputmode="numeric"></div>
         <div class="preview" id="rgPreview">Preencha duração e plataforma pra ver os pontos.</div>
         <div style="display:flex;align-items:center;gap:14px"><button class="btn primary" id="rgAdd" disabled>Adicionar</button><span class="status" id="rgStatus"></span></div>
       </div>
@@ -859,22 +860,39 @@ function parseNumber(v){const s=cleanCell(v).replace('%','').replace(/\./g,'').r
 function todayBR(){const d=new Date();return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;}
 function parseDateBR(s){const m=String(s||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);if(!m)return null;let[,d,mo,y]=m;if(y.length===2)y='20'+y;return new Date(+y,+mo-1,+d);}
 function monthKey(b){const d=parseDateBR(b);return d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`:'';}
-function fmtNum(n){const x=Number(n);return Number.isInteger(x)?fmtInt(x):String(x.toFixed(1)).replace('.',',');}
-function canonicalPlatform(v){const raw=cleanCell(v).replace(/\s+/g,' ');const k=raw.toLowerCase();const map={'pc off':'pc-off','pcoff':'pc-off','pc-off':'pc-off','pc on':'pc-on','pcon':'pc-on','pc-on':'pc-on','pc onr':'pc-onr','pconr':'pc-onr','pc-onr':'pc-onr','telegram':'telegram','telegram full':'telegram full','telegram-only':'telegram only','telegram only':'telegram only','tv full':'tv full','tv live':'tv live','aloha':'aloha','foto':'fotos','fotos':'fotos','photo':'fotos','photos':'fotos','twitter':'twitter','x':'twitter','pornmedia':'PornMedia','mobile':'mobile','celular':'mobile','cel':'mobile','tv':'tv full','telegram-full':'telegram full'};return map[k]||(LIVE_RULES[k]?k:(raw||'—'));}
+function fmtNum(n){const x=Number(n)||0;
+  if(Number.isInteger(x))return fmtInt(x);
+  if(Math.abs(x)>=1)return fmtInt(x);                         // 1 ou mais: sempre inteiro
+  return String(+x.toFixed(2)).replace('.',',');}             // abaixo de 1: até 2 casas, pra não virar zero
+function canonicalPlatform(v){const raw=cleanCell(v).replace(/\s+/g,' ');const k=raw.toLowerCase();const map={'pc off':'pc-off','pcoff':'pc-off','pc-off':'pc-off','pc on':'pc-on','pcon':'pc-on','pc-on':'pc-on','pc onr':'pc-onr','pconr':'pc-onr','pc-onr':'pc-onr','telegram':'telegram','telegram full':'telegram full','telegram-only':'telegram only','telegram only':'telegram only','tv full':'tv full','tv live':'tv live','aloha':'aloha','foto':'fotos','fotos':'fotos','photo':'fotos','photos':'fotos','twitter':'twitter','x':'twitter','pornmedia':'PornMedia','tg':'telegram','tg 1':'telegram','tg 2':'telegram','tg 3':'telegram','telegram 1':'telegram','telegram 2':'telegram','telegram 3':'telegram','mobile':'mobile','celular':'mobile','cel':'mobile','tv':'tv full','telegram-full':'telegram full'};return map[k]||(LIVE_RULES[k]?k:(raw||'—'));}
 function platformGroupName(v){const p=canonicalPlatform(v);const k=String(p||'').toLowerCase();if(k==='telegram'||k==='telegram full'||k==='telegram only'||k==='telegram-only')return 'telegram';return p;}
+/* Régua. 'legacy' = só existe pra entender dados antigos, não aparece no Registrar.
+   Os pontos ficam gravados em cada linha, então mexer aqui NÃO recalcula o passado. */
+const SEG_FOTO=10;   // uma foto equivale a 10 segundos na régua da plataforma
 const LIVE_RULES={
-  'pc-off':{kind:'secondsDivisor',value:2,label:'2s = 1 ponto',skip:true},
-  'pc-on':{kind:'secondsDivisor',value:3,label:'3s = 1 ponto',rankBonus:true,skip:true},
-  'telegram full':{kind:'secondsDivisor',value:5,label:'5s = 1 ponto',skip:true},
+  'pc-off':{kind:'secondsDivisor',value:2,label:'2s = 1 ponto',skip:true,fotos:true},
+  'pc-on':{kind:'secondsDivisor',value:3,label:'3s = 1 ponto',skip:true,fotos:true},
   'tv full':{kind:'secondsDivisor',value:5,label:'5s = 1 ponto',skip:true},
-  'pc-onr':{kind:'secondsDivisor',value:15,label:'15s = 1 ponto',rankBonus:true,skip:true},
-  'telegram only':{kind:'secondsDivisor',value:15,label:'15s = 1 ponto',skip:true},
-  'twitter':{kind:'secondsDivisor',value:20,label:'20s = 1 ponto',skip:true},
-  'mobile':{kind:'secondsDivisor',value:20,label:'20s = 1 ponto',skip:true},
+  'PornMedia':{kind:'secondsDivisor',value:10,label:'10s = 1 ponto · foto = 1',fotos:true},
+  'pc-onr':{kind:'secondsDivisor',value:15,label:'15s = 1 ponto',skip:true,fotos:true},
+  /* Telegram é UMA plataforma. O nível entra multiplicando o tempo na digitação:
+     nível 1 = tempo como é · nível 2 = ×2 · nível 3 = ×3. */
+  'telegram':{kind:'secondsDivisor',value:20,label:'20s = 1 ponto · nível entra no tempo (×1 ×2 ×3)',fotos:true},
+  'twitter':{kind:'secondsDivisor',value:20,label:'20s = 1 ponto',fotos:true},
+  'mobile':{kind:'secondsDivisor',value:20,label:'20s = 1 ponto',fotos:true},
   'tv live':{kind:'pointsPerMinute',value:20,label:'20 pts/min'},
   'aloha':{kind:'pointsPerMinute',value:2,label:'2 pts/min'},
-  'fotos':{kind:'manualPoints',value:1,label:'pontos manuais'}
+  'telegram full':{kind:'secondsDivisor',value:5,label:'5s = 1 ponto',skip:true,legacy:true},
+  'telegram only':{kind:'secondsDivisor',value:15,label:'15s = 1 ponto',skip:true,legacy:true},
+  'tg1':{kind:'secondsDivisor',value:20,label:'20s = 1 ponto',legacy:true},
+  'tg2':{kind:'secondsDivisor',value:15,label:'15s = 1 ponto',legacy:true},
+  'tg3':{kind:'secondsDivisor',value:10,label:'10s = 1 ponto',legacy:true},
+  'fotos':{kind:'manualPoints',value:1,label:'pontos manuais',legacy:true}
 };
+/* quanto vale 1 foto na plataforma */
+function fotoPts(plat){const r=LIVE_RULES[plat];if(!r)return 0;
+  if(r.kind==='secondsDivisor')return SEG_FOTO/r.value;
+  if(r.kind==='pointsPerMinute')return SEG_FOTO/60*r.value;return 0;}
 const MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 function fmtSec(s){const m=Math.floor(s/60),sec=Math.round(s%60);return m?`${m}:${String(sec).padStart(2,'0')}`:`${sec}s`;}
 
@@ -953,8 +971,8 @@ function expct(a,b){return 1/(1+Math.pow(10,((b.elo||1500)-(a.elo||1500))/400));
 function applyElo(w,l,k=32){const ew=expct(w,l),el=expct(l,w);w.elo=(w.elo||1500)+k*(1-ew);l.elo=(l.elo||1500)+k*(0-el);}
 function avgElo(list){return list.length?list.reduce((s,m)=>s+(Number(m.elo)||1500),0)/list.length:1500;}
 function eloFocus(m,score,ref){const E=1/(1+Math.pow(10,(ref-(m.elo||1500))/400));m.elo=(m.elo||1500)+K_FOCUS*(score-E);}
-function videoPts(sec){return Math.max(1,Math.round((Number(sec)||20)/20));}
-function mediaPts(m){return m.type==='video'?videoPts(m.durationSec):1;}
+function videoPts(sec){return (Number(sec)||0)/10;}   // PornMedia: 10s = 1 ponto, sem piso — vídeo curto conta seus segundos
+function mediaPts(m){return m.type==='video'?Math.max(0.1,videoPts(m.durationSec)):1;}   // foto = 1 pt (= 10s na régua do PornMedia)
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
 
 /* =====================================================================
@@ -2068,7 +2086,7 @@ $('#libUploadToggle').onclick=()=>$('#libUploadInner').classList.toggle('hide');
 /* =====================================================================
    REGISTRAR — uma sessão por linha
    ===================================================================== */
-function regPlats(){return Object.keys(LIVE_RULES).filter(k=>LIVE_RULES[k].kind!=='manualPoints');}
+function regPlats(){return Object.keys(LIVE_RULES).filter(k=>!LIVE_RULES[k].legacy);}
 function fillPlats(){
   const sel=$('#rgPlat');const cur=sel.value;
   sel.innerHTML=regPlats().map(k=>`<option value="${k}">${k} · ${LIVE_RULES[k].label}</option>`).join('');
@@ -2082,15 +2100,25 @@ function regCompute(){
   const d=sessDur($('#rgDur').value),sk=sessDur($('#rgSkip').value);
   const sc=cleanCell($('#rgScore').value);
   const nomes=atores.length?atores:(prod&&prod!=='-'?[prod]:[]);
+  const fotos=Math.max(0,Math.round(parseNumber($('#rgFotos').value)||0));
   const net=Math.max(0,(d.sec||0)-(sk.sec||0));
-  const pts=d.sec==null?null:sessPoints(net,plat);
-  return{data,plat,nomes,tipo:atores.length?'Ator':'Studio',prod:prod==='-'?'':prod,dur:d.sec,durFlag:d.flag,skip:sk.sec,score:(!sc||sc==='-')?null:parseNumber(sc),net,pts,ok:!!(data&&nomes.length&&d.sec!=null&&pts>0)};
+  // foto conta como 10s na régua da própria plataforma, somada ao tempo de vídeo
+  const segTot=net+fotos*SEG_FOTO;
+  const temAlgo=d.sec!=null||fotos>0;
+  const pts=temAlgo?sessPoints(segTot,plat):null;
+  return{data,plat,nomes,tipo:atores.length?'Ator':'Studio',prod:prod==='-'?'':prod,
+    dur:d.sec,durFlag:d.flag,skip:sk.sec,fotos,segTot,
+    score:(!sc||sc==='-')?null:parseNumber(sc),net,pts,
+    ok:!!(data&&nomes.length&&temAlgo&&pts>0)};
 }
 function regPreview(){
   const c=regCompute(),bits=[];
-  if(c.dur==null)bits.push('Informe a duração.');
+  if(c.dur==null&&!c.fotos)bits.push('Informe a duração ou o número de fotos.');
   else{
-    bits.push(`${fmtHMS(c.net)} líquido${c.skip?` (${fmtHMS(c.dur)} − ${fmtHMS(c.skip)})`:''} · ${LIVE_RULES[c.plat]?.label||'sem régua'}`);
+    const partes=[];
+    if(c.dur!=null)partes.push(`${fmtHMS(c.net)} de vídeo${c.skip?` (${fmtHMS(c.dur)} − ${fmtHMS(c.skip)})`:''}`);
+    if(c.fotos)partes.push(`${c.fotos} foto${c.fotos>1?'s':''} = ${fmtHMS(c.fotos*SEG_FOTO)}`);
+    bits.push(`${partes.join(' + ')} · ${LIVE_RULES[c.plat]?.label||'sem régua'}`);
     if(c.pts!=null)bits.push(`<b>${fmtNum(c.pts)} pts</b> por ator${c.nomes.length>1?` · ${c.nomes.length} atores · ${fmtNum(c.pts*c.nomes.length)} pts no total`:''}`);
   }
   if(!c.data)bits.push('<span style="color:var(--clay)">Data inválida.</span>');
@@ -2102,14 +2130,14 @@ function regPreview(){
 function regUI(){fillPlats();if(!cleanCell($('#rgData').value))$('#rgData').value=todayBR();regPreview();renderRecent();}
 $('#rgAdd').onclick=()=>{
   const c=regCompute();if(!c.ok)return;
-  c.nomes.forEach(nome=>LEDGER.events.push({id:uid('ss'),nome,tipo:c.tipo,ponto:c.pts,dataBR:c.data,plataforma:c.plat,score:c.score,titulo:c.prod,modo:'sessao',assistido_seg:c.dur,skipado_seg:c.skip,duracao_video_seg:c.dur,score_aplicavel:'',source:'import-sessao'}));
+  c.nomes.forEach(nome=>LEDGER.events.push({id:uid('ss'),nome,tipo:c.tipo,ponto:c.pts,dataBR:c.data,plataforma:c.plat,score:c.score,titulo:c.prod,modo:'sessao',assistido_seg:c.segTot,skipado_seg:c.skip,duracao_video_seg:c.dur,fotos:c.fotos||0,score_aplicavel:'',source:'import-sessao'}));
   $('#rgStatus').textContent=`✓ ${c.nomes.length} entrada(s) · ${fmtNum(c.pts*c.nomes.length)} pts.`;
   toast('+'+fmtNum(c.pts*c.nomes.length),c.nomes.join(', '));
-  ['rgAtores','rgDur','rgSkip','rgScore'].forEach(id=>$('#'+id).value='');
+  ['rgAtores','rgDur','rgSkip','rgScore','rgFotos'].forEach(id=>$('#'+id).value='');
   savePontoSoon();refreshAll();regPreview();
 };
 $('#rgPlat').addEventListener('change',regPreview);
-['rgData','rgAtores','rgProd','rgDur','rgSkip','rgScore'].forEach(id=>$('#'+id).addEventListener('input',regPreview));
+['rgData','rgAtores','rgProd','rgDur','rgSkip','rgScore','rgFotos'].forEach(id=>$('#'+id).addEventListener('input',regPreview));
 function renderRecent(){
   const box=$('#rgRecent');
   const rows=LEDGER.events.filter(e=>e.modo==='sessao').slice(-14).reverse();
@@ -2138,7 +2166,13 @@ function sessDur(s){
   if(p.length===1)return{sec:p[0]};
   return{sec:null,bad:true};
 }
-function sessPoints(net,plat){const r=LIVE_RULES[plat];if(!r)return null;if(r.kind==='secondsDivisor')return Math.round(net/r.value);if(r.kind==='pointsPerMinute')return Math.round(net/60*r.value);return null;}
+/* Guarda o valor exato. Arredondar aqui jogava fora os segundos curtos:
+   10s no twitter viravam 1 ponto em vez de 0,5, e menos de 5s viravam zero.
+   O arredondamento acontece só na exibição. */
+function sessPoints(net,plat){const r=LIVE_RULES[plat];if(!r)return null;
+  if(r.kind==='secondsDivisor')return net/r.value;
+  if(r.kind==='pointsPerMinute')return net/60*r.value;
+  return null;}
 function fmtHMS(s){if(s==null)return '-';s=Math.round(s);return Math.floor(s/3600)+':'+p2d(Math.floor(s%3600/60))+':'+p2d(s%60);}
 function parseSessions(raw){
   const lines=raw.replace(/^﻿/,'').split(/\r?\n/).filter(l=>l.trim());if(lines.length<1)return null;
@@ -2146,6 +2180,7 @@ function parseSessions(raw){
   const head=splitDelimited(lines[0],sep).map(x=>cleanCell(x).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''));
   const col=pre=>head.findIndex(x=>x.startsWith(pre));
   let iA=col('ator'),iD=col('dura'),iData=col('data'),iProd=col('produt'),iSkip=col('skip'),iScore=col('score'),iPlat=col('plataf');
+  const iFoto=col('foto');
   let cells,off=2;
   if(iA<0||iD<0){
     if(!sessDate(splitDelimited(lines[0],sep)[0]||''))return null;
@@ -2166,19 +2201,21 @@ function parseSessions(raw){
     if(!r.nomes.length)r.flags.push('sem ator nem produtora');
     r.platRaw=iPlat>=0?(c[iPlat]||''):'';r.plat=canonicalPlatform(r.platRaw);
     const d=sessDur(c[iD]),sk=iSkip>=0?sessDur(c[iSkip]):{sec:null};
+    r.fotos=iFoto>=0?Math.max(0,Math.round(parseNumber(c[iFoto])||0)):0;
     r.dur=d.sec;r.skip=sk.sec;if(d.flag)r.flags.push(d.flag);if(sk.flag)r.flags.push('skip '+sk.flag);
-    if(r.dur==null)r.flags.push('duração inválida');
+    if(r.dur==null&&!r.fotos)r.flags.push('duração inválida');
     const sc=iScore>=0?cleanCell(c[iScore]):'';r.score=(!sc||sc==='-')?null:parseNumber(sc);
-    r.net=Math.max(0,(r.dur||0)-(r.skip||0));
-    r.pts=r.dur==null?null:sessPoints(r.net,r.plat);
-    if(r.dur!=null&&r.pts==null)r.flags.push(`sem régua pra "${r.platRaw||'—'}"`);
+    r.net=Math.max(0,(r.dur||0)-(r.skip||0))+r.fotos*SEG_FOTO;
+    const temAlgo=r.dur!=null||r.fotos>0;
+    r.pts=temAlgo?sessPoints(r.net,r.plat):null;
+    if(temAlgo&&r.pts==null)r.flags.push(`sem régua pra "${r.platRaw||'—'}"`);
     else if(r.pts===0)r.flags.push('0 pontos');
-    r.ok=!!(r.data&&r.nomes.length&&r.dur!=null&&r.pts>0);
+    r.ok=!!(r.data&&r.nomes.length&&(r.dur!=null||r.fotos>0)&&r.pts>0);
     r.warn=r.ok&&r.flags.length>0;
     if(!r.ok)errors.push(`linha ${L}: ${r.flags.join(', ')}`);
     out.push(r);
   });
-  return{list:out,errors,rows:out.filter(r=>r.ok).flatMap(r=>r.nomes.map(nome=>({id:uid('ss'),nome,tipo:r.tipo,ponto:r.pts,dataBR:r.data,plataforma:r.plat,score:r.score,titulo:r.prod,modo:'sessao',assistido_seg:r.dur,skipado_seg:r.skip,duracao_video_seg:r.dur,score_aplicavel:'',source:'import-sessao'})))};
+  return{list:out,errors,rows:out.filter(r=>r.ok).flatMap(r=>r.nomes.map(nome=>({id:uid('ss'),nome,tipo:r.tipo,ponto:r.pts,dataBR:r.data,plataforma:r.plat,score:r.score,titulo:r.prod,modo:'sessao',assistido_seg:r.net,skipado_seg:r.skip,duracao_video_seg:r.dur,fotos:r.fotos||0,score_aplicavel:'',source:'import-sessao'})))};
 }
 function sessKey(e){return[e.nome,e.dataBR,e.plataforma,Math.round(e.assistido_seg||0),Math.round(e.skipado_seg||0)].join('|').toLowerCase();}
 function renderImpPreview(){
