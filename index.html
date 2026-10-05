@@ -388,6 +388,10 @@ main{min-width:0}
 .toast .b{font:400 19px/1 var(--serif)}
 dialog{border:0;border-radius:var(--r-lg);padding:28px;max-width:520px;width:calc(100vw - 32px);background:var(--paper);color:var(--ink);box-shadow:var(--sh-lg)}
 dialog::backdrop{background:rgba(29,27,23,.25)}
+.rn-info{margin-top:16px;padding:12px 14px;border-radius:10px;background:var(--sand);font:500 13px var(--sans);line-height:1.6;color:var(--ink-2)}
+.rn-info b{color:var(--ink)}
+.rn-info.merge{background:#F6EDE2;border:1px solid var(--line)}
+.chip.warn{background:#F6EDE2;border-color:var(--gold);cursor:pointer}
 .keys{display:grid;grid-template-columns:auto 1fr;gap:9px 18px;font-size:13px;margin:16px 0 22px;align-items:center}
 .keys dt{justify-self:start}
 .keys dd{margin:0;color:var(--ink-2)}
@@ -577,7 +581,7 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
       <div><span class="lbl">Pontos de outras plataformas</span><h1>Registrar</h1></div>
       <div class="seg"><button class="on" data-reg="uma">Uma sessão</button><button data-reg="colar">Colar planilha</button></div>
     </div>
-    <p class="muted" style="margin:-12px 0 0;font-size:13px">Uma sessão por linha, nas colunas da planilha: Data · Produtora · Atores · Duração · Skip · Score · Plataforma. Os pontos saem da régua da plataforma.</p>
+    <p class="muted" style="margin:-12px 0 0;font-size:13px">Uma sessão por linha, nas colunas da planilha: Data · Produtora · Atores · Duração · Skip · Score · Plataforma. A coluna Código é opcional e vai pelo cabeçalho, não pela posição. Os pontos saem da régua da plataforma.</p>
     <div id="regUma" style="display:flex;flex-direction:column;gap:24px">
       <div class="card">
         <div class="two"><div class="fld"><span class="lbl">Data</span><input id="rgData" placeholder="dd/mm/aaaa"></div>
@@ -642,6 +646,17 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
   <div class="vp v-hint">← → navegar · roda ou duplo clique: zoom no cursor · arrastar move · Esc sai</div>
 </div>
 
+<dialog id="renameDlg">
+  <div class="sec-t">Renomear ator</div>
+  <p class="muted" style="font-size:13px;margin:8px 0 18px">Troca o nome no acervo e em todas as sessões do histórico. Se o novo nome já existir, os dois viram um só.</p>
+  <div class="fld"><span class="lbl">Nome atual</span><input id="rnFrom" disabled></div>
+  <div class="fld" style="margin-top:14px"><span class="lbl">Novo nome</span><input id="rnTo" list="rnNames" autocomplete="off" placeholder="Escreva ou escolha um existente"><datalist id="rnNames"></datalist></div>
+  <div id="rnInfo" class="rn-info"></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:22px">
+    <button class="btn ghost" id="rnCancel">Cancelar</button>
+    <button class="btn primary" id="rnOk">Renomear</button>
+  </div>
+</dialog>
 <dialog id="keysDlg">
   <div class="sec-t">Atalhos</div>
   <dl class="keys">
@@ -935,6 +950,50 @@ function mediaPos(m){const arr=mediaRanked(mediaKind(m));return arr.findIndex(x=
 function mediaTier(m){const tot=mediaPool(mediaKind(m)).length||1;const p=(mediaPos(m)||tot)/tot;return p<=.06?'S':p<=.2?'A':p<=.45?'B':p<=.75?'C':'D';}
 function mediaLabel(m){return mediaKind(m)==='video'?'Vídeo':'Foto';}
 function actorName(id){return GAME.actors[id]?.name||'—';}
+/* ---------- renomear / fundir atores ---------- */
+const semAcento=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+function allKnownNames(){
+  const set=new Set();
+  LEDGER.events.forEach(e=>{if(e&&e.nome)set.add(e.nome);});
+  Object.values(GAME.actors).forEach(a=>{if(a&&a.name)set.add(a.name);});
+  return [...set].sort((a,b)=>a.localeCompare(b,'pt'));
+}
+/* mesmo nome ignorando acento e caixa — é assim que o duplicado aparece */
+function nomesParecidos(name){
+  const k=semAcento(name);
+  return allKnownNames().filter(n=>n!==name&&semAcento(n)===k);
+}
+function renameImpact(from,to){
+  const evs=LEDGER.events.filter(e=>e.nome===from).length;
+  const orig=Object.values(GAME.actors).find(a=>a&&a.name===from);
+  const alvo=to?Object.values(GAME.actors).find(a=>a&&a.name===to):null;
+  const midias=orig?Object.values(GAME.media).filter(m=>m.actorId===orig.id&&!m.deleted).length:0;
+  const evsAlvo=to?LEDGER.events.filter(e=>e.nome===to).length:0;
+  return{evs,midias,funde:!!(alvo&&orig&&alvo.id!==orig.id)||(!!to&&evsAlvo>0),evsAlvo,
+         midiasAlvo:alvo?Object.values(GAME.media).filter(m=>m.actorId===alvo.id&&!m.deleted).length:0};
+}
+function renameActor(from,to){
+  to=String(to||'').replace(/\s+/g,' ').trim();
+  if(!to||to===from)return null;
+  const orig=Object.values(GAME.actors).find(a=>a&&a.name===from);
+  const alvo=Object.values(GAME.actors).find(a=>a&&a.name===to);
+  let evs=0,midias=0,fundiu=false;
+  LEDGER.events.forEach(e=>{if(e&&e.nome===from){e.nome=to;evs++;}});
+  if(orig&&alvo&&orig.id!==alvo.id){
+    /* ELO ponderado pelas partidas de cada um: fundir não pode inventar rating */
+    const pa=(alvo.wins||0)+(alvo.losses||0),po=(orig.wins||0)+(orig.losses||0);
+    const ea=alvo.elo||1500,eo=orig.elo||1500;
+    alvo.elo=(pa+po)?Math.round((ea*pa+eo*po)/(pa+po)):Math.round((ea+eo)/2);
+    alvo.wins=(alvo.wins||0)+(orig.wins||0);
+    alvo.losses=(alvo.losses||0)+(orig.losses||0);
+    Object.values(GAME.media).forEach(m=>{if(m.actorId===orig.id){m.actorId=alvo.id;midias++;}});
+    delete GAME.actors[orig.id];
+    fundiu=true;
+  }else if(orig){orig.name=to;}
+  if(currentProfile===from)currentProfile=to;
+  savePontoSoon();saveGameSoon();
+  return{evs,midias,fundiu,to};
+}
 function actorMediaListByName(name){return Object.values(GAME.media).filter(m=>!m.deleted&&actorName(m.actorId)===name);}
 function actorAvgMediaElo(name){const rows=actorMediaListByName(name).filter(m=>m.type!=='video');const use=rows.length?rows:actorMediaListByName(name);if(!use.length)return 1500;return use.reduce((s,m)=>s+(Number(m.elo)||1500),0)/use.length;}
 function isPornMediaEvent(e){return String(e.plataforma||'').toLowerCase()==='pornmedia'||String(e.source||'').toLowerCase()==='pornmedia';}
@@ -1985,6 +2044,7 @@ function openActorProfile(name){
   const hist=profHistAll?sorted:sorted.slice(0,12);
   /* candidatos a comparação: quem tem ponto, menos o próprio, mais pontuados primeiro */
   /* todo mundo que tem ponto, sem corte: a busca precisa alcançar o elenco inteiro */
+  const parecidos=nomesParecidos(name);
   const cmpOpts=Object.entries(allTot).filter(([nm,v])=>nm!==name&&v>0).sort((a,b)=>b[1]-a[1]);
   const box=$('#actorProfile');
   box.innerHTML=`
@@ -2001,10 +2061,12 @@ function openActorProfile(name){
         ${g?`<span class="chip">${w}V ${l}D · ${Math.round(w/g*100)}%</span>`:''}
         <span class="chip">${photos.length} foto${photos.length!==1?'s':''}${videos.length?` · ${videos.length} vídeo${videos.length!==1?'s':''}`:''} · limite ${ti.limit}</span>
         ${ti.over?'<span class="chip clay">acima do limite de mídia</span>':''}
+        ${parecidos.length?`<button type="button" class="chip warn" id="profDup">nome parecido: ${parecidos.map(escapeHtml).join(' · ')}</button>`:''}
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
         <button class="btn primary" id="profAll" ${allMedia.length?'':'disabled'}>${ICON.expand}Ver acervo inteiro</button>
         <label class="btn filebtn">+ Enviar mídia<input id="actorUpInput" type="file" accept="image/*,video/*" multiple></label>
+        <button class="btn" id="profRename">Renomear</button>
       </div>
       <span class="status" id="actorUpStatus"></span>
     </div>
@@ -2055,6 +2117,33 @@ function openActorProfile(name){
   </div></section>`:''}`;
   lazyAll(box);
   $('#actorBack').onclick=()=>switchView('ranking');
+  const abreRename=sug=>{
+    $('#rnFrom').value=name;
+    $('#rnNames').innerHTML=allKnownNames().filter(n=>n!==name).map(n=>`<option value="${escapeHtml(n)}"></option>`).join('');
+    $('#rnTo').value=sug||'';
+    pintaRnInfo();$('#renameDlg').showModal();setTimeout(()=>$('#rnTo').focus(),30);
+  };
+  const pintaRnInfo=()=>{
+    const to=$('#rnTo').value.replace(/\s+/g,' ').trim(),info=$('#rnInfo');
+    if(!to||to===name){info.className='rn-info';info.innerHTML='Escreva o nome que deve ficar valendo.';return;}
+    const im=renameImpact(name,to);
+    info.className='rn-info'+(im.funde?' merge':'');
+    info.innerHTML=im.funde
+      ?`Vai <b>fundir</b> com <b>${escapeHtml(to)}</b>, que já existe.<br>${im.evs} sessão(ões) e ${im.midias} mídia(s) de <b>${escapeHtml(name)}</b> passam pra ele, somando às ${im.evsAlvo} sessão(ões) e ${im.midiasAlvo} mídia(s) que ele já tem. O ELO vira a média ponderada pelas partidas de cada um.`
+      :`Renomeia <b>${escapeHtml(name)}</b> para <b>${escapeHtml(to)}</b> em ${im.evs} sessão(ões) do histórico e ${im.midias} mídia(s) do acervo.`;
+  };
+  $('#profRename').onclick=()=>abreRename(parecidos[0]||'');
+  $('#profDup')?.addEventListener('click',()=>abreRename(parecidos[0]));
+  $('#rnTo').oninput=pintaRnInfo;
+  $('#rnCancel').onclick=()=>$('#renameDlg').close();
+  $('#rnOk').onclick=()=>{
+    const to=$('#rnTo').value.replace(/\s+/g,' ').trim();
+    if(!to||to===name){$('#renameDlg').close();return;}
+    const r=renameActor(name,to);
+    $('#renameDlg').close();
+    if(r)toast(r.fundiu?'Atores fundidos':'Ator renomeado',`${r.evs} sessão(ões)${r.midias?' · '+r.midias+' mídia(s)':''} agora em ${r.to}`);
+    openActorProfile(to);
+  };
   $('#profCover').onclick=()=>openMediaViewer(allMedia,0);
   $('#profAll').onclick=()=>openMediaViewer(allMedia,0);
   $('#profChartSeg').onclick=e=>{const b=e.target.closest('[data-cm]');if(!b)return;profChartMode=b.dataset.cm;openActorProfile(name);};
@@ -2275,7 +2364,7 @@ function parseSessions(raw){
   const head=splitDelimited(lines[0],sep).map(x=>cleanCell(x).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''));
   const col=pre=>head.findIndex(x=>x.startsWith(pre));
   let iA=col('ator'),iD=col('dura'),iData=col('data'),iProd=col('produt'),iSkip=col('skip'),iScore=col('score'),iPlat=col('plataf');
-  const iFoto=col('foto');
+  const iFoto=col('foto'),iCod=col('cod');
   let cells,off=2;
   if(iA<0||iD<0){
     if(!sessDate(splitDelimited(lines[0],sep)[0]||''))return null;
@@ -2297,6 +2386,15 @@ function parseSessions(raw){
     r.platRaw=iPlat>=0?(c[iPlat]||''):'';r.plat=canonicalPlatform(r.platRaw);
     const d=sessDur(c[iD]),sk=iSkip>=0?sessDur(c[iSkip]):{sec:null};
     r.fotos=iFoto>=0?Math.max(0,Math.round(parseNumber(c[iFoto])||0)):0;
+    /* Código: vazio é obra nova · 8 dígitos é obra existente · número curto agrupa
+       as linhas desta colagem · '+' força obra mesmo em vídeo curto. */
+    const cod=iCod>=0?cleanCell(c[iCod]).replace(/\s+/g,''):'';
+    r.cod=(cod==='-')?'':cod;
+    r.codForca=/^\+/.test(r.cod);
+    const codNu=r.cod.replace(/^\+/,'');
+    r.codRef=/^\d{8}$/.test(codNu)?codNu:'';
+    r.codGrupo=(!r.codRef&&/^\d{1,7}$/.test(codNu))?codNu:'';
+    if(r.cod&&!r.codRef&&!r.codGrupo&&!r.codForca)r.flags.push(`código "${r.cod}" não reconhecido`);
     r.dur=d.sec;r.skip=sk.sec;if(d.flag)r.flags.push(d.flag);if(sk.flag)r.flags.push('skip '+sk.flag);
     if(r.dur==null&&!r.fotos)r.flags.push('duração inválida');
     const sc=iScore>=0?cleanCell(c[iScore]):'';r.score=(!sc||sc==='-')?null:parseNumber(sc);
@@ -2310,7 +2408,7 @@ function parseSessions(raw){
     if(!r.ok)errors.push(`linha ${L}: ${r.flags.join(', ')}`);
     out.push(r);
   });
-  return{list:out,errors,rows:out.filter(r=>r.ok).flatMap(r=>r.nomes.map(nome=>({id:uid('ss'),nome,tipo:r.tipo,ponto:r.pts,dataBR:r.data,plataforma:r.plat,score:r.score,titulo:r.prod,modo:'sessao',assistido_seg:r.net,skipado_seg:r.skip,duracao_video_seg:r.dur,fotos:r.fotos||0,score_aplicavel:'',source:'import-sessao'})))};
+  return{list:out,errors,temCod:iCod>=0,rows:out.filter(r=>r.ok).flatMap(r=>r.nomes.map(nome=>({id:uid('ss'),nome,tipo:r.tipo,ponto:r.pts,dataBR:r.data,plataforma:r.plat,score:r.score,titulo:r.prod,modo:'sessao',assistido_seg:r.net,skipado_seg:r.skip,duracao_video_seg:r.dur,fotos:r.fotos||0,score_aplicavel:'',codigo:r.codRef||'',cod_grupo:r.codGrupo||'',cod_forca:!!r.codForca,source:'import-sessao'})))};
 }
 function sessKey(e){return[e.nome,e.dataBR,e.plataforma,Math.round(e.assistido_seg||0),Math.round(e.skipado_seg||0)].join('|').toLowerCase();}
 function renderImpPreview(){
@@ -2323,8 +2421,8 @@ function renderImpPreview(){
   const tot=ok.reduce((s,r)=>s+r.pts*r.nomes.length,0);
   box.style.display='block';
   box.innerHTML=`<div class="sum"><b>${ok.length}</b> linha(s) entram · <b>${fmtNum(tot)} pts</b>${warn.length?` · <span style="color:var(--gold)">${warn.length} pra conferir</span>`:''}${bad.length?` · <span style="color:var(--clay)">${bad.length} não entram</span>`:''}${dup?` · ${dup} já estão no ledger (Adicionar pula)`:''}</div>
-  <div class="tw"><table><thead><tr><th>Linha</th><th>Data</th><th>Ator</th><th>Plataforma</th><th>Duração</th><th>Skip</th><th>Líquido</th><th>Pts</th><th>Aviso</th></tr></thead><tbody>${
-    S.list.map(r=>`<tr class="${!r.ok?'err':r.warn?'warn':''}"><td class="n">${r.line}</td><td>${r.data||'?'}</td><td>${escapeHtml(r.nome||'—')}${r.tipo==='Studio'?' <small>(produtora, fora do ranking)</small>':r.nomes.length>1?` <small>(×${r.nomes.length})</small>`:''}</td><td>${escapeHtml(r.plat)}</td><td class="n">${fmtHMS(r.dur)}</td><td class="n">${fmtHMS(r.skip)}</td><td class="n">${fmtHMS(r.net)}</td><td class="n"><b>${r.pts==null?'—':fmtNum(r.pts)}</b></td><td class="fl">${escapeHtml(r.flags.join(' · '))}</td></tr>`).join('')
+  <div class="tw"><table><thead><tr><th>Linha</th><th>Data</th>${S.temCod?'<th>Código</th>':''}<th>Ator</th><th>Plataforma</th><th>Duração</th><th>Skip</th><th>Líquido</th><th>Pts</th><th>Aviso</th></tr></thead><tbody>${
+    S.list.map(r=>`<tr class="${!r.ok?'err':r.warn?'warn':''}"><td class="n">${r.line}</td><td>${r.data||'?'}</td>${S.temCod?`<td class="n">${r.codRef?`<b>${escapeHtml(r.codRef)}</b>`:r.codGrupo?`grupo ${escapeHtml(r.codGrupo)}`:r.codForca?'forçar':'<span class="muted">—</span>'}</td>`:''}<td>${escapeHtml(r.nome||'—')}${r.tipo==='Studio'?' <small>(produtora, fora do ranking)</small>':r.nomes.length>1?` <small>(×${r.nomes.length})</small>`:''}</td><td>${escapeHtml(r.plat)}</td><td class="n">${fmtHMS(r.dur)}</td><td class="n">${fmtHMS(r.skip)}</td><td class="n">${fmtHMS(r.net)}</td><td class="n"><b>${r.pts==null?'—':fmtNum(r.pts)}</b></td><td class="fl">${escapeHtml(r.flags.join(' · '))}</td></tr>`).join('')
   }</tbody></table></div>`;
 }
 let impPrevT=null;
