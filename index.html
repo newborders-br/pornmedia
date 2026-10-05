@@ -260,6 +260,19 @@ main{min-width:0}
 .lchart .dot{fill:var(--ink);transition:r .15s}
 .lchart .dot.sel{fill:var(--clay)}
 .lchart .dot.solo{stroke:var(--paper);stroke-width:2}
+.lchart .ln.cmp{stroke-width:1.8;opacity:.9}
+.btn.ghost.on{border-color:var(--ink);background:var(--sand);color:var(--ink)}
+.cmp-panel{margin:4px 0 14px;padding:12px;border:1px solid var(--line);border-radius:10px;background:var(--sand)}
+.cmp-top{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.cmp-top input{flex:1;min-width:0;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--paper);font:500 13px var(--sans);color:var(--ink)}
+.cmp-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:4px;max-height:210px;overflow-y:auto}
+.cmp-opt{display:flex;align-items:center;gap:8px;padding:6px 9px;border:1px solid transparent;border-radius:7px;background:transparent;cursor:pointer;text-align:left;font:500 13px var(--sans);color:var(--ink)}
+.cmp-opt:hover{background:rgba(29,27,23,.05)}
+.cmp-opt.on{border-color:var(--line);background:var(--paper)}
+.cmp-opt i{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--ink-3);flex-shrink:0}
+.cmp-opt.on i{border-color:transparent}
+.cmp-opt .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cmp-opt .pt{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
 .bar{cursor:pointer;border:0;background:none;padding:0;font:inherit;color:inherit}
 .bar.sel .f{background:var(--clay)}
 .bar.sel .rk{color:var(--clay);font-weight:700}
@@ -1805,8 +1818,9 @@ $('#platSelect').addEventListener('change',e=>{platFilter=e.target.value;renderR
 /* =====================================================================
    PERFIL DO ATOR
    ===================================================================== */
-let currentProfile=null,profChartMode='pts',profTab='photo',profHistAll=false,profMonth=null;
-function showActorProfile(name){profTab='photo';profHistAll=false;profMonth=null;switchView('atores');openActorProfile(name);}
+let currentProfile=null,profChartMode='rank',profTab='photo',profHistAll=false,profMonth=null,profCompare=[],profCmpOpen=false;
+const CMP_MAX=4,CMP_COLORS=['#B5603A','#4E7A6B','#8A6CA8','#C08A2E'];
+function showActorProfile(name){profTab='photo';profHistAll=false;profMonth=null;profCompare=[];profCmpOpen=false;switchView('atores');openActorProfile(name);}
 function buildMonthRange(s,e){const[sy,sm]=s.split('-').map(Number),[ey,em]=e.split('-').map(Number);const out=[];let y=sy,m=sm;while(y<ey||(y===ey&&m<=em)){out.push(`${y}-${String(m).padStart(2,'0')}`);if(++m>12){m=1;y++;}}return out;}
 /* séries mensais do ator: pontos, fatia do mês, posição no ranking e acumulado */
 function profSeries(name){
@@ -1845,58 +1859,94 @@ function profLineSVG(data,o){
     ? pT+((v-1)/Math.max(1,o.domMax-1))*(H-pT-pB)
     : H-pB-((v-o.min)/Math.max(1e-9,o.domMax-o.min))*(H-pT-pB);
   const pts=data.map((d,i)=>({i,d,v:o.value(d)}));
-  // quebra a linha nos meses sem valor
-  const segs=[];let cur=[];
-  pts.forEach(p=>{if(p.v==null){if(cur.length)segs.push(cur);cur=[];}else cur.push(p);});
-  if(cur.length)segs.push(cur);
-  const path=segs.filter(s=>s.length>1).map(s=>'M'+s.map(p=>`${x(p.i).toFixed(1)} ${y(p.v).toFixed(1)}`).join(' L')).join(' ');
+  /* quebra a linha nos meses sem valor — vale pro ator e pra cada série de comparação */
+  const quebra=arr=>{const segs=[];let cur=[];
+    arr.forEach(p=>{if(p.v==null){if(cur.length)segs.push(cur);cur=[];}else cur.push(p);});
+    if(cur.length)segs.push(cur);return segs;};
+  const traco=segs=>segs.filter(s=>s.length>1).map(s=>'M'+s.map(p=>`${x(p.i).toFixed(1)} ${y(p.v).toFixed(1)}`).join(' L')).join(' ');
+  const segs=quebra(pts);
+  const path=traco(segs);
   const solos=segs.filter(s=>s.length===1).flat();
+  const extra=(o.extra||[]).map(ex=>{
+    const ep=ex.vals.map((v,i)=>({i,v}));const es=quebra(ep);
+    return{...ex,path:traco(es),solos:es.filter(s=>s.length===1).flat(),ep};});
   const ticks=[...new Set(o.ticks)].filter(t=>o.invert?t<=o.domMax:(t>=o.min&&t<=o.domMax)).sort((a,b)=>a-b);
   const step=Math.ceil(data.length/10);
   return `<div class="lchart"><svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="${escapeHtml(o.aria||'gráfico')}">
     ${ticks.map(t=>`<text class="gt" x="${pL-10}" y="${(y(t)+4).toFixed(1)}" text-anchor="end">${o.tick(t)}</text>`).join('')}
     ${o.ref&&o.domMax>o.ref?`<g><line class="rf" x1="${pL}" x2="${W-pR}" y1="${y(o.ref).toFixed(1)}" y2="${y(o.ref).toFixed(1)}"/><text class="rt" x="${W-pR}" y="${(y(o.ref)-5).toFixed(1)}" text-anchor="end">top ${o.ref}</text></g>`:''}
+    ${extra.map(ex=>`<g opacity=".95">${ex.path?`<path class="ln cmp" d="${ex.path}" stroke="${ex.color}"/>`:''}${ex.solos.map(p=>`<circle class="dot solo" cx="${x(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="3.5" fill="${ex.color}"/>`).join('')}${ex.ep.filter(p=>p.v!=null).map(p=>`<circle cx="${x(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="3" fill="${ex.color}" pointer-events="none"/>`).join('')}</g>`).join('')}
     ${path?`<path class="ln" d="${path}"/>`:''}
     ${solos.map(p=>`<circle class="dot solo" cx="${x(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="4"/>`).join('')}
     ${pts.map(p=>{const cw=data.length>1?(W-pL-pR)/(data.length-1):(W-pL-pR);const cx=x(p.i);
-      const txt=keyLabel(p.d.k)+' · '+(p.v==null?'sem pontos':o.tip(p.d));
+      const txt=keyLabel(p.d.k)+' · '+(p.v==null?'sem pontos':o.tip(p.d))
+        +extra.map(ex=>`\n${ex.name}: ${ex.vals[p.i]==null?'sem pontos':ex.fmt(ex.vals[p.i])}`).join('');
       return `<rect class="hz" data-k="${p.d.k}" x="${Math.max(0,cx-cw/2).toFixed(1)}" y="${pT}" width="${cw.toFixed(1)}" height="${H-pT-pB}" fill="transparent"><title>${escapeHtml(txt)}</title></rect>`;}).join('')}
     ${pts.filter(p=>p.v!=null).map(p=>`<circle class="dot${p.d.k===profMonth?' sel':''}" data-k="${p.d.k}" cx="${x(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="${p.d.k===profMonth?6:4}" pointer-events="none"/>`).join('')}
     ${data.map((d,i)=>i%step===0||i===data.length-1?`<text class="gx" x="${x(i).toFixed(1)}" y="${H-7}" text-anchor="middle">${keyLabel(d.k)}</text>`:'').join('')}
   </svg></div>`;
 }
+/* séries dos atores em comparação, indexadas por mês */
+function cmpSeries(){
+  return profCompare.map((nm,i)=>{const S=profSeries(nm),map={};
+    if(S)S.data.forEach(d=>{map[d.k]=d;});
+    return{name:nm,color:CMP_COLORS[i%CMP_COLORS.length],map};});
+}
+function cmpLegend(cmps){
+  return cmps.map(c=>`<span><i style="background:${c.color}"></i>${escapeHtml(c.name)}</span>`).join('');
+}
 function profileChartHTML(name){
   const S=profSeries(name);
   if(!S)return '<div class="empty">Sem histórico de pontos para este ator.</div>';
-  const cur=currentMonthKey();
+  const cur=currentMonthKey(),cmps=cmpSeries(),comparando=cmps.length>0;
   if(profChartMode==='rank'){
     const d=S.data.slice(-24);
-    const pior=Math.max(1,...d.map(x=>x.rank||0));
+    const extra=cmps.map(c=>({name:c.name,color:c.color,fmt:v=>'#'+v,
+      vals:d.map(x=>{const o=c.map[x.k];return(o&&o.rank)?o.rank:null;})}));
+    const pior=Math.max(1,...d.map(x=>x.rank||0),...extra.flatMap(e=>e.vals.filter(v=>v!=null)));
     const domMax=Math.max(100,pior);
-    return profLineSVG(d,{invert:true,domMax,ref:100,ticks:[1,100,domMax],
+    return profLineSVG(d,{invert:true,domMax,ref:100,ticks:[1,100,domMax],extra,
       tick:t=>'#'+t,value:x=>x.rank,
       tip:x=>`#${x.rank} · ${fmtNum(x.a)} pts`,aria:'posição no ranking por mês'})
-      +`<div class="legend"><span>Posição no ranking de pontos de cada mês. A linha corta onde o ator não pontuou.</span>${domMax>100?'<span><i class="rfi"></i>linha do top 100</span>':'<span>escala até #100</span>'}</div>`;
+      +`<div class="legend">${comparando?`<span><i style="background:var(--ink)"></i>${escapeHtml(name)}</span>`+cmpLegend(cmps):'<span>Posição no ranking de pontos de cada mês. A linha corta onde o ator não pontuou.</span>'}${domMax>100?'<span><i class="rfi"></i>linha do top 100</span>':'<span>escala até #100</span>'}</div>`;
   }
   if(profChartMode==='acum'){
     const d=S.data.filter(x=>x.allRank!=null);
     if(!d.length)return '<div class="empty">Sem histórico de pontos para este ator.</div>';
-    const pior=Math.max(1,...d.map(x=>x.allRank));
+    const extra=cmps.map(c=>({name:c.name,color:c.color,fmt:v=>'#'+v,
+      vals:d.map(x=>{const o=c.map[x.k];return(o&&o.allRank!=null)?o.allRank:null;})}));
+    const pior=Math.max(1,...d.map(x=>x.allRank),...extra.flatMap(e=>e.vals.filter(v=>v!=null)));
     const domMax=Math.max(100,pior),fim=d[d.length-1];
-    return profLineSVG(d,{invert:true,domMax,ref:100,ticks:[1,100,domMax],
+    return profLineSVG(d,{invert:true,domMax,ref:100,ticks:[1,100,domMax],extra,
       tick:t=>'#'+t,value:x=>x.allRank,
       tip:x=>`#${x.allRank} de ${x.universo} · ${fmtNum(x.acum)} pts acumulados`,aria:'posição histórica por mês'})
-      +`<div class="legend"><span>Posição dele no ranking de pontos acumulados, recalculada a cada mês.</span><span>hoje: <b>#${fim.allRank}</b> de ${fim.universo} · ${fmtNum(fim.acum)} pts</span>${domMax>100?'<span><i class="rfi"></i>linha do top 100</span>':''}</div>`;
+      +`<div class="legend">${comparando?`<span><i style="background:var(--ink)"></i>${escapeHtml(name)}</span>`+cmpLegend(cmps):'<span>Posição dele no ranking de pontos acumulados, recalculada a cada mês.</span>'}<span>hoje: <b>#${fim.allRank}</b> de ${fim.universo} · ${fmtNum(fim.acum)} pts</span>${domMax>100?'<span><i class="rfi"></i>linha do top 100</span>':''}</div>`;
   }
   let months=S.full;const cut=months.length>24;const data=cut?S.data.slice(-24):S.data;if(cut)months=months.slice(-24);
-  const vals=data.map(d=>profChartMode==='pct'?d.pct:d.a),max=Math.max(...vals,1);
+  const ehPct=profChartMode==='pct';
+  const vals=data.map(d=>ehPct?d.pct:d.a);
+  /* comparando, as barras não servem: duas séries sobrepostas pedem linha */
+  if(comparando){
+    const extra=cmps.map(c=>({name:c.name,color:c.color,
+      fmt:v=>ehPct?v.toFixed(1).replace('.',',')+'%':fmtNum(v)+' pts',
+      vals:data.map(x=>{const o=c.map[x.k];if(!o)return null;const v=ehPct?o.pct:o.a;return v>0?v:null;})}));
+    const topo=Math.max(1,...vals,...extra.flatMap(e=>e.vals.filter(v=>v!=null)));
+    const t=ehPct?[0,Math.round(topo/2),Math.round(topo)]:[0,topo/2,topo];
+    return profLineSVG(data,{invert:false,min:0,domMax:topo,ticks:t,extra,
+      tick:v=>ehPct?Math.round(v)+'%':fmtNum(v),
+      value:x=>{const v=ehPct?x.pct:x.a;return v>0?v:null;},
+      tip:x=>ehPct?x.pct.toFixed(1).replace('.',',')+'% do mês':fmtNum(x.a)+' pts',
+      aria:ehPct?'fatia do mês':'pontos por mês'})
+      +`<div class="legend"><span><i style="background:var(--ink)"></i>${escapeHtml(name)}</span>${cmpLegend(cmps)}${cut?'<span>últimos 24 meses</span>':''}</div>`;
+  }
+  const max=Math.max(...vals,1);
   const peakI=vals.indexOf(Math.max(...vals));
   const step=Math.ceil(months.length/12);
   const bars=data.map((d,i)=>{const v=vals[i];const lab=keyLabel(d.k);
     return `<button type="button" data-k="${d.k}" class="bar${i===peakI&&v>0?' peak':''}${d.k===cur?' cur':''}${d.k===profMonth?' sel':''}" title="${lab} · ${fmtNum(d.a)} pts · ${d.pct.toFixed(1).replace('.',',')}% do mês${d.rank?' · #'+d.rank:''}"><span class="rk${d.rank===1?' one':''}">${d.rank?'#'+d.rank:''}</span><div class="f" style="height:${(v/max*230).toFixed(1)}px"></div>${i%step===0||i===data.length-1?`<span class="m">${lab}</span>`:''}</button>`;}).join('');
   const pk=data[peakI];
   return `<div class="chart" style="grid-template-columns:repeat(${months.length},minmax(0,1fr))">${bars}</div>
-  <div class="legend"><span><i style="background:var(--ink)"></i>pico · ${keyLabel(pk.k)} · ${profChartMode==='pct'?pk.pct.toFixed(1).replace('.',',')+'%':fmtNum(pk.a)+' pts'}</span>${data.some(d=>d.k===cur)?'<span><i style="background:var(--sand-2);border:1px dashed #8F877A"></i>mês em curso, parcial</span>':''}${cut?'<span>últimos 24 meses</span>':''}</div>`;
+  <div class="legend"><span><i style="background:var(--ink)"></i>pico · ${keyLabel(pk.k)} · ${ehPct?pk.pct.toFixed(1).replace('.',',')+'%':fmtNum(pk.a)+' pts'}</span>${data.some(d=>d.k===cur)?'<span><i style="background:var(--sand-2);border:1px dashed #8F877A"></i>mês em curso, parcial</span>':''}${cut?'<span>últimos 24 meses</span>':''}</div>`;
 }
 function openActorProfile(name){
   currentProfile=name;
@@ -1927,6 +1977,8 @@ function openActorProfile(name){
   const w=actor.wins||0,l=actor.losses||0,g=w+l;
   const tabList=profTab==='video'?videos:photos;
   const hist=profHistAll?sorted:sorted.slice(0,12);
+  /* candidatos a comparação: quem tem ponto, menos o próprio, mais pontuados primeiro */
+  const cmpOpts=Object.entries(allTot).filter(([nm,v])=>nm!==name&&v>0).sort((a,b)=>b[1]-a[1]).slice(0,60);
   const box=$('#actorProfile');
   box.innerHTML=`
   <div><button class="btn ghost sm" id="actorBack" style="margin-left:-12px">← Ranking</button></div>
@@ -1959,7 +2011,16 @@ function openActorProfile(name){
   </section>
   <section class="sec">
     <div class="sec-head"><div><div class="sec-t">Evolução mensal</div><div class="muted" style="font-size:13px;margin-top:6px">${{'pct':'Fatia do total de cada mês.','rank':'Posição dele no ranking de cada mês, do #1 pra baixo.','acum':'Posição no ranking histórico, mês a mês.'}[profChartMode]||'Pontos por mês.'} Clique num mês pra ver as plataformas dele.</div></div>
-      <div class="seg" id="profChartSeg"><button data-cm="pts" class="${profChartMode==='pts'?'on':''}">Pontos</button><button data-cm="pct" class="${profChartMode==='pct'?'on':''}">% do mês</button><button data-cm="rank" class="${profChartMode==='rank'?'on':''}">Ranking</button><button data-cm="acum" class="${profChartMode==='acum'?'on':''}"># all time</button></div></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="seg" id="profChartSeg"><button data-cm="rank" class="${profChartMode==='rank'?'on':''}">Ranking</button><button data-cm="acum" class="${profChartMode==='acum'?'on':''}"># all time</button><button data-cm="pts" class="${profChartMode==='pts'?'on':''}">Pontos</button><button data-cm="pct" class="${profChartMode==='pct'?'on':''}">% do mês</button></div>
+        <button class="btn ghost sm${profCompare.length?' on':''}" id="profCmpBtn" aria-expanded="${profCmpOpen}">Comparar${profCompare.length?' · '+profCompare.length:''}</button>
+      </div></div>
+    ${profCmpOpen?`<div class="cmp-panel" id="profCmpPanel">
+      <div class="cmp-top"><input type="search" id="profCmpSearch" placeholder="Buscar ator…" autocomplete="off">${profCompare.length?`<button class="btn ghost sm" id="profCmpClear">Limpar</button>`:''}</div>
+      <div class="cmp-list" id="profCmpList">${cmpOpts.map(([nm,v],i)=>{const on=profCompare.includes(nm);const ci=profCompare.indexOf(nm);
+        return `<button type="button" class="cmp-opt${on?' on':''}" data-cmp="${escapeHtml(nm)}"><i style="background:${on?CMP_COLORS[ci%CMP_COLORS.length]:'transparent'}"></i><span class="nm">${escapeHtml(nm)}</span><span class="pt">${fmtNum(v)}</span></button>`;}).join('')}</div>
+      <div class="muted" style="font-size:12px;margin-top:8px">Até ${CMP_MAX} atores. Em Pontos e % do mês a comparação vira linha, porque barras sobrepostas não dão pra ler.</div>
+    </div>`:''}
     ${profileChartHTML(name)}
   </section>
   <section class="two-col">
@@ -1989,6 +2050,17 @@ function openActorProfile(name){
   $('#profCover').onclick=()=>openMediaViewer(allMedia,0);
   $('#profAll').onclick=()=>openMediaViewer(allMedia,0);
   $('#profChartSeg').onclick=e=>{const b=e.target.closest('[data-cm]');if(!b)return;profChartMode=b.dataset.cm;openActorProfile(name);};
+  $('#profCmpBtn').onclick=()=>{profCmpOpen=!profCmpOpen;openActorProfile(name);};
+  $('#profCmpClear')?.addEventListener('click',()=>{profCompare=[];openActorProfile(name);});
+  $('#profCmpList')?.addEventListener('click',e=>{const b=e.target.closest('[data-cmp]');if(!b)return;
+    const nm=b.dataset.cmp,i=profCompare.indexOf(nm);
+    if(i>=0)profCompare.splice(i,1);
+    else if(profCompare.length<CMP_MAX)profCompare.push(nm);
+    else{toast('Máximo de '+CMP_MAX+' atores na comparação.');return;}
+    openActorProfile(name);});
+  $('#profCmpSearch')?.addEventListener('input',e=>{const q=e.target.value.trim().toLowerCase();
+    $('#profCmpList').querySelectorAll('[data-cmp]').forEach(b=>{
+      b.style.display=(!q||b.dataset.cmp.toLowerCase().includes(q))?'':'none';});});
   $('#profAllTime')?.addEventListener('click',()=>{profMonth=null;openActorProfile(name);});
   box.querySelectorAll('[data-k]').forEach(el=>el.addEventListener('click',()=>{
     const k=el.dataset.k;profMonth=(profMonth===k)?null:k;openActorProfile(name);
