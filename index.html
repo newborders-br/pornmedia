@@ -273,6 +273,7 @@ main{min-width:0}
 .cmp-opt.on i{border-color:transparent}
 .cmp-opt .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cmp-opt .pt{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.cmp-none{padding:14px 4px;font:500 13px var(--sans);color:var(--ink-3)}
 .bar{cursor:pointer;border:0;background:none;padding:0;font:inherit;color:inherit}
 .bar.sel .f{background:var(--clay)}
 .bar.sel .rk{color:var(--clay);font-weight:700}
@@ -1818,9 +1819,9 @@ $('#platSelect').addEventListener('change',e=>{platFilter=e.target.value;renderR
 /* =====================================================================
    PERFIL DO ATOR
    ===================================================================== */
-let currentProfile=null,profChartMode='rank',profTab='photo',profHistAll=false,profMonth=null,profCompare=[],profCmpOpen=false;
+let currentProfile=null,profChartMode='rank',profTab='photo',profHistAll=false,profMonth=null,profCompare=[],profCmpOpen=false,profCmpQ='';
 const CMP_MAX=4,CMP_COLORS=['#B5603A','#4E7A6B','#8A6CA8','#C08A2E'];
-function showActorProfile(name){profTab='photo';profHistAll=false;profMonth=null;profCompare=[];profCmpOpen=false;switchView('atores');openActorProfile(name);}
+function showActorProfile(name){profTab='photo';profHistAll=false;profMonth=null;profCompare=[];profCmpOpen=false;profCmpQ='';switchView('atores');openActorProfile(name);}
 function buildMonthRange(s,e){const[sy,sm]=s.split('-').map(Number),[ey,em]=e.split('-').map(Number);const out=[];let y=sy,m=sm;while(y<ey||(y===ey&&m<=em)){out.push(`${y}-${String(m).padStart(2,'0')}`);if(++m>12){m=1;y++;}}return out;}
 /* séries mensais do ator: pontos, fatia do mês, posição no ranking e acumulado */
 function profSeries(name){
@@ -1948,6 +1949,11 @@ function profileChartHTML(name){
   return `<div class="chart" style="grid-template-columns:repeat(${months.length},minmax(0,1fr))">${bars}</div>
   <div class="legend"><span><i style="background:var(--ink)"></i>pico · ${keyLabel(pk.k)} · ${ehPct?pk.pct.toFixed(1).replace('.',',')+'%':fmtNum(pk.a)+' pts'}</span>${data.some(d=>d.k===cur)?'<span><i style="background:var(--sand-2);border:1px dashed #8F877A"></i>mês em curso, parcial</span>':''}${cut?'<span>últimos 24 meses</span>':''}</div>`;
 }
+function bindMonthClicks(root,name){
+  root.querySelectorAll('[data-k]').forEach(el=>el.addEventListener('click',()=>{
+    const k=el.dataset.k;profMonth=(profMonth===k)?null:k;openActorProfile(name);
+  }));
+}
 function openActorProfile(name){
   currentProfile=name;
   const actor=Object.values(GAME.actors).find(a=>a.name===name)||{id:null,name,elo:null,wins:0,losses:0};
@@ -1978,7 +1984,8 @@ function openActorProfile(name){
   const tabList=profTab==='video'?videos:photos;
   const hist=profHistAll?sorted:sorted.slice(0,12);
   /* candidatos a comparação: quem tem ponto, menos o próprio, mais pontuados primeiro */
-  const cmpOpts=Object.entries(allTot).filter(([nm,v])=>nm!==name&&v>0).sort((a,b)=>b[1]-a[1]).slice(0,60);
+  /* todo mundo que tem ponto, sem corte: a busca precisa alcançar o elenco inteiro */
+  const cmpOpts=Object.entries(allTot).filter(([nm,v])=>nm!==name&&v>0).sort((a,b)=>b[1]-a[1]);
   const box=$('#actorProfile');
   box.innerHTML=`
   <div><button class="btn ghost sm" id="actorBack" style="margin-left:-12px">← Ranking</button></div>
@@ -2016,12 +2023,13 @@ function openActorProfile(name){
         <button class="btn ghost sm${profCompare.length?' on':''}" id="profCmpBtn" aria-expanded="${profCmpOpen}">Comparar${profCompare.length?' · '+profCompare.length:''}</button>
       </div></div>
     ${profCmpOpen?`<div class="cmp-panel" id="profCmpPanel">
-      <div class="cmp-top"><input type="search" id="profCmpSearch" placeholder="Buscar ator…" autocomplete="off">${profCompare.length?`<button class="btn ghost sm" id="profCmpClear">Limpar</button>`:''}</div>
-      <div class="cmp-list" id="profCmpList">${cmpOpts.map(([nm,v],i)=>{const on=profCompare.includes(nm);const ci=profCompare.indexOf(nm);
+      <div class="cmp-top"><input type="search" id="profCmpSearch" placeholder="Buscar entre ${cmpOpts.length} atores…" autocomplete="off" value="${escapeHtml(profCmpQ)}"><button class="btn ghost sm" id="profCmpClear" style="${profCompare.length?'':'display:none'}">Limpar</button></div>
+      <div class="cmp-list" id="profCmpList">${cmpOpts.map(([nm,v])=>{const on=profCompare.includes(nm);const ci=profCompare.indexOf(nm);
         return `<button type="button" class="cmp-opt${on?' on':''}" data-cmp="${escapeHtml(nm)}"><i style="background:${on?CMP_COLORS[ci%CMP_COLORS.length]:'transparent'}"></i><span class="nm">${escapeHtml(nm)}</span><span class="pt">${fmtNum(v)}</span></button>`;}).join('')}</div>
+      <div class="cmp-none" id="profCmpNone" style="display:none">Ninguém com esse nome pontuou.</div>
       <div class="muted" style="font-size:12px;margin-top:8px">Até ${CMP_MAX} atores. Em Pontos e % do mês a comparação vira linha, porque barras sobrepostas não dão pra ler.</div>
     </div>`:''}
-    ${profileChartHTML(name)}
+    <div id="profChartBox">${profileChartHTML(name)}</div>
   </section>
   <section class="two-col">
     <div class="card"><div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><span class="lbl">Onde os pontos vêm · ${escapeHtml(platLabel)}</span>${profMonth?`<button class="btn ghost sm" id="profAllTime">all time</button>`:'<span class="chip">all time</span>'}</div>${pEntries.length?`<div class="pbars">${pEntries.map(([p,v])=>`<div class="pbar"><span class="sw" style="background:${platColor(p)}"></span><div style="min-width:0"><div class="nm">${escapeHtml(p)}</div><div class="track"><i style="width:${(v/pMax*100).toFixed(1)}%;background:${platColor(p)}"></i></div></div><span class="v"><b>${Math.round(v/pTot*100)}%</b> · ${fmtNum(v)}</span></div>`).join('')}</div>`:'<div class="muted" style="margin-top:12px;font-size:13px">Nenhum ponto ainda.</div>'}</div>
@@ -2051,20 +2059,35 @@ function openActorProfile(name){
   $('#profAll').onclick=()=>openMediaViewer(allMedia,0);
   $('#profChartSeg').onclick=e=>{const b=e.target.closest('[data-cm]');if(!b)return;profChartMode=b.dataset.cm;openActorProfile(name);};
   $('#profCmpBtn').onclick=()=>{profCmpOpen=!profCmpOpen;openActorProfile(name);};
-  $('#profCmpClear')?.addEventListener('click',()=>{profCompare=[];openActorProfile(name);});
+  /* redesenha só o gráfico: o perfil inteiro apagaria a busca, o foco e o scroll da lista */
+  const repintaCmp=()=>{
+    const cx=$('#profChartBox');
+    if(cx){cx.innerHTML=profileChartHTML(name);bindMonthClicks(cx,name);}
+    const bt=$('#profCmpBtn');
+    if(bt){bt.textContent='Comparar'+(profCompare.length?' · '+profCompare.length:'');bt.classList.toggle('on',!!profCompare.length);}
+    const cl=$('#profCmpClear');if(cl)cl.style.display=profCompare.length?'':'none';
+    $('#profCmpList')?.querySelectorAll('[data-cmp]').forEach(b=>{
+      const ci=profCompare.indexOf(b.dataset.cmp),on=ci>=0;
+      b.classList.toggle('on',on);
+      b.querySelector('i').style.background=on?CMP_COLORS[ci%CMP_COLORS.length]:'transparent';});
+  };
+  const filtraCmp=()=>{const q=profCmpQ.trim().toLowerCase();let n=0;
+    $('#profCmpList')?.querySelectorAll('[data-cmp]').forEach(b=>{
+      const ok=!q||b.dataset.cmp.toLowerCase().includes(q);
+      b.style.display=ok?'':'none';if(ok)n++;});
+    const none=$('#profCmpNone');if(none)none.style.display=n?'none':'';
+    const lst=$('#profCmpList');if(lst)lst.style.display=n?'':'none';};
+  $('#profCmpClear')?.addEventListener('click',()=>{profCompare=[];repintaCmp();});
   $('#profCmpList')?.addEventListener('click',e=>{const b=e.target.closest('[data-cmp]');if(!b)return;
     const nm=b.dataset.cmp,i=profCompare.indexOf(nm);
     if(i>=0)profCompare.splice(i,1);
     else if(profCompare.length<CMP_MAX)profCompare.push(nm);
     else{toast('Máximo de '+CMP_MAX+' atores na comparação.');return;}
-    openActorProfile(name);});
-  $('#profCmpSearch')?.addEventListener('input',e=>{const q=e.target.value.trim().toLowerCase();
-    $('#profCmpList').querySelectorAll('[data-cmp]').forEach(b=>{
-      b.style.display=(!q||b.dataset.cmp.toLowerCase().includes(q))?'':'none';});});
+    repintaCmp();});
+  $('#profCmpSearch')?.addEventListener('input',e=>{profCmpQ=e.target.value;filtraCmp();});
+  if(profCmpOpen)filtraCmp();
   $('#profAllTime')?.addEventListener('click',()=>{profMonth=null;openActorProfile(name);});
-  box.querySelectorAll('[data-k]').forEach(el=>el.addEventListener('click',()=>{
-    const k=el.dataset.k;profMonth=(profMonth===k)?null:k;openActorProfile(name);
-  }));
+  bindMonthClicks(box,name);
   $('#profTabs').onclick=e=>{const b=e.target.closest('[data-pt]');if(!b)return;profTab=b.dataset.pt;openActorProfile(name);};
   $('#histMore')?.addEventListener('click',()=>{profHistAll=true;openActorProfile(name);});
   box.querySelectorAll('.atile').forEach(t=>{t.querySelector('.open').onclick=()=>openMediaViewer(tabList,+t.dataset.i);});
