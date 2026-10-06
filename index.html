@@ -274,6 +274,49 @@ main{min-width:0}
 .cmp-opt .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cmp-opt .pt{font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums}
 .cmp-none{padding:14px 4px;font:500 13px var(--sans);color:var(--ink-3)}
+/* ---------- registro manual, alvos de dedo ---------- */
+.mreg{display:flex;flex-direction:column;gap:20px}
+.mreg-card{display:flex;flex-direction:column;gap:20px}
+.mrow{display:flex;flex-direction:column;gap:9px}
+.mrow>.lbl{margin:0}
+.mrow input:not(.mdate):not([inputmode]),.mrow input.mbusca{height:46px;padding:0 13px;border:1px solid var(--line-2);border-radius:10px;background:var(--paper);font:500 15px var(--sans);color:var(--ink);width:100%}
+.mdate{height:46px;padding:0 13px;border:1px solid var(--line-2);border-radius:10px;background:var(--paper);font:500 15px var(--sans);color:var(--ink);width:100%}
+.mhint{font:500 12px var(--sans);color:var(--ink-3)}
+.mhint .er,.mprev .er{color:var(--clay)}
+.chips-pick{display:flex;flex-wrap:wrap;gap:8px}
+.chips-pick button{min-height:44px;padding:0 15px;border:1px solid var(--line-2);border-radius:999px;background:var(--paper);font:600 14px var(--sans);color:var(--ink-2);cursor:pointer;transition:background .12s,border-color .12s,color .12s}
+.chips-pick button.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.chips-pick.tight button{min-height:38px;padding:0 13px;font-size:13px;font-weight:500}
+.chips-sel{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:30px}
+.chip-x{display:inline-flex;align-items:center;gap:8px;min-height:38px;padding:0 8px 0 14px;border:1px solid var(--ink);border-radius:999px;background:var(--ink);color:var(--paper);font:600 14px var(--sans);cursor:pointer}
+.chip-x i{font-style:normal;opacity:.65;font-size:13px;padding:0 4px}
+.mlist{max-height:188px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;background:var(--sand)}
+.mlist:empty{display:none}
+.mlist-i{display:block;width:100%;text-align:left;min-height:44px;padding:0 14px;border:0;border-bottom:1px solid var(--line);background:transparent;font:500 15px var(--sans);color:var(--ink);cursor:pointer}
+.mlist-i:last-child{border-bottom:0}
+.mlist-i:active{background:var(--sand-2)}
+.mlist-i.novo{font-weight:600;color:var(--clay)}
+.tempo{display:flex;align-items:center;gap:8px}
+.tempo input{width:84px;height:52px;text-align:center;border:1px solid var(--line-2);border-radius:10px;background:var(--paper);font:600 22px var(--sans);color:var(--ink);font-variant-numeric:tabular-nums}
+.tempo span{font:500 13px var(--sans);color:var(--ink-3)}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:52px;height:52px;border:1px solid var(--line-2);border-radius:12px;background:var(--paper);font:600 24px var(--sans);color:var(--ink);cursor:pointer;line-height:1}
+.stepper button:active{background:var(--sand-2)}
+.stepper input{width:84px;height:52px;text-align:center;border:1px solid var(--line-2);border-radius:10px;background:var(--paper);font:600 22px var(--sans);color:var(--ink);font-variant-numeric:tabular-nums}
+.mmais{align-self:flex-start;min-height:40px;padding:0 2px;border:0;background:transparent;font:600 13px var(--sans);color:var(--ink-3);text-decoration:underline;text-underline-offset:4px;cursor:pointer}
+#rgExtra{display:flex;flex-direction:column;gap:20px}
+.mfoot{display:flex;flex-direction:column;gap:12px}
+.mprev{padding:14px;border-radius:12px;background:var(--sand);font:500 14px var(--sans);line-height:1.65;color:var(--ink-2)}
+.mprev .big{font-size:26px;font-weight:700;color:var(--ink)}
+.mbig{height:56px;font-size:16px;width:100%}
+@media(min-width:760px){.mbig{width:auto;min-width:220px;align-self:flex-start}}
+@media(max-width:560px){
+  .mfoot{position:sticky;bottom:0;padding:12px 0 14px;background:linear-gradient(to bottom,transparent,var(--paper) 18%);z-index:5}
+  .tempo input,.stepper input,.stepper button{height:56px}
+  .chip-x,.chips-pick.tight button{min-height:44px}
+  .mreg-card{padding-bottom:4px}
+  #regUma{padding-bottom:12px}
+}
 .obras{margin-top:4px}
 .obra{display:grid;grid-template-columns:96px minmax(160px,1.6fr) minmax(120px,1.2fr) 86px 136px 60px;gap:14px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line);font-size:13px}
 .obra.h{border-bottom:1px solid var(--line-2);padding-bottom:8px}
@@ -594,20 +637,88 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
       <div><span class="lbl">Pontos de outras plataformas</span><h1>Registrar</h1></div>
       <div class="seg"><button class="on" data-reg="uma">Uma sessão</button><button data-reg="colar">Colar planilha</button></div>
     </div>
-    <p class="muted" style="margin:-12px 0 0;font-size:13px">Uma sessão por linha, nas colunas da planilha: Data · Produtora · Atores · Duração · Skip · Score · Plataforma. A coluna Código é opcional e vai pelo cabeçalho, não pela posição. Os pontos saem da régua da plataforma.</p>
-    <div id="regUma" style="display:flex;flex-direction:column;gap:24px">
-      <div class="card">
-        <div class="two"><div class="fld"><span class="lbl">Data</span><input id="rgData" placeholder="dd/mm/aaaa"></div>
-          <div class="fld"><span class="lbl">Plataforma</span><select id="rgPlat"></select></div></div>
-        <div class="fld"><span class="lbl">Atores (separe por ;)</span><input id="rgAtores" list="rgNames" placeholder="Nome; Outro nome" autocomplete="off"><datalist id="rgNames"></datalist></div>
-        <div class="fld"><span class="lbl">Produtora</span><input id="rgProd" list="rgProds" placeholder="Produtora (ou vazio)" autocomplete="off"><datalist id="rgProds"></datalist></div>
-        <div class="three"><div class="fld"><span class="lbl">Duração</span><input id="rgDur" placeholder="26:31 ou 0:26:31"></div>
-          <div class="fld"><span class="lbl">Skip</span><input id="rgSkip" placeholder="15:10 ou -"></div>
-          <div class="fld"><span class="lbl">Score</span><input id="rgScore" placeholder="48 ou -"></div></div>
-        <div class="fld"><span class="lbl">Fotos · cada uma vale 10s na régua da plataforma</span><input id="rgFotos" placeholder="ex: 12" inputmode="numeric"></div>
-        <div class="preview" id="rgPreview">Preencha duração e plataforma pra ver os pontos.</div>
-        <div style="display:flex;align-items:center;gap:14px"><button class="btn primary" id="rgAdd" disabled>Adicionar</button><span class="status" id="rgStatus"></span></div>
+    <p class="muted" id="regHint" style="margin:-12px 0 0;font-size:13px"></p>
+    <div id="regUma" class="mreg">
+      <div class="card mreg-card">
+
+        <div class="mrow">
+          <span class="lbl">Quando</span>
+          <div class="chips-pick" id="rgDias"></div>
+          <input id="rgData" type="date" class="mdate">
+        </div>
+
+        <div class="mrow">
+          <span class="lbl">Plataforma</span>
+          <div class="chips-pick" id="rgPlats"></div>
+          <div class="mhint" id="rgReguaHint"></div>
+        </div>
+
+        <div class="mrow hide" id="rgNivelWrap">
+          <span class="lbl">Nível do telegram · multiplica o tempo</span>
+          <div class="chips-pick" id="rgNivel">
+            <button type="button" data-niv="1" class="on">×1</button>
+            <button type="button" data-niv="2">×2</button>
+            <button type="button" data-niv="3">×3</button>
+          </div>
+        </div>
+
+        <div class="mrow">
+          <span class="lbl">Quem · toque pra adicionar</span>
+          <div class="chips-sel" id="rgSel"></div>
+          <input id="rgBusca" type="search" class="mbusca" placeholder="Buscar ou escrever um nome novo" autocomplete="off">
+          <div class="mlist" id="rgSug"></div>
+        </div>
+
+        <div class="mrow">
+          <span class="lbl">Duração</span>
+          <div class="tempo">
+            <input id="rgMin" inputmode="numeric" pattern="[0-9]*" placeholder="0"><span>min</span>
+            <input id="rgSeg" inputmode="numeric" pattern="[0-9]*" placeholder="00"><span>s</span>
+          </div>
+          <div class="chips-pick tight" id="rgRapido">
+            <button type="button" data-add="60">+1 min</button>
+            <button type="button" data-add="300">+5 min</button>
+            <button type="button" data-add="600">+10 min</button>
+            <button type="button" data-add="0">zerar</button>
+          </div>
+        </div>
+
+        <div class="mrow">
+          <span class="lbl">Fotos · cada uma vale 10s nessa régua</span>
+          <div class="stepper"><button type="button" id="rgFotoM">−</button><input id="rgFotos" inputmode="numeric" pattern="[0-9]*" value="0"><button type="button" id="rgFotoP">+</button></div>
+        </div>
+
+        <button type="button" class="mmais" id="rgMais" aria-expanded="false">Mais campos</button>
+        <div class="hide" id="rgExtra">
+          <div class="mrow">
+            <span class="lbl">Skip</span>
+            <div class="tempo">
+              <input id="rgSkipMin" inputmode="numeric" pattern="[0-9]*" placeholder="0"><span>min</span>
+              <input id="rgSkipSeg" inputmode="numeric" pattern="[0-9]*" placeholder="00"><span>s</span>
+            </div>
+          </div>
+          <div class="mrow" id="rgScoreWrap">
+            <span class="lbl">Score</span>
+            <input id="rgScore" inputmode="numeric" pattern="[0-9]*" placeholder="vazio = sem score">
+          </div>
+          <div class="mrow">
+            <span class="lbl">Produtora</span>
+            <input id="rgProd" list="rgProds" placeholder="vazio = sem produtora" autocomplete="off"><datalist id="rgProds"></datalist>
+          </div>
+          <div class="mrow">
+            <span class="lbl">Código da obra</span>
+            <input id="rgCod" inputmode="numeric" placeholder="vazio = obra nova" autocomplete="off">
+            <div class="mhint" id="rgCodHint"></div>
+          </div>
+        </div>
       </div>
+
+      <div class="mfoot">
+        <div class="mprev" id="rgPreview"></div>
+        <button class="btn primary mbig" id="rgAdd" disabled>Registrar</button>
+      </div>
+      <datalist id="rgNames"></datalist>
+
       <div><div class="sec-t" style="font-size:22px;margin-bottom:10px">Últimas sessões</div><div id="rgRecent"></div></div>
     </div>
     <div id="regColar" class="hide">
@@ -2379,62 +2490,150 @@ $('#libUploadToggle').onclick=()=>$('#libUploadInner').classList.toggle('hide');
    REGISTRAR — uma sessão por linha
    ===================================================================== */
 function regPlats(){return Object.keys(LIVE_RULES).filter(k=>!LIVE_RULES[k].legacy);}
+function splitActors(s){return cleanCell(s).split(/[;,/]|\s+e\s+/).map(x=>cleanCell(x)).filter(x=>x&&x!=='-');}
+/* ---------- registro manual, pensado pro celular ----------
+   Nada de digitar "0:26:31" num teclado de telefone: minuto e segundo em campos
+   separados, plataforma e nomes no toque, e o nível do telegram multiplicando o
+   tempo aqui na digitação, como ele já faz com os bônus. */
+let regSel=[],regPlat='pc-onr',regNivel=1;
+const toSec=(m,sg)=>Math.max(0,(parseInt(m,10)||0)*60+(parseInt(sg,10)||0));
+function regDur(){return toSec($('#rgMin').value,$('#rgSeg').value);}
+function regSkip(){return toSec($('#rgSkipMin').value,$('#rgSkipSeg').value);}
+function setDur(sec){sec=Math.max(0,Math.round(sec));$('#rgMin').value=sec?Math.floor(sec/60):'';$('#rgSeg').value=sec?String(sec%60).padStart(2,'0'):'';}
+function ehTelegram(){return String(regPlat).toLowerCase()==='telegram';}
+function temScore(){return ['pc-on','pc-off'].includes(String(regPlat).toLowerCase());}
+
 function fillPlats(){
-  const sel=$('#rgPlat');const cur=sel.value;
-  sel.innerHTML=regPlats().map(k=>`<option value="${k}">${k} · ${LIVE_RULES[k].label}</option>`).join('');
-  if(cur&&regPlats().includes(cur))sel.value=cur;
+  $('#rgPlats').innerHTML=regPlats().map(k=>
+    `<button type="button" data-plat="${escapeHtml(k)}" class="${k===regPlat?'on':''}">${escapeHtml(k)}</button>`).join('');
   $('#rgProds').innerHTML=[...new Set(LEDGER.events.map(e=>cleanCell(e.titulo)).filter(x=>x&&x!=='-'))].sort().map(x=>`<option value="${escapeHtml(x)}">`).join('');
 }
-function splitActors(s){return cleanCell(s).split(/[;,/]|\s+e\s+/).map(x=>cleanCell(x)).filter(x=>x&&x!=='-');}
+function fillDias(){
+  const hoje=new Date(),op=[['Hoje',0],['Ontem',1],['Anteontem',2]];
+  $('#rgDias').innerHTML=op.map(([rot,d])=>{
+    const dt=new Date(hoje.getFullYear(),hoje.getMonth(),hoje.getDate()-d);
+    const iso=`${dt.getFullYear()}-${p2d(dt.getMonth()+1)}-${p2d(dt.getDate())}`;
+    return `<button type="button" data-dia="${iso}" class="${$('#rgData').value===iso?'on':''}">${rot}</button>`;}).join('');
+}
+function renderSel(){
+  $('#rgSel').innerHTML=regSel.length
+    ? regSel.map(n=>`<button type="button" class="chip-x" data-rm="${escapeHtml(n)}">${escapeHtml(n)}<i>✕</i></button>`).join('')
+    : '<span class="muted" style="font-size:13px">ninguém selecionado</span>';
+}
+function renderSug(){
+  const q=semAcento($('#rgBusca').value),box=$('#rgSug');
+  /* sem busca, os mais pontuados primeiro — é quem ele registra toda hora.
+     Buscando, alfabético, que é como se procura um nome específico. */
+  const pts={};LEDGER.events.forEach(e=>{if(e&&e.nome)pts[e.nome]=(pts[e.nome]||0)+(Number(e.ponto)||0);});
+  const todos=allKnownNames().filter(n=>!regSel.includes(n));
+  const hits=(q?todos.filter(n=>semAcento(n).includes(q))
+               :todos.slice().sort((a,b)=>(pts[b]||0)-(pts[a]||0))).slice(0,40);
+  const exato=todos.some(n=>semAcento(n)===q);
+  const novo=(q&&!exato)?`<button type="button" class="mlist-i novo" data-add-nome="${escapeHtml($('#rgBusca').value.trim())}">+ criar “${escapeHtml($('#rgBusca').value.trim())}”</button>`:'';
+  box.innerHTML=novo+(hits.length?hits.map(n=>`<button type="button" class="mlist-i" data-add-nome="${escapeHtml(n)}">${escapeHtml(n)}</button>`).join(''):(novo?'':'<div class="muted" style="font-size:13px;padding:10px">Nenhum nome parecido.</div>'));
+}
 function regCompute(){
-  const data=sessDate($('#rgData').value),plat=$('#rgPlat').value;
-  const atores=splitActors($('#rgAtores').value),prod=cleanCell($('#rgProd').value);
-  const d=sessDur($('#rgDur').value),sk=sessDur($('#rgSkip').value);
-  const sc=cleanCell($('#rgScore').value);
-  const nomes=atores.length?atores:(prod&&prod!=='-'?[prod]:[]);
+  const iso=$('#rgData').value;
+  const m=iso&&iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const data=m?`${m[3]}/${m[2]}/${m[1]}`:null;
+  const dur=regDur(),skip=Math.min(regSkip(),dur);
   const fotos=Math.max(0,Math.round(parseNumber($('#rgFotos').value)||0));
-  const net=Math.max(0,(d.sec||0)-(sk.sec||0));
-  // foto conta como 10s na régua da própria plataforma, somada ao tempo de vídeo
-  const segTot=net+fotos*SEG_FOTO;
-  const temAlgo=d.sec!=null||fotos>0;
-  const pts=temAlgo?sessPoints(segTot,plat):null;
-  return{data,plat,nomes,tipo:atores.length?'Ator':'Studio',prod:prod==='-'?'':prod,
-    dur:d.sec,durFlag:d.flag,skip:sk.sec,fotos,segTot,
-    score:(!sc||sc==='-')?null:parseNumber(sc),net,pts,
+  const net=Math.max(0,dur-skip);
+  /* o nível do telegram entra aqui: multiplica o tempo, não a régua */
+  const mult=ehTelegram()?regNivel:1;
+  const segTot=(net+fotos*SEG_FOTO)*mult;
+  const prod=cleanCell($('#rgProd').value);
+  const nomes=regSel.length?regSel.slice():((prod&&prod!=='-')?[prod]:[]);
+  const sc=cleanCell($('#rgScore').value);
+  const temAlgo=dur>0||fotos>0;
+  const pts=temAlgo?sessPoints(segTot,regPlat):null;
+  const cod=cleanCell($('#rgCod').value).replace(/\s+/g,'');
+  return{data,plat:regPlat,nomes,tipo:regSel.length?'Ator':'Studio',prod:prod==='-'?'':prod,
+    dur,skip,fotos,net,segTot,mult,cod,
+    score:(!sc||sc==='-')?null:parseNumber(sc),pts,
     ok:!!(data&&nomes.length&&temAlgo&&pts>0)};
 }
+/* resolve a obra da sessão manual com a mesma regra do import */
+function regObra(c){
+  const nu=c.cod.replace(/^\+/,''),forca=/^\+/.test(c.cod);
+  if(/^\d{8}$/.test(nu))return{cod:nu,nova:false,existe:codigosUsados().has(nu)};
+  if(c.cod&&!forca)return{erro:true};
+  if(forca||c.dur>=OBRA_MIN_SEG)return{cod:null,nova:true,existe:false};
+  return{cod:null,nova:false,existe:false};
+}
 function regPreview(){
-  const c=regCompute(),bits=[];
-  if(c.dur==null&&!c.fotos)bits.push('Informe a duração ou o número de fotos.');
+  const c=regCompute(),ob=regObra(c),bits=[];
+  const r=LIVE_RULES[c.plat];
+  $('#rgReguaHint').textContent=r?r.label:'sem régua';
+  $('#rgNivelWrap').classList.toggle('hide',!ehTelegram());
+  $('#rgScoreWrap').classList.toggle('hide',!temScore());
+  if(!c.dur&&!c.fotos)bits.push('Informe a duração ou o número de fotos.');
   else{
     const partes=[];
-    if(c.dur!=null)partes.push(`${fmtHMS(c.net)} de vídeo${c.skip?` (${fmtHMS(c.dur)} − ${fmtHMS(c.skip)})`:''}`);
+    if(c.dur)partes.push(`${fmtHMS(c.net)}${c.skip?` (${fmtHMS(c.dur)} − ${fmtHMS(c.skip)})`:''}`);
     if(c.fotos)partes.push(`${c.fotos} foto${c.fotos>1?'s':''} = ${fmtHMS(c.fotos*SEG_FOTO)}`);
-    bits.push(`${partes.join(' + ')} · ${LIVE_RULES[c.plat]?.label||'sem régua'}`);
-    if(c.pts!=null)bits.push(`<b>${fmtNum(c.pts)} pts</b> por ator${c.nomes.length>1?` · ${c.nomes.length} atores · ${fmtNum(c.pts*c.nomes.length)} pts no total`:''}`);
+    let txt=partes.join(' + ');
+    if(c.mult>1)txt=`(${txt}) × ${c.mult} do nível = <b>${fmtHMS(c.segTot)}</b>`;
+    bits.push(txt);
+    if(c.pts!=null)bits.push(`<b class="big">${fmtNum(c.pts)} pts</b>${c.nomes.length>1?` por ator · ${fmtNum(c.pts*c.nomes.length)} no total`:''}`);
   }
-  if(!c.data)bits.push('<span style="color:var(--clay)">Data inválida.</span>');
-  if(!c.nomes.length)bits.push('<span style="color:var(--clay)">Informe ator ou produtora.</span>');
-  if(c.durFlag)bits.push(`<span style="color:var(--gold)">${escapeHtml(c.durFlag)}</span>`);
+  if(!c.data)bits.push('<span class="er">Escolha a data.</span>');
+  if(!c.nomes.length)bits.push('<span class="er">Escolha pelo menos um nome.</span>');
+  $('#rgCodHint').innerHTML=ob.erro?'<span class="er">Código tem que ter 8 dígitos, ou “+” pra forçar obra nova.</span>'
+    :ob.cod?(ob.existe?`vincula à obra <b>${escapeHtml(ob.cod)}</b>`:`<span class="er">obra ${escapeHtml(ob.cod)} não existe ainda</span>`)
+    :ob.nova?'abre obra nova':`abaixo de ${Math.round(OBRA_MIN_SEG/60)} min: pontua, mas não vira obra`;
+  if(ob.cod&&!ob.existe)bits.push('<span class="er">Esse código não existe no catálogo.</span>');
   $('#rgPreview').innerHTML=bits.join('<br>');
-  $('#rgAdd').disabled=!c.ok;
+  $('#rgAdd').disabled=!(c.ok&&!ob.erro&&!(ob.cod&&!ob.existe));
 }
-function regUI(){fillPlats();if(!cleanCell($('#rgData').value))$('#rgData').value=todayBR();regPreview();renderRecent();}
+function regUI(){
+  if(!$('#rgData').value){const d=new Date();$('#rgData').value=`${d.getFullYear()}-${p2d(d.getMonth()+1)}-${p2d(d.getDate())}`;}
+  fillPlats();fillDias();renderSel();renderSug();regPreview();renderRecent();
+  $('#regHint').textContent='Uma sessão por vez. Toque pra escolher, os pontos saem da régua da plataforma.';
+}
+$('#rgPlats').onclick=e=>{const b=e.target.closest('[data-plat]');if(!b)return;
+  regPlat=b.dataset.plat;fillPlats();regPreview();};
+$('#rgDias').onclick=e=>{const b=e.target.closest('[data-dia]');if(!b)return;
+  $('#rgData').value=b.dataset.dia;fillDias();regPreview();};
+$('#rgData').addEventListener('change',()=>{fillDias();regPreview();});
+$('#rgNivel').onclick=e=>{const b=e.target.closest('[data-niv]');if(!b)return;
+  regNivel=+b.dataset.niv;$('#rgNivel').querySelectorAll('[data-niv]').forEach(x=>x.classList.toggle('on',+x.dataset.niv===regNivel));regPreview();};
+$('#rgSug').onclick=e=>{const b=e.target.closest('[data-add-nome]');if(!b)return;
+  const n=b.dataset.addNome.trim();
+  if(n&&!regSel.includes(n))regSel.push(n);
+  $('#rgBusca').value='';renderSel();renderSug();regPreview();};
+$('#rgSel').onclick=e=>{const b=e.target.closest('[data-rm]');if(!b)return;
+  regSel=regSel.filter(n=>n!==b.dataset.rm);renderSel();renderSug();regPreview();};
+$('#rgBusca').addEventListener('input',renderSug);
+$('#rgBusca').addEventListener('keydown',e=>{if(e.key!=='Enter')return;e.preventDefault();
+  const b=$('#rgSug').querySelector('[data-add-nome]');if(b)b.click();});
+$('#rgRapido').onclick=e=>{const b=e.target.closest('[data-add]');if(!b)return;
+  const a=+b.dataset.add;setDur(a?regDur()+a:0);regPreview();};
+$('#rgFotoM').onclick=()=>{$('#rgFotos').value=Math.max(0,(parseInt($('#rgFotos').value,10)||0)-1);regPreview();};
+$('#rgFotoP').onclick=()=>{$('#rgFotos').value=(parseInt($('#rgFotos').value,10)||0)+1;regPreview();};
+$('#rgMais').onclick=()=>{const x=$('#rgExtra').classList.toggle('hide');
+  $('#rgMais').setAttribute('aria-expanded',String(!x));$('#rgMais').textContent=x?'Mais campos':'Menos campos';};
+['rgMin','rgSeg','rgSkipMin','rgSkipSeg','rgScore','rgFotos','rgProd','rgCod'].forEach(id=>$('#'+id).addEventListener('input',regPreview));
 $('#rgAdd').onclick=()=>{
   const c=regCompute();if(!c.ok)return;
-  c.nomes.forEach(nome=>LEDGER.events.push({id:uid('ss'),nome,tipo:c.tipo,ponto:c.pts,dataBR:c.data,plataforma:c.plat,score:c.score,titulo:c.prod,modo:'sessao',assistido_seg:c.segTot,skipado_seg:c.skip,duracao_video_seg:c.dur,fotos:c.fotos||0,score_aplicavel:'',source:'import-sessao'}));
-  $('#rgStatus').textContent=`✓ ${c.nomes.length} entrada(s) · ${fmtNum(c.pts*c.nomes.length)} pts.`;
-  toast('+'+fmtNum(c.pts*c.nomes.length),c.nomes.join(', '));
-  ['rgAtores','rgDur','rgSkip','rgScore','rgFotos'].forEach(id=>$('#'+id).value='');
-  savePontoSoon();refreshAll();regPreview();
+  const ob=regObra(c);if(ob.erro||(ob.cod&&!ob.existe))return;
+  let cod=ob.cod||'';
+  if(ob.nova)cod=novoCodigo(c.data,codigosUsados());
+  c.nomes.forEach(nome=>LEDGER.events.push({id:uid('ss'),nome,tipo:c.tipo,ponto:c.pts,dataBR:c.data,
+    plataforma:c.plat,score:c.score,titulo:c.prod,modo:'sessao',assistido_seg:c.segTot,
+    skipado_seg:c.skip,duracao_video_seg:c.dur,fotos:c.fotos||0,score_aplicavel:'',
+    codigo:cod,nivel:ehTelegram()?regNivel:undefined,source:'import-sessao'}));
+  toast('+'+fmtNum(c.pts*c.nomes.length),c.nomes.join(', ')+(cod?' · obra '+cod:''));
+  regSel=[];setDur(0);['rgSkipMin','rgSkipSeg','rgScore','rgCod'].forEach(id=>$('#'+id).value='');
+  $('#rgFotos').value='0';regNivel=1;
+  $('#rgNivel').querySelectorAll('[data-niv]').forEach(x=>x.classList.toggle('on',x.dataset.niv==='1'));
+  savePontoSoon();refreshAll();renderSel();renderSug();regPreview();
 };
-$('#rgPlat').addEventListener('change',regPreview);
-['rgData','rgAtores','rgProd','rgDur','rgSkip','rgScore','rgFotos'].forEach(id=>$('#'+id).addEventListener('input',regPreview));
 function renderRecent(){
   const box=$('#rgRecent');
   const rows=LEDGER.events.filter(e=>e.modo==='sessao').slice(-14).reverse();
   if(!rows.length){box.innerHTML='<div class="empty">Nada registrado ainda.</div>';return;}
-  box.innerHTML=rows.map(e=>`<div class="rg-row"><span class="d">${escapeHtml(e.dataBR)}</span><span class="n">${escapeHtml(e.nome)} <small>· ${escapeHtml(e.plataforma)}${e.titulo?' · '+escapeHtml(e.titulo):''}</small></span><span class="p">+${fmtNum(e.ponto)}</span><button class="x" data-del="${e.id}" aria-label="Apagar">✕</button></div>`).join('');
+  box.innerHTML=rows.map(e=>`<div class="rg-row"><span class="d">${escapeHtml(e.dataBR)}</span><span class="n">${escapeHtml(e.nome)} <small>· ${escapeHtml(e.plataforma)}${e.nivel>1?' ×'+e.nivel:''}${e.titulo?' · '+escapeHtml(e.titulo):''}${e.codigo?' · '+escapeHtml(e.codigo):''}</small></span><span class="p">+${fmtNum(e.ponto)}</span><button class="x" data-del="${e.id}" aria-label="Apagar">✕</button></div>`).join('');
   box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>{LEDGER.events=LEDGER.events.filter(x=>x.id!==b.dataset.del);savePontoSoon();refreshAll();});
 }
 
