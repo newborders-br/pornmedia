@@ -169,6 +169,8 @@ main{min-width:0}
 .car-meta{text-align:center;font-size:12px;color:var(--ink-2);padding:14px 36px 10px;min-height:20px}
 .car-acts{display:flex;justify-content:center;gap:10px;padding:0 36px}
 #fpScore{height:60px;min-width:280px;font-size:15px;border-radius:12px}
+#fpScore2{height:60px;min-width:200px;font-size:15px;border-radius:12px;background:var(--clay);border-color:var(--clay)}
+#fpScore2:hover{filter:brightness(.94)}
 #fpSkip{height:52px;color:var(--ink-2);border-radius:12px}
 .car-foot{display:flex;align-items:center;gap:20px;padding:14px 36px 16px;border-top:1px solid var(--line);margin-top:14px}
 .car-prog{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;font-size:12px;color:var(--ink-2)}
@@ -487,7 +489,7 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
   .cc.o1{height:min(70cqh,calc(14cqw / var(--ar)))}
   .cc.o0{height:min(100cqh,calc(72cqw / var(--ar)))}
   .car-nav{display:none}
-  #fpScore{min-width:0;flex:1}
+  #fpScore,#fpScore2{min-width:0;flex:1}
   .car-foot{padding:10px 12px}
   .car-prog{display:none}
   .prof-hero{grid-template-columns:1fr}
@@ -562,6 +564,7 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
       <div class="car-acts">
         <button class="btn" id="fpSkip">Dispensar <span class="kbd">↓</span></button>
         <button class="btn primary" id="fpScore"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="lb">Pontuar +1</span><span class="kbd">↑ ou espaço</span></button>
+        <button class="btn primary hide" id="fpScore2"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="lb">Pontuar ×2</span><span class="kbd">2</span></button>
       </div>
       <div class="car-foot">
         <div class="strip" id="carStrip"></div>
@@ -1015,10 +1018,13 @@ function parseNumber(v){const s=cleanCell(v).replace('%','').replace(/\./g,'').r
 function todayBR(){const d=new Date();return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;}
 function parseDateBR(s){const m=String(s||'').match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);if(!m)return null;let[,d,mo,y]=m;if(y.length===2)y='20'+y;return new Date(+y,+mo-1,+d);}
 function monthKey(b){const d=parseDateBR(b);return d?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`:'';}
+/* Visual é só a unidade completa: o decimal continua inteiro por dentro, mas na tela
+   nunca aparece. O que sobra entre 0 e 1 vira "<1" em vez de "0", pra não dizer que
+   uma coisa que pontuou não pontuou nada. */
 function fmtNum(n){const x=Number(n)||0;
-  if(Number.isInteger(x))return fmtInt(x);
-  if(Math.abs(x)>=1)return fmtInt(x);                         // 1 ou mais: sempre inteiro
-  return String(+x.toFixed(2)).replace('.',',');}             // abaixo de 1: até 2 casas, pra não virar zero
+  if(x>0&&x<1)return '<1';
+  if(x<0&&x>-1)return '>-1';
+  return fmtInt(Math.trunc(x));}
 function canonicalPlatform(v){const raw=cleanCell(v).replace(/\s+/g,' ');const k=raw.toLowerCase();const map={'pc off':'pc-off','pcoff':'pc-off','pc-off':'pc-off','pc on':'pc-on','pcon':'pc-on','pc-on':'pc-on','pc onr':'pc-onr','pconr':'pc-onr','pc-onr':'pc-onr','telegram':'telegram','telegram full':'telegram full','telegram-only':'telegram only','telegram only':'telegram only','tv full':'tv full','tv live':'tv live','aloha':'aloha','foto':'fotos','fotos':'fotos','photo':'fotos','photos':'fotos','twitter':'twitter','x':'twitter','pornmedia':'PornMedia','tg':'telegram','tg 1':'telegram','tg 2':'telegram','tg 3':'telegram','telegram 1':'telegram','telegram 2':'telegram','telegram 3':'telegram','mobile':'mobile','celular':'mobile','cel':'mobile','tv':'tv full','telegram-full':'telegram full'};return map[k]||(LIVE_RULES[k]?k:(raw||'—'));}
 function platformGroupName(v){const p=canonicalPlatform(v);const k=String(p||'').toLowerCase();if(k==='telegram'||k==='telegram full'||k==='telegram only'||k==='telegram-only')return 'telegram';return p;}
 /* Régua. 'legacy' = só existe pra entender dados antigos, não aparece no Registrar.
@@ -1290,7 +1296,7 @@ function actorStats(aid){
 }
 function setStageActor(side,aid){
   const el=side==='a'?$('#cA'):$('#cB');el.classList.remove('win','lose');
-  const list=topMosaic(aid),full=allOfActor(aid);
+  const list=topMosaic(aid),full=availMedia(aid).sort((x,y)=>(y.elo||1500)-(x.elo||1500));
   el.querySelector('.nm').textContent=actorName(aid);
   el.querySelector('.rk').textContent='#'+(actorEloPos(aid)||'—');
   el.querySelector('.ac').textContent=actorStats(aid);
@@ -1342,9 +1348,34 @@ function decide(side){
 }
 
 /* ---------- fase do vencedor / sorteio: carrossel ---------- */
-function newPhase(type,items,extra={}){return{type,items,cur:items[0]||null,filter:'all',scored:{},dismissed:{},seen:{},pts:0,ref:avgElo(items.map(id=>GAME.media[id]).filter(Boolean)),...extra};}
+function newPhase(type,items,extra={}){return{type,items,cur:items[0]||null,filter:'all',scored:{},dismissed:{},keep:{},round:1,seen:{},pts:0,ref:avgElo(items.map(id=>GAME.media[id]).filter(Boolean)),...extra};}
+/* fases salvas antes do 2º turno não têm keep/round */
+function normPhase(){if(!phase)return;if(!phase.keep)phase.keep={};if(!phase.round)phase.round=1;}
+/* o que ainda pode aparecer: 1º turno mostra todo mundo uma vez,
+   2º turno só o que foi escolhido pra voltar (foto pontuada e vídeo ×2) */
+function faseAtiva(id){
+  if(!phase)return false;
+  /* tolerante de propósito: fase salva por uma versão anterior não tem keep/round,
+     e isso é lido na volta do F5 antes de qualquer normalização */
+  if((phase.dismissed||{})[id])return false;
+  if((phase.round||1)===1)return !(phase.scored||{})[id];
+  return !!(phase.keep||{})[id];
+}
+function temSegundoTurno(){
+  if(!phase||!phase.keep)return false;
+  return Object.keys(phase.keep).some(id=>phase.keep[id]&&!phase.dismissed[id]&&GAME.media[id]&&!GAME.media[id].deleted);
+}
+/* passa pro 2º turno quando o 1º acabou. devolve true se virou */
+function abreSegundoTurno(){
+  if(!phase||(phase.round||1)!==1||!temSegundoTurno())return false;
+  phase.round=2;
+  toast('2º turno',`${Object.keys(phase.keep).filter(id=>phase.keep[id]&&!phase.dismissed[id]).length} mídia(s) voltaram`);
+  return true;
+}
 function startWinnerPhase(aid,info={}){
-  const mine=allOfActor(aid);
+  /* avail, não all: mídia já dispensada ou já consumida nesta rodada não volta
+     pro carrossel — ele precisa ver só o que ainda dá pra pontuar */
+  const mine=availMedia(aid).sort((x,y)=>(y.elo||1500)-(x.elo||1500));
   if(!mine.length){nextDuel();return;}
   phase=newPhase('winner',mine.map(m=>m.id),{actorId:aid,loser:info.loser||'',gain:info.gain||0});
   savePhase();renderPhase();
@@ -1354,14 +1385,11 @@ function startWinnerPhase(aid,info={}){
 /* Mídia que já teve resposta nesta fase não volta a ser sorteada:
    dispensada sai de vez, e vídeo pontuado também (vídeo aparece uma vez só).
    Sem isso, o sorteio podia cair numa dispensada e o Pontuar virava um beco sem saída. */
-function resolvidaNaFase(id){
-  if(!phase)return false;
-  if(phase.dismissed[id])return true;
-  const m=GAME.media[id];
-  return !!(m&&m.type==='video'&&phase.scored[id]);
-}
+function resolvidaNaFase(id){return phase?!faseAtiva(id):false;}
 function drawSorteio(){
-  const pool=sorteioPool().filter(m=>!resolvidaNaFase(m.id));
+  normPhase();
+  let pool=sorteioPool().filter(m=>faseAtiva(m.id));
+  if(!pool.length&&abreSegundoTurno())pool=sorteioPool().filter(m=>faseAtiva(m.id));
   if(!pool.length)return null;
   const ult=phase?.cur,recentes=(phase?.items||[]).slice(-2);
   let livres=pool.length>2?pool.filter(m=>!recentes.includes(m.id)):[];
@@ -1376,7 +1404,8 @@ function nextSorteio(){
   savePhase();renderPhase();
 }
 function endSorteio(){
-  phase=null;phaseStash.sorteio=null;savePhase();
+  if(phase)markUsed(Object.keys(phase.keep).filter(id=>phase.keep[id]));
+  phase=null;phaseStash.sorteio=null;savePhase();saveSessionNow();
   if(duelActors().length>=2)showEmpty(`Sorteio esgotado nesta rodada.<br>Ainda há <b>${duelActors().length}</b> atores no Duelo.`+roundLine());
   else showRoundEnd();
 }
@@ -1400,6 +1429,7 @@ function phaseList(){
   const f=phase.filter;
   return phase.items.filter(id=>{
     const m=GAME.media[id];if(!m||m.deleted)return false;
+    if(!faseAtiva(id)&&id!==phase.cur)return false;   // some da tira assim que resolve
     if(f==='photo')return m.type!=='video';
     if(f==='video')return m.type==='video';
     if(f==='unseen')return !phase.seen[id]||id===phase.cur;
@@ -1415,8 +1445,8 @@ function cardHTML(id,o){
   const ar=aspectCache.get(id);
   return `<div class="cc o${ao}${ds?' dis':''}${isV&&cur?' isv':''}" data-id="${id}" data-o="${o}" style="${ar?`--ar:${ar};`:''}--dx:${o*40}px">
     ${isV&&cur?'<video playsinline controls autoplay></video>':'<img alt="">'}
-    ${sc?`<span class="b-tl chip ok">${ICON.check} pontuada${sc>1?' '+sc+'×':''}</span>`:''}${ds?'<span class="b-tl chip clay">dispensada</span>':''}
-    ${isV?`<span class="b-tr pill vid">▶ ${m.durationSec?fmtSec(m.durationSec)+' · +'+videoPts(m.durationSec):'vídeo'}</span>`:''}
+    ${sc?`<span class="b-tl chip ok">${ICON.check} pontuada${sc>1?' '+sc+'×':''}${phase.keep[id]?' · volta':''}</span>`:''}${ds?'<span class="b-tl chip clay">dispensada</span>':''}
+    ${isV?`<span class="b-tr pill vid">▶ ${m.durationSec?fmtSec(m.durationSec)+' · +'+fmtNum(videoPts(m.durationSec)):'vídeo'}</span>`:''}
     ${cur?`<button type="button" class="b-br btn sm fsbtn">${ICON.expand}Tela cheia <span class="kbd">F</span></button>`:''}
   </div>`;
 }
@@ -1438,7 +1468,7 @@ function renderPhase(){
   if(phase.type==='sorteio'){
     if(!phaseValid(phase.cur)||usedSet().has(phase.cur)||resolvidaNaFase(phase.cur))return nextSorteio();
   }
-  if(phase.type==='winner'&&phase.items.every(id=>!phaseValid(id)||phase.dismissed[id]))return endWinnerPhase();
+  if(phase.type==='winner'&&!phase.items.some(id=>phaseValid(id)&&faseAtiva(id))&&!abreSegundoTurno())return endWinnerPhase();
   const sorteio=phase.type==='sorteio';
   const list=sorteio?[phase.cur]:phaseList();
   if(!list.length){
@@ -1486,39 +1516,57 @@ function renderPhase(){
   const fs=st.querySelector('.fsbtn');if(fs)fs.onclick=e=>{e.stopPropagation();openPhaseViewer();};
   phaseMeta();
   if(sorteio){
-    const pool=sorteioPool().filter(x=>!resolvidaNaFase(x.id)),pf=pool.filter(x=>x.type!=='video').length,pv=pool.length-pf;
+    const pool=sorteioPool().filter(x=>faseAtiva(x.id)),pf=pool.filter(x=>x.type!=='video').length,pv=pool.length-pf;
+    const volta=Object.keys(phase.keep).filter(id=>phase.keep[id]&&!phase.dismissed[id]).length;
     $('#carStrip').innerHTML='';$('#carStrip')._key='';
-    $('#carProg').innerHTML=`sorteio <b>${phase.items.length}</b> · restam <b>${pf}</b> foto${pf===1?'':'s'}${pv?` e <b>${pv}</b> vídeo${pv===1?'':'s'}`:''}`;
+    $('#carProg').innerHTML=`<b>${phase.round===1?'1º':'2º'} turno</b> · restam <b>${pf}</b> foto${pf===1?'':'s'}${pv?` e <b>${pv}</b> vídeo${pv===1?'':'s'}`:''}`
+      +(phase.round===1&&volta?` · <b class="okc">${volta}</b> pra voltar`:'');
   }else{
     $('#carPrev').disabled=i<=0;$('#carNext').disabled=i>=list.length-1;
     renderStrip($('#carStrip'),list,phase.cur,{go:phaseGoTo,sc:phase.scored,ds:phase.dismissed,seen:phase.seen});
     const valid=phase.items.filter(phaseValid);
-    const sc=Object.keys(phase.scored).length,ds=Object.keys(phase.dismissed).length,seen=valid.filter(id=>phase.seen[id]).length;
-    $('#carProg').innerHTML=`<b>${seen}</b> de ${valid.length} vistas · <b class="okc">${sc}</b> pontuada${sc===1?'':'s'} · ${ds} dispensada${ds===1?'':'s'}`;
+    const sc=Object.keys(phase.scored).length,ds=Object.keys(phase.dismissed).length;
+    const faltam=valid.filter(id=>faseAtiva(id)).length;
+    const volta=Object.keys(phase.keep).filter(id=>phase.keep[id]&&!phase.dismissed[id]).length;
+    $('#carProg').innerHTML=`<b>${phase.round===1?'1º':'2º'} turno</b> · faltam <b>${faltam}</b> de ${valid.length} · <b class="okc">${sc}</b> pontuada${sc===1?'':'s'} · ${ds} dispensada${ds===1?'':'s'}`
+      +(phase.round===1&&volta?` · <b class="okc">${volta}</b> pra voltar`:'');
   }
   savePhase();
 }
 function phaseMeta(){
   if(!phase)return;const m=GAME.media[phase.cur];if(!m)return;
+  normPhase();
   const sc=phase.scored[m.id]||0,ds=!!phase.dismissed[m.id],isV=m.type==='video';
+  const pode=faseAtiva(m.id);
   $('#fpMeta').textContent=`${m.name} · #${mediaPos(m)||'—'} geral · Tier ${mediaTier(m)} · ELO ${fmtInt(m.elo||1500)}${isV&&m.durationSec?' · '+fmtSec(m.durationSec):''}${sc?` · já pontuada ${sc}×`:''}`;
-  $('#fpScore .lb').textContent=ds?'Dispensada':(isV&&sc)?'Vídeo já pontuado':`Pontuar +${mediaPts(m)}`;
-  $('#fpScore').disabled=ds||(isV&&sc>0);
+  /* vídeo ganha dois botões: ×1 sai do bolo, ×2 volta no 2º turno e dobra o ELO */
+  $('#fpScore2').classList.toggle('hide',!isV);
+  $('#fpScore .lb').textContent=ds?'Dispensada':!pode?'Já resolvida':isV?`Pontuar ×1 +${fmtNum(mediaPts(m))}`:`Pontuar +${fmtNum(mediaPts(m))}`;
+  $('#fpScore2 .lb').textContent=`Pontuar ×2 · volta`;
+  $('#fpScore').disabled=!pode;
+  $('#fpScore2').disabled=!pode;
   $('#fpSkip').disabled=ds;
 }
 $('#phaseFilters').onclick=e=>{const b=e.target.closest('[data-pf]');if(!b||!phase)return;phase.filter=b.dataset.pf;renderPhase();};
 function phaseGoTo(id){if(!phase||id===phase.cur)return;phase.cur=id;renderPhase();}
 function phaseGo(d){if(!phase||phase.type==='sorteio')return;const list=phaseList(),i=list.indexOf(phase.cur),j=clamp(i+d,0,list.length-1);if(j!==i)phaseGoTo(list[j]);}
-function phaseScoreId(id){
-  if(!phase||phaseBusy)return false;const m=GAME.media[id];if(!m)return false;
+/* nivel vale só pra vídeo: ×1 pontua e sai · ×2 pontua, volta no 2º turno e
+   bate duas vezes no ELO. Foto pontua normal e sempre volta. */
+function phaseScoreId(id,nivel=1){
+  if(!phase||phaseBusy)return false;normPhase();
+  const m=GAME.media[id];if(!m)return false;
   if(phase.dismissed[id]){toast('—','Essa mídia foi dispensada');return false;}
-  if(m.type==='video'&&phase.scored[id]){toast('—','Vídeo já pontuado nesta fase');return false;}
+  if(!faseAtiva(id)){toast('—','Essa mídia já saiu do bolo');return false;}
   phaseBusy=true;setTimeout(()=>phaseBusy=false,220);
-  eloFocus(m,1,phase.ref||1500);m.wins=(m.wins||0)+1;
+  const isV=m.type==='video',n=isV?(nivel===2?2:1):1;
+  for(let k=0;k<n;k++)eloFocus(m,1,phase.ref||1500);
+  m.wins=(m.wins||0)+n;
   phase.scored[id]=(phase.scored[id]||0)+1;
-  const pts=mediaPts(m);phase.pts+=pts;
+  const pts=mediaPts(m);phase.pts+=pts;      // ponto é um só; o nível dobra o ELO
   creditPonto(actorName(m.actorId),pts);
-  if(m.type==='video')markUsed([id]);   // vídeo aparece uma vez só; foto pontuada volta pro bolo
+  const volta=isV?(nivel===2):true;
+  phase.keep[id]=volta;
+  if(!volta)markUsed([id]);
   saveGameSoon();savePhase();
   return true;
 }
@@ -1529,14 +1577,14 @@ function phaseDismissId(id){
      não "essa é ruim". Então só tira de circulação, sem mexer no ELO nem contar derrota.
      Dispensar sem ter pontuado continua sendo rejeição de verdade. */
   if(!phase.scored[id]){eloFocus(m,0,phase.ref||1500);m.losses=(m.losses||0)+1;}
-  phase.dismissed[id]=true;markUsed([id]);
+  phase.dismissed[id]=true;phase.keep[id]=false;markUsed([id]);
   saveGameSoon();saveSessionNow();savePhase();
   return true;
 }
-function phaseScore(){
+function phaseScore(nivel=1){
   if(!phase)return;
   const atual=phase.cur;
-  if(!phaseScoreId(atual)){
+  if(!phaseScoreId(atual,nivel)){
     if(phase.type==='sorteio'&&!phaseBusy&&resolvidaNaFase(atual))nextSorteio();   // nunca fica preso
     return;
   }
@@ -1546,14 +1594,19 @@ function phaseScore(){
 }
 /* próxima não-dispensada da lista, dando a volta — a pontuada volta a aparecer
    numa próxima passagem, e só sai de vez quando você dispensa */
+/* próxima ainda ativa, dando a volta. Esgotou o 1º turno e há quem volte,
+   abre o 2º turno e continua por ele. */
 function proximaNaFase(id){
-  const list=phaseList();if(!list.length)return id;
-  const i=list.indexOf(id);
-  for(let k=1;k<=list.length;k++){
-    const c=list[(i+k+list.length)%list.length];
-    if(!phase.dismissed[c])return c;
-  }
-  return id;
+  const acha=()=>{
+    const list=phaseList();if(!list.length)return null;
+    const i=list.indexOf(id);
+    for(let k=1;k<=list.length;k++){
+      const c=list[(i+k+list.length)%list.length];
+      if(c!==id&&faseAtiva(c))return c;
+    }
+    return faseAtiva(id)?id:null;
+  };
+  return acha()||(abreSegundoTurno()?(acha()||id):id);
 }
 function phaseDismiss(){
   if(!phase)return;
@@ -1590,7 +1643,8 @@ function viewerSwapTo(m){
   rebuildSlides(1);neutralizeViewer();$('#vStrip')._key=null;
   setTrack(false);vmeta();paintViewerSlides();bumpIdle();
 }
-$('#fpScore').onclick=phaseScore;
+$('#fpScore').onclick=()=>phaseScore(1);
+$('#fpScore2').onclick=()=>phaseScore(2);
 $('#fpSkip').onclick=phaseDismiss;
 $('#fpEnd').onclick=endWinnerPhase;
 $('#carPrev').onclick=()=>{if(phase?.type!=='sorteio')phaseGo(-1);};
@@ -1611,7 +1665,7 @@ $$('#gameModeFilters [data-game]').forEach(b=>b.onclick=()=>{
   phaseStash[gameMode]=phase;            // guarda o que estava rolando
   gameMode=novo;setModeButtons();stopVideos($('#carStage'));
   const salva=phaseStash[novo];
-  if(salva&&salva.items?.some(id=>phaseValid(id))){phase=salva;savePhase();renderPhase();return;}
+  if(salva&&salva.items?.some(id=>phaseValid(id))){phase=salva;normPhase();savePhase();renderPhase();return;}
   phase=null;savePhase();nextDuel();
 });
 async function startGameIfReady(){
@@ -1619,7 +1673,7 @@ async function startGameIfReady(){
     const s=JSON.parse(localStorage.getItem(LS_PHASE)||'null');
     if(s&&s.day===localDay()&&s.phase&&Array.isArray(s.phase.items)){
       gameMode=s.mode==='sorteio'?'sorteio':'duelo';
-      phase=s.phase;phase.items=phase.items.filter(phaseValid);
+      phase=s.phase;normPhase();phase.items=phase.items.filter(phaseValid);
       if(phase.items.length){renderPhase();return;}
     }
   }catch(e){}
@@ -2848,6 +2902,7 @@ addEventListener('keydown',e=>{
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   if(e.target.closest?.('input,textarea,select'))return;
   if(['1','2','3','4'].includes(e.key)){switchView(VIEWS[+e.key-1]);return;}
+  if(e.key==='2'&&phase&&GAME.media[phase.cur]?.type==='video'){phaseScore(2);return;}
   if(e.key==='?'){$('#keysDlg').showModal();return;}
   if(e.key==='/'&&$('#ranking').classList.contains('on')){e.preventDefault();$('#rankSearch').focus();return;}
   if(e.key==='Escape'&&$('#atores').classList.contains('on')){switchView('ranking');return;}
