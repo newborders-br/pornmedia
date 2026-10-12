@@ -723,7 +723,7 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
     </div>
     <div id="regColar" class="hide">
       <div class="card">
-        <div class="fld"><textarea id="impText" placeholder="Cole aqui direto da planilha, com ou sem o cabeçalho."></textarea></div>
+        <div class="fld"><textarea id="impText" placeholder="Cole aqui direto da planilha, com o cabeçalho junto."></textarea><div class="mhint" style="margin-top:8px">Colunas pelo nome do cabeçalho, em qualquer ordem: Data · Atores · Duracao · Plataforma · Produtora · Skip · Score · Fotos · <b>Código</b> (ou <b>Obra</b>). Com a coluna de código, cole sempre com o cabeçalho.</div></div>
         <div class="ex">Data	Produtora	Atores	Duracao	Skip	Score	Plataforma
 12/08/2026	Produtora	Nome; Outro nome	0:26:31	0:15:10	48	PC-OFF
 18/08/2026	-	Nome	0:24:00	-	-	Twitter</div>
@@ -2671,7 +2671,11 @@ function parseSessions(raw){
   const head=splitDelimited(lines[0],sep).map(x=>cleanCell(x).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,''));
   const col=pre=>head.findIndex(x=>x.startsWith(pre));
   let iA=col('ator'),iD=col('dura'),iData=col('data'),iProd=col('produt'),iSkip=col('skip'),iScore=col('score'),iPlat=col('plataf');
-  const iFoto=col('foto'),iCod=col('cod');
+  const iFoto=col('foto');
+  /* A coluna da obra entra por 'cod...' ou por 'obra...': a prévia chama de Obra e a
+     planilha costuma chamar de Código, e perder a coluna por causa do nome é o erro
+     mais caro aqui — some o agrupamento do gangbang sem avisar nada. */
+  const iCod=col('cod')>=0?col('cod'):col('obra');
   let cells,off=2;
   if(iA<0||iD<0){
     if(!sessDate(splitDelimited(lines[0],sep)[0]||''))return null;
@@ -2734,6 +2738,12 @@ function parseSessions(raw){
     const cod=g.ref||novoCodigo(g.data,usados);
     g.rows.forEach(r=>{r.obra=cod;r.obraNova=!g.ref;});
   });
+  /* marcador local sozinho quase sempre é erro de digitação: o par ficou noutro número */
+  const contaGrupo={};
+  out.forEach(r=>{if(r.ok&&r.codGrupo)contaGrupo[r.codGrupo]=(contaGrupo[r.codGrupo]||0)+1;});
+  out.forEach(r=>{if(r.ok&&r.codGrupo&&contaGrupo[r.codGrupo]===1)
+    r.flags.push(`grupo "${r.codGrupo}" só tem esta linha`);});
+  out.forEach(r=>{r.warn=r.ok&&r.flags.length>0;});
   return{list:out,errors,temCod:iCod>=0,rows:out.filter(r=>r.ok).flatMap(r=>r.nomes.map(nome=>({id:uid('ss'),nome,tipo:r.tipo,ponto:r.pts,dataBR:r.data,plataforma:r.plat,score:r.score,titulo:r.prod,modo:'sessao',assistido_seg:r.net,skipado_seg:r.skip,duracao_video_seg:r.dur,fotos:r.fotos||0,score_aplicavel:'',codigo:r.obra||'',source:'import-sessao'})))};
 }
 function sessKey(e){return[e.nome,e.dataBR,e.plataforma,Math.round(e.assistido_seg||0),Math.round(e.skipado_seg||0)].join('|').toLowerCase();}
