@@ -2022,8 +2022,7 @@ function fallQueue(){
     if(!last[e.nome]||d>last[e.nome])last[e.nome]=d;
     const age=(now-d)/864e5;if(age>=0&&age<30)w[e.nome]=(w[e.nome]||0)+(Number(e.ponto)||0);});
   const wRank={};Object.entries(w).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).forEach(([n],i)=>wRank[n]=i+1);
-  const curIdx=qdMonthIdx(currentMonthKey());
-  const nomes=new Set();months.forEach(k=>Object.keys(charts[k]).forEach(n=>nomes.add(n)));
+    const nomes=new Set();months.forEach(k=>Object.keys(charts[k]).forEach(n=>nomes.add(n)));
   const rows=[];
   nomes.forEach(nome=>{
     let pico=null,picoK=null,picoTier=QD_TIERS.length,top25=0;
@@ -2032,20 +2031,21 @@ function fallQueue(){
     if(picoTier>2)return;                         // nunca foi Top 25
     const agora=wRank[nome]||null,agoraTier=qdTier(agora);
     if(agoraTier-picoTier<2)return;               // não caiu 2 faixas
-    let ultimoBom=null;months.forEach(k=>{if(qdTier(charts[k][nome])-picoTier<2)ultimoBom=k;});
-    const fora=ultimoBom?Math.max(0,curIdx-qdMonthIdx(ultimoBom)):0;
+    /* fora = tempo desde o último ponto: quanto tempo ele não aparece no ranking.
+       Quem ainda pontua nos últimos 30 dias (caiu, mas está no chart) fica com 0. */
+    const ld=last[nome];const fora=(!agora&&ld)?Math.max(1,Math.floor((now-ld)/864e5/30.44)):0;
     const prio=QD_PESO[picoTier]*(1+Math.log2(Math.max(1,fora)))*(1+0.25*Math.min(top25,4));
-    rows.push({nome,pico,picoK,picoTier,agora,agoraTier,fora,ultimoBom,top25,last:last[nome]||null,prio});
+    rows.push({nome,pico,picoK,picoTier,agora,agoraTier,fora,top25,last:last[nome]||null,prio});
   });
   rows.sort((a,b)=>b.prio-a.prio||a.pico-b.pico||b.fora-a.fora);
   const out={rows,map:Object.fromEntries(rows.map((r,i)=>[r.nome,{...r,pos:i+1}]))};
   qdMemo={sig,out};return out;
 }
-const qdForaTxt=f=>f<=0?'este mês':f===1?'1 mês':`${f} meses`;
+const qdForaTxt=f=>f<=0?'no chart':f===1?'1 mês':`${f} meses`;
 const qdQuedaTxt=r=>`#${r.pico} → ${r.agora?'#'+r.agora:'fora'}`;
 function renderQuedas(){
   const {rows}=fallQueue();
-  $('#qdSub').textContent=`${rows.length} atores que já foram Top 25 e hoje estão duas faixas ou mais abaixo do próprio pico (faixas: Top 3 · 10 · 25 · 50 · 100 · fora). "Agora" é a posição nos últimos 30 dias. Ordem: quem tem mais prioridade de voltar a pontuar, pesando o pico, o tempo fora e quantos meses ficou no Top 25.`;
+  $('#qdSub').textContent=`${rows.length} atores que já foram Top 25 e hoje estão duas faixas ou mais abaixo do próprio pico (faixas: Top 3 · 10 · 25 · 50 · 100 · fora). "Agora" é a posição nos últimos 30 dias, e "fora há" é o tempo desde o último ponto. Ordem: quem tem mais prioridade de voltar a pontuar, pesando o pico, o tempo fora e quantos meses ficou no Top 25.`;
   const list=$('#quedaList');
   if(!rows.length){list.innerHTML='<div class="empty">Ninguém em queda.</div>';return;}
   list.innerHTML=rows.map((r,i)=>{
@@ -2055,7 +2055,7 @@ function renderQuedas(){
       <span class="rk-pos">${i+1}</span>
       <span style="min-width:0"><span class="rk-nm"><span class="n">${escapeHtml(r.nome)}</span></span><span class="rk-sub" style="display:block"><span class="qd-m">${qdQuedaTxt(r)} · </span>${escapeHtml(sub)}</span></span>
       <span class="qd-q">${qdQuedaTxt(r)}<small>${QD_LABEL[r.picoTier]} → ${QD_LABEL[r.agoraTier]}</small></span>
-      <span class="qd-f">${qdForaTxt(r.fora)}<small>fora</small></span>
+      <span class="qd-f">${qdForaTxt(r.fora)}<small>${r.fora?'sem pontuar':'ainda pontua'}</small></span>
     </button>`;}).join('');
   list.querySelectorAll('[data-name]').forEach(b=>b.onclick=()=>showActorProfile(b.dataset.name));
 }
