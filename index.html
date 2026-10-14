@@ -2003,8 +2003,12 @@ function importantPlatformsForMonth(name,k){const by={};LEDGER.events.forEach(e=
    - pico: melhor faixa já alcançada nos charts mensais (calendário).
    - agora: posição nos últimos 30 dias corridos (janela móvel, sem o falso
      alarme do começo do mês).
-   - entra na fila quem já foi Top 25 e hoje está 2+ faixas abaixo do pico.
-   - prioridade = peso do pico × (1 + log2 meses fora) × consistência.
+   - a queda é medida contra onde ele estava ANTES (não contra o pico):
+       sumiu   → última posição mensal antes de sumir → fora; conta o tempo sem ponto.
+       caindo  → posição nos 30 dias anteriores → agora, se desceu 2+ faixas.
+   - só entra quem já esteve no Top 100 de algum mês.
+   - prioridade = peso do pico × (1 + meses sem ponto ÷ 3) × consistência.
+     O pico só pesa a prioridade; não é a régua da queda.
    ===================================================================== */
 const QD_TIERS=[3,10,25,50,100],QD_LABEL=['Top 3','Top 10','Top 25','Top 50','Top 100','fora'],QD_PESO=[5,4,3,2,1,0];
 const qdTier=r=>{if(!r)return QD_TIERS.length;for(let i=0;i<QD_TIERS.length;i++)if(r<=QD_TIERS[i])return i;return QD_TIERS.length;};
@@ -2017,35 +2021,43 @@ function fallQueue(){
   months.forEach(k=>{const by={};LEDGER.events.forEach(e=>{if(monthKey(e.dataBR)!==k||!rankableEvent(e))return;by[e.nome]=(by[e.nome]||0)+(Number(e.ponto)||0);});
     const m={};Object.entries(by).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).forEach(([n],i)=>m[n]=i+1);charts[k]=m;});
   const now=new Date();now.setHours(23,59,59,999);
-  const w={},last={};
+  const w={},wAnt={},last={};
   LEDGER.events.forEach(e=>{if(!rankableEvent(e))return;const d=parseDateBR(e.dataBR);if(!d)return;
-    if(!last[e.nome]||d>last[e.nome])last[e.nome]=d;
-    const age=(now-d)/864e5;if(age>=0&&age<30)w[e.nome]=(w[e.nome]||0)+(Number(e.ponto)||0);});
-  const wRank={};Object.entries(w).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).forEach(([n],i)=>wRank[n]=i+1);
+    const v=Number(e.ponto)||0;if(v>0&&(!last[e.nome]||d>last[e.nome]))last[e.nome]=d;
+    const age=(now-d)/864e5;if(age>=0&&age<30)w[e.nome]=(w[e.nome]||0)+v;else if(age>=30&&age<60)wAnt[e.nome]=(wAnt[e.nome]||0)+v;});
+  const rankOf=o=>{const r={};Object.entries(o).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).forEach(([n],i)=>r[n]=i+1);return r;};
+  const wRank=rankOf(w),wAntRank=rankOf(wAnt);
     const nomes=new Set();months.forEach(k=>Object.keys(charts[k]).forEach(n=>nomes.add(n)));
   const rows=[];
   nomes.forEach(nome=>{
     let pico=null,picoK=null,picoTier=QD_TIERS.length,top25=0;
     months.forEach(k=>{const r=charts[k][nome];if(!r)return;if(r<=25)top25++;if(pico===null||r<pico||(r===pico&&k>picoK)){pico=r;picoK=k;}});
     picoTier=qdTier(pico);
-    if(picoTier>2)return;                         // nunca foi Top 25
+    if(picoTier>=QD_TIERS.length)return;          // nunca esteve no Top 100
     const agora=wRank[nome]||null,agoraTier=qdTier(agora);
-    if(agoraTier-picoTier<2)return;               // não caiu 2 faixas
-    /* fora = tempo desde o último ponto: quanto tempo ele não aparece no ranking.
-       Quem ainda pontua nos últimos 30 dias (caiu, mas está no chart) fica com 0. */
-    const ld=last[nome];const fora=(!agora&&ld)?Math.max(1,Math.floor((now-ld)/864e5/30.44)):0;
-    const prio=QD_PESO[picoTier]*(1+Math.log2(Math.max(1,fora)))*(1+0.25*Math.min(top25,4));
-    rows.push({nome,pico,picoK,picoTier,agora,agoraTier,fora,top25,last:last[nome]||null,prio});
+    let antes,antesK=null,fora=0;
+    if(agora){
+      /* ainda pontua: compara com os 30 dias anteriores */
+      antes=wAntRank[nome]||null;
+      if(!antes||agoraTier-qdTier(antes)<2)return;
+    }else{
+      /* sumiu: última posição mensal antes de sumir, e o tempo sem ponto */
+      const ld=last[nome];if(!ld)return;
+      antesK=months.filter(k=>charts[k][nome]).pop();antes=charts[antesK][nome];
+      fora=Math.max(1,Math.floor((now-ld)/864e5/30.44));
+    }
+    const prio=QD_PESO[picoTier]*(1+fora/3)*(1+0.25*Math.min(top25,4));
+    rows.push({nome,pico,picoK,picoTier,antes,antesK,antesTier:qdTier(antes),agora,agoraTier,fora,top25,last:last[nome]||null,prio});
   });
-  rows.sort((a,b)=>b.prio-a.prio||a.pico-b.pico||b.fora-a.fora);
+  rows.sort((a,b)=>b.prio-a.prio||b.fora-a.fora||a.pico-b.pico);
   const out={rows,map:Object.fromEntries(rows.map((r,i)=>[r.nome,{...r,pos:i+1}]))};
   qdMemo={sig,out};return out;
 }
 const qdForaTxt=f=>f<=0?'no chart':f===1?'1 mês':`${f} meses`;
-const qdQuedaTxt=r=>`#${r.pico} → ${r.agora?'#'+r.agora:'fora'}`;
+const qdQuedaTxt=r=>`#${r.antes} → ${r.agora?'#'+r.agora:'fora'}`;
 function renderQuedas(){
   const {rows}=fallQueue();
-  $('#qdSub').textContent=`${rows.length} atores que já foram Top 25 e hoje estão duas faixas ou mais abaixo do próprio pico (faixas: Top 3 · 10 · 25 · 50 · 100 · fora). "Agora" é a posição nos últimos 30 dias, e "fora há" é o tempo desde o último ponto. Ordem: quem tem mais prioridade de voltar a pontuar, pesando o pico, o tempo fora e quantos meses ficou no Top 25.`;
+  $('#qdSub').textContent=`${rows.length} atores que já estiveram no Top 100. Entra quem sumiu (última posição antes de sumir → fora, com o tempo sem pontuar) e quem ainda pontua mas desceu duas faixas ou mais em relação aos 30 dias anteriores (faixas: Top 3 · 10 · 25 · 50 · 100 · fora). Ordem: prioridade de voltar a pontuar, pesando o tempo fora, o pico e quantos meses ficou no Top 25.`;
   const list=$('#quedaList');
   if(!rows.length){list.innerHTML='<div class="empty">Ninguém em queda.</div>';return;}
   list.innerHTML=rows.map((r,i)=>{
@@ -2054,7 +2066,7 @@ function renderQuedas(){
     return `<button type="button" class="rk-row qd${i<3?' top':''}" data-name="${escapeHtml(r.nome)}">
       <span class="rk-pos">${i+1}</span>
       <span style="min-width:0"><span class="rk-nm"><span class="n">${escapeHtml(r.nome)}</span></span><span class="rk-sub" style="display:block"><span class="qd-m">${qdQuedaTxt(r)} · </span>${escapeHtml(sub)}</span></span>
-      <span class="qd-q">${qdQuedaTxt(r)}<small>${QD_LABEL[r.picoTier]} → ${QD_LABEL[r.agoraTier]}</small></span>
+      <span class="qd-q">${qdQuedaTxt(r)}<small>${r.antesK?keyLabel(r.antesK):'30 dias antes'} → agora</small></span>
       <span class="qd-f">${qdForaTxt(r.fora)}<small>${r.fora?'sem pontuar':'ainda pontua'}</small></span>
     </button>`;}).join('');
   list.querySelectorAll('[data-name]').forEach(b=>b.onclick=()=>showActorProfile(b.dataset.name));
