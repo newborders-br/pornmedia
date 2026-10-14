@@ -194,6 +194,11 @@ main{min-width:0}
 .rk-row{width:100%;padding:14px 12px;border:0;border-top:1px solid var(--line);background:none;text-align:left;transition:background .15s}
 .rk-row:hover{background:var(--sand)}
 .rk-row.ar{grid-template-columns:52px minmax(0,1fr) 120px}
+.rk-row.qd{grid-template-columns:52px minmax(0,1fr) 150px 110px}
+.qd-q{text-align:right;font:400 18px/1 var(--serif);color:var(--clay)}
+.qd-q small,.qd-f small{display:block;font:600 9px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-top:5px}
+.qd-f{text-align:right;font:400 22px/1 var(--serif)}
+.qd-m{display:none;color:var(--clay);font-weight:600}
 .rk-pos{font:400 24px/1 var(--serif);color:var(--ink-3)}
 .rk-row.top .rk-pos{color:var(--ink)}
 .rk-nm{display:flex;align-items:center;gap:8px;min-width:0}
@@ -501,6 +506,9 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
   .rk-head{display:none}
   .rk-row{grid-template-columns:36px minmax(0,1fr) 80px}
   .rk-row .stack,.rk-row .rk-d{display:none}
+  .rk-row.qd{grid-template-columns:36px minmax(0,1fr) 80px}
+  .rk-row.qd .qd-q{display:none}
+  .qd-m{display:inline}
   .search{width:100%;margin-left:0}
   .hrow{grid-template-columns:90px 1fr 80px}.hrow span:nth-child(3){display:none}
   .v-title{max-width:60vw}.v-count{display:none}
@@ -578,7 +586,7 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
   <section class="view" id="ranking"><div class="page">
     <div class="phead">
       <div><span class="lbl">Pontuação consolidada · todas as plataformas</span><h1>Ranking</h1></div>
-      <div class="seg" id="rankModeFilters"><button class="on" data-rmode="pontos">Pontos</button><button data-rmode="artistas">Artistas · ELO</button></div>
+      <div class="seg" id="rankModeFilters"><button class="on" data-rmode="pontos">Pontos</button><button data-rmode="artistas">Artistas · ELO</button><button data-rmode="quedas">Quedas</button></div>
     </div>
     <div id="rankPontosWrap" style="display:flex;flex-direction:column;gap:24px">
       <div class="toolbar">
@@ -600,6 +608,11 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
           <div class="card" id="rkMoves"></div>
         </aside>
       </div>
+    </div>
+    <div id="rankQuedasWrap" class="hide" style="flex-direction:column;gap:16px">
+      <div class="toolbar"><span class="muted" id="qdSub" style="font-size:13px;max-width:760px"></span></div>
+      <div class="rk-head lbl rk-row qd" style="border:0;padding-top:0"><span>#</span><span>Ator</span><span style="text-align:right">Queda</span><span style="text-align:right">Fora há</span></div>
+      <div id="quedaList"></div>
     </div>
     <div id="rankArtistasWrap" class="hide" style="flex-direction:column;gap:16px">
       <div class="toolbar"><div class="seg" id="arSort"><button class="on" data-arsort="elo">ELO</button><button data-arsort="acervo">ELO do acervo</button><button data-arsort="wins">Vitórias</button><button data-arsort="pct">Aproveitamento</button></div><span class="muted" id="arSub" style="font-size:13px"></span></div>
@@ -1982,16 +1995,69 @@ function rankMonthData(k){
   const out={rows,map};rankMonthMemo.set(k,out);setTimeout(()=>rankMonthMemo.clear(),0);return out;
 }
 function importantPlatformsForMonth(name,k){const by={};LEDGER.events.forEach(e=>{if(e.nome!==name||monthKey(e.dataBR)!==k)return;const p=importantPlatformName(e.plataforma);if(!p)return;by[p]=(by[p]||0)+(Number(e.ponto)||0);});return Object.entries(by).filter(([p,v])=>p==='PornMedia'?v>10:v>0).map(([name,pts])=>({name,pts}));}
-/* sinal de "queda": estava no top 20, caiu 5+ posições ou saiu do top 20, e perdeu uma plataforma importante */
-function fallAnalysis(name){
-  const curK=currentComparableMonthKey(),prevK=previousComparableMonthKey(curK);
-  if(!prevK||prevK===curK)return null;
-  const prev=rankMonthData(prevK),cur=rankMonthData(curK);
-  const pr=prev.map[name],cr=cur.map[name];if(!pr&&!cr)return null;
-  const curRank=cr?cr.rank:(cur.rows.length+1),prevRank=pr?pr.rank:null,drop=prevRank?curRank-prevRank:null;
-  const curSet=new Set(importantPlatformsForMonth(name,curK).map(x=>x.name));
-  const lost=importantPlatformsForMonth(name,prevK).filter(x=>!curSet.has(x.name));
-  return {flag:!!(prevRank&&prevRank<=20&&((drop!==null&&drop>=5)||curRank>20)&&lost.length>0)};
+/* =====================================================================
+   QUEDAS
+   O chart mensal não tem estabilidade de Billboard: posição exata é ruído,
+   e quase toda queda real é "sumiu". Então a régua é por faixa, e
+   ausência conta como a faixa mais baixa ("fora"), nunca como dado faltando.
+   - pico: melhor faixa já alcançada nos charts mensais (calendário).
+   - agora: posição nos últimos 30 dias corridos (janela móvel, sem o falso
+     alarme do começo do mês).
+   - entra na fila quem já foi Top 25 e hoje está 2+ faixas abaixo do pico.
+   - prioridade = peso do pico × (1 + log2 meses fora) × consistência.
+   ===================================================================== */
+const QD_TIERS=[3,10,25,50,100],QD_LABEL=['Top 3','Top 10','Top 25','Top 50','Top 100','fora'],QD_PESO=[5,4,3,2,1,0];
+const qdTier=r=>{if(!r)return QD_TIERS.length;for(let i=0;i<QD_TIERS.length;i++)if(r<=QD_TIERS[i])return i;return QD_TIERS.length;};
+const qdMonthIdx=k=>{const[y,m]=k.split('-').map(Number);return y*12+m-1;};
+let qdMemo=null;
+function fallQueue(){
+  const sig=LEDGER.events.length+'|'+localDay();
+  if(qdMemo&&qdMemo.sig===sig)return qdMemo.out;
+  const months=monthsWithData();const charts={};
+  months.forEach(k=>{const by={};LEDGER.events.forEach(e=>{if(monthKey(e.dataBR)!==k||!rankableEvent(e))return;by[e.nome]=(by[e.nome]||0)+(Number(e.ponto)||0);});
+    const m={};Object.entries(by).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).forEach(([n],i)=>m[n]=i+1);charts[k]=m;});
+  const now=new Date();now.setHours(23,59,59,999);
+  const w={},last={};
+  LEDGER.events.forEach(e=>{if(!rankableEvent(e))return;const d=parseDateBR(e.dataBR);if(!d)return;
+    if(!last[e.nome]||d>last[e.nome])last[e.nome]=d;
+    const age=(now-d)/864e5;if(age>=0&&age<30)w[e.nome]=(w[e.nome]||0)+(Number(e.ponto)||0);});
+  const wRank={};Object.entries(w).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).forEach(([n],i)=>wRank[n]=i+1);
+  const curIdx=qdMonthIdx(currentMonthKey());
+  const nomes=new Set();months.forEach(k=>Object.keys(charts[k]).forEach(n=>nomes.add(n)));
+  const rows=[];
+  nomes.forEach(nome=>{
+    let pico=null,picoK=null,picoTier=QD_TIERS.length,top25=0;
+    months.forEach(k=>{const r=charts[k][nome];if(!r)return;if(r<=25)top25++;if(pico===null||r<pico||(r===pico&&k>picoK)){pico=r;picoK=k;}});
+    picoTier=qdTier(pico);
+    if(picoTier>2)return;                         // nunca foi Top 25
+    const agora=wRank[nome]||null,agoraTier=qdTier(agora);
+    if(agoraTier-picoTier<2)return;               // não caiu 2 faixas
+    let ultimoBom=null;months.forEach(k=>{if(qdTier(charts[k][nome])-picoTier<2)ultimoBom=k;});
+    const fora=ultimoBom?Math.max(0,curIdx-qdMonthIdx(ultimoBom)):0;
+    const prio=QD_PESO[picoTier]*(1+Math.log2(Math.max(1,fora)))*(1+0.25*Math.min(top25,4));
+    rows.push({nome,pico,picoK,picoTier,agora,agoraTier,fora,ultimoBom,top25,last:last[nome]||null,prio});
+  });
+  rows.sort((a,b)=>b.prio-a.prio||a.pico-b.pico||b.fora-a.fora);
+  const out={rows,map:Object.fromEntries(rows.map((r,i)=>[r.nome,{...r,pos:i+1}]))};
+  qdMemo={sig,out};return out;
+}
+const qdForaTxt=f=>f<=0?'este mês':f===1?'1 mês':`${f} meses`;
+const qdQuedaTxt=r=>`#${r.pico} → ${r.agora?'#'+r.agora:'fora'}`;
+function renderQuedas(){
+  const {rows}=fallQueue();
+  $('#qdSub').textContent=`${rows.length} atores que já foram Top 25 e hoje estão duas faixas ou mais abaixo do próprio pico (faixas: Top 3 · 10 · 25 · 50 · 100 · fora). "Agora" é a posição nos últimos 30 dias. Ordem: quem tem mais prioridade de voltar a pontuar, pesando o pico, o tempo fora e quantos meses ficou no Top 25.`;
+  const list=$('#quedaList');
+  if(!rows.length){list.innerHTML='<div class="empty">Ninguém em queda.</div>';return;}
+  list.innerHTML=rows.map((r,i)=>{
+    const lastTxt=r.last?`último ponto ${String(r.last.getDate()).padStart(2,'0')}/${String(r.last.getMonth()+1).padStart(2,'0')}/${String(r.last.getFullYear()).slice(2)}`:'';
+    const sub=[`pico #${r.pico} em ${keyLabel(r.picoK)}`,`${r.top25} ${r.top25===1?'mês':'meses'} no top 25`,lastTxt].filter(Boolean).join(' · ');
+    return `<button type="button" class="rk-row qd${i<3?' top':''}" data-name="${escapeHtml(r.nome)}">
+      <span class="rk-pos">${i+1}</span>
+      <span style="min-width:0"><span class="rk-nm"><span class="n">${escapeHtml(r.nome)}</span></span><span class="rk-sub" style="display:block"><span class="qd-m">${qdQuedaTxt(r)} · </span>${escapeHtml(sub)}</span></span>
+      <span class="qd-q">${qdQuedaTxt(r)}<small>${QD_LABEL[r.picoTier]} → ${QD_LABEL[r.agoraTier]}</small></span>
+      <span class="qd-f">${qdForaTxt(r.fora)}<small>fora</small></span>
+    </button>`;}).join('');
+  list.querySelectorAll('[data-name]').forEach(b=>b.onclick=()=>showActorProfile(b.dataset.name));
 }
 const RAMP=['#1D1B17','#4A453C','#7A7266','#A69D8E','#C9BFAE','#DDD4C5','#E9E3D8'];
 let platColorMap={};
@@ -2031,13 +2097,17 @@ function renderRanking(){
   $$('#rankModeFilters [data-rmode]').forEach(b=>b.classList.toggle('on',b.dataset.rmode===rankMode));
   $('#rankPontosWrap').style.display=rankMode==='pontos'?'flex':'none';
   $('#rankArtistasWrap').classList.toggle('hide',rankMode!=='artistas');
-  if(rankMode==='artistas'){$('#rankArtistasWrap').style.display='flex';renderArtists();return;}
+  $('#rankQuedasWrap').classList.toggle('hide',rankMode!=='quedas');
+  $('#rankArtistasWrap').style.display=rankMode==='artistas'?'flex':'none';
+  $('#rankQuedasWrap').style.display=rankMode==='quedas'?'flex':'none';
+  if(rankMode==='artistas'){renderArtists();return;}
+  if(rankMode==='quedas'){renderQuedas();return;}
   rebuildPlatColors();
   $$('#periodFilters [data-period]').forEach(b=>b.classList.toggle('on',b.dataset.period===periodFilter));
   $('#periodPickWrap').classList.toggle('hide',periodFilter!=='pick');
   if(periodFilter==='pick')fillPickSelects();
   renderPlatformSelect();
-  const baseRows=aggregate();
+  const baseRows=aggregate();const qdMap=fallQueue().map;
   const vk=viewMonthKey(),prevK=vk&&platFilter==='all'?prevMonthWithData(vk):null;
   const prevMap=prevK?rankMonthData(prevK).map:null;
   $('#rkDeltaH').textContent=prevK?`vs ${keyLabel(prevK)}`:'';
@@ -2053,10 +2123,10 @@ function renderRanking(){
     const sub=`Tier ${ti.tier} · ${ti.mediaCount}/${ti.limit} mídias${ti.over?' · acima do limite':''}`;
     let d='',dc='';
     if(prevMap&&r.pos){const pr=prevMap[r.nome]?.rank;if(!pr){d='novo';dc='up';}else{const x=pr-r.pos;d=x>0?`▲ ${x}`:x<0?`▼ ${-x}`:'—';dc=x>0?'up':x<0?'dn':'';}}
-    const fall=fallAnalysis(r.nome)?.flag;
+    const fall=qdMap[r.nome];
     return `<button type="button" class="rk-row${r.pos&&r.pos<=3?' top':''}${r.total?'':' zero'}" data-name="${escapeHtml(r.nome)}">
       <span class="rk-pos">${r.pos||'—'}</span>
-      <span style="min-width:0"><span class="rk-nm"><span class="n">${escapeHtml(r.nome)}</span>${fall?'<span class="chip clay">queda</span>':''}</span><span class="rk-sub" style="display:block">${sub}</span></span>
+      <span style="min-width:0"><span class="rk-nm"><span class="n">${escapeHtml(r.nome)}</span>${fall?`<span class="chip clay" title="${escapeHtml(qdQuedaTxt(fall))} · fora há ${qdForaTxt(fall.fora)}">queda</span>`:''}</span><span class="rk-sub" style="display:block">${sub}</span></span>
       <span class="stack">${segs}</span>
       <span class="rk-d ${dc}">${d}</span>
       <span class="rk-pts">${fmtNum(r.total)}</span>
@@ -2276,9 +2346,8 @@ function openActorProfile(name){
   const total=events.reduce((s,e)=>s+(Number(e.ponto)||0),0);
   const month=events.filter(e=>monthKey(e.dataBR)===mk).reduce((s,e)=>s+(Number(e.ponto)||0),0);
   const byMonth={};events.forEach(e=>{const k=monthKey(e.dataBR);if(k)byMonth[k]=(byMonth[k]||0)+(Number(e.ponto)||0);});
-  const peak=Object.entries(byMonth).sort((a,b)=>b[1]-a[1])[0];
   const globalByMonth={};LEDGER.events.forEach(e=>{const k=monthKey(e.dataBR);if(!k||!rankableEvent(e))return;(globalByMonth[k]=globalByMonth[k]||{})[e.nome]=(globalByMonth[k][e.nome]||0)+(Number(e.ponto)||0);});
-  let top10=0,curRank=null;Object.entries(globalByMonth).forEach(([k,acts])=>{const idx=Object.entries(acts).sort((a,b)=>b[1]-a[1]).findIndex(([n])=>n===name);if(idx>=0&&idx<10)top10++;if(k===mk&&idx>=0)curRank=idx+1;});
+  let top10=0,curRank=null,peakPos=null,peakN=0,peakK=null;Object.entries(globalByMonth).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([k,acts])=>{const idx=Object.entries(acts).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).findIndex(([n])=>n===name);if(idx<0)return;const pos=idx+1;if(pos<=10)top10++;if(k===mk)curRank=pos;if(peakPos===null||pos<peakPos){peakPos=pos;peakN=1;peakK=k;}else if(pos===peakPos){peakN++;peakK=k;}});
   const allTot={};LEDGER.events.forEach(e=>{if(!rankableEvent(e))return;allTot[e.nome]=(allTot[e.nome]||0)+(Number(e.ponto)||0);});
   const allRankArr=Object.entries(allTot).sort((a,b)=>b[1]-a[1]);
   const allRank=allRankArr.findIndex(([nm])=>nm===name)+1||null;
@@ -2327,7 +2396,7 @@ function openActorProfile(name){
   <section class="kstrip">
     <div><div class="v">${fmtNum(total)}</div><div class="lbl l">pontos totais</div></div>
     <div><div class="v">${fmtNum(month)}</div><div class="lbl l">${keyLabel(mk)}${month?', parcial':''}</div></div>
-    <div><div class="v">${peak?fmtNum(peak[1]):'—'}</div><div class="lbl l">pico${peak?' · '+keyLabel(peak[0]):''}</div></div>
+    <div><div class="v">${peakPos?'#'+peakPos+(peakN>1?` <small style="font-size:.5em">(${peakN}x)</small>`:''):'—'}</div><div class="lbl l">peak${peakPos?(peakN>1?' · último em ':' · ')+keyLabel(peakK):''}</div></div>
     <div><div class="v">${top10}</div><div class="lbl l">meses no top 10</div></div>
     <div><div class="v">${last==='—'?'—':last.slice(0,5)}</div><div class="lbl l">última atividade</div></div>
   </section>
