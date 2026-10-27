@@ -169,8 +169,6 @@ main{min-width:0}
 .car-meta{text-align:center;font-size:12px;color:var(--ink-2);padding:14px 36px 10px;min-height:20px}
 .car-acts{display:flex;justify-content:center;gap:10px;padding:0 36px}
 #fpScore{height:60px;min-width:280px;font-size:15px;border-radius:12px}
-#fpScore2{height:60px;min-width:200px;font-size:15px;border-radius:12px;background:var(--clay);border-color:var(--clay)}
-#fpScore2:hover{filter:brightness(.94)}
 #fpSkip{height:52px;color:var(--ink-2);border-radius:12px}
 #fpDef{height:60px;min-width:200px;font-size:15px;border-radius:12px;background:var(--gold);border-color:var(--gold)}
 #fpDef:hover{filter:brightness(.94)}
@@ -416,6 +414,7 @@ main{min-width:0}
 .viewer.idle{cursor:none}
 .v-title{left:20px;top:calc(20px + var(--st));padding:12px 16px;max-width:min(34vw,440px)}
 .v-title .n{font:400 19px/1.15 var(--serif);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v-title .hj{color:var(--ok);font-weight:600}
 .v-title .s{font-size:12px;color:var(--ink-2);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .v-count{left:50%;top:calc(24px + var(--st));transform:translateX(-50%);padding:8px 14px;border-radius:999px;font-size:13px;font-weight:600}
 .v-count span{font-weight:400;color:var(--ink-2)}
@@ -502,7 +501,7 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
   .cc.o1{height:min(70cqh,calc(14cqw / var(--ar)))}
   .cc.o0{height:min(100cqh,calc(72cqw / var(--ar)))}
   .car-nav{display:none}
-  #fpScore,#fpScore2,#fpDef{min-width:0;flex:1}
+  #fpScore,#fpDef{min-width:0;flex:1}
   .car-acts{flex-wrap:wrap;padding:0 12px}
   #fpSkip{flex:1 0 100%;height:44px;order:3}
   .car-foot{padding:10px 12px}
@@ -583,7 +582,6 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
       <div class="car-acts">
         <button class="btn" id="fpSkip"><span class="lb">Dispensar</span> <span class="kbd">↓</span></button>
         <button class="btn primary" id="fpScore"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="lb">Pontuar +1</span><span class="kbd">↑ ou espaço</span></button>
-        <button class="btn primary hide" id="fpScore2"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="lb">Pontuar ×2</span><span class="kbd">2</span></button>
         <button class="btn primary hide" id="fpDef"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg><span class="lb">Definir ×3</span><span class="kbd">D</span></button>
       </div>
       <div class="car-foot">
@@ -781,7 +779,7 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
 <!-- TELA CHEIA -->
 <div class="viewer" id="viewer" aria-hidden="true">
   <div class="v-track" id="vTrack"></div>
-  <div class="vp v-title"><div class="n" id="vName">—</div><div class="s" id="vSub">—</div></div>
+  <div class="vp v-title"><div class="n" id="vName">—</div><div class="s" id="vSub">—</div><div class="s hj hide" id="vHoje"></div></div>
   <div class="vp v-count" id="vCount"></div>
   <div class="vp v-tools">
     <button class="vt" id="vZoomOut" aria-label="Diminuir zoom">−</button>
@@ -824,7 +822,6 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
     <dt><span class="kbd">←</span> <span class="kbd">→</span></dt><dd>Passar as mídias</dd>
     <dt><span class="kbd">↑</span> <span class="kbd">espaço</span></dt><dd>Pontuar</dd>
     <dt><span class="kbd">↓</span></dt><dd>Dispensar</dd>
-    <dt><span class="kbd">2</span></dt><dd>Vídeo ×2 (volta no próximo turno)</dd>
     <dt><span class="kbd">D</span></dt><dd>C2BB: definir (vale ×3)</dd>
     <dt><span class="kbd">F</span></dt><dd>Tela cheia</dd>
     <dt><span class="kbd">Esc</span></dt><dd>Encerrar ator (sorteio e C2BB encerram só pelo botão)</dd>
@@ -1411,7 +1408,7 @@ function newPhase(type,items,extra={}){return{type,items,cur:items[0]||null,filt
 /* fases salvas antes do 2º turno não têm keep/round */
 function normPhase(){if(!phase)return;if(!phase.keep)phase.keep={};if(!phase.round)phase.round=1;}
 /* o que ainda pode aparecer: 1º turno mostra todo mundo uma vez,
-   2º turno só o que foi escolhido pra voltar (foto pontuada e vídeo ×2) */
+   2º turno só o que foi pontuado */
 function faseAtiva(id){
   if(!phase)return false;
   if(phase.type==='c2bb')return !(phase.dismissed||{})[id];
@@ -1451,16 +1448,13 @@ function startWinnerPhase(aid,info={}){
 function resolvidaNaFase(id){return phase?!faseAtiva(id):false;}
 /* ---------- sorteio por turnos ----------
    Cada turno tem no máximo TURNO_MAX mídias na mesa.
-   · Vencedoras do turno anterior voltam (foto pontuada, vídeo ×2), até REP_MAX.
+   · Vencedoras do turno anterior (foto ou vídeo pontuado) voltam, até REP_MAX.
      Se passarem disso, ficam as de MENOR ELO, pra ter variedade; as outras vão
      pro banco e voltam quando sobrar cadeira.
-   · As cadeiras livres vão primeiro pra quem ainda não apareceu neste sorteio,
-     depois pra quem perdeu em todas as vezes que apareceu, depois pro banco.
-     Em cada grupo, quem está há mais tempo sem aparecer no jogo vem antes.
-   · A mesa sempre enche até 30 (ou o bolo inteiro, se for menor). A ordem de quem
-     ocupa as cadeiras livres: nunca apareceu → só perdeu, descansada → banco →
-     só perdeu, no turno anterior → venceu antes e perdeu depois. Vídeo pontuado ×1
-     sai do sorteio. O sorteio acaba pelo botão, ou se o bolo esvaziar. */
+   · As cadeiras livres vão pra quem ainda não apareceu, por ordem de última
+     aparição no jogo (há mais tempo fora vem antes), e depois pro banco.
+   · Perdeu (dispensada) não volta mais no dia. A mesa não é completada com
+     perdedoras: sem vencedoras e sem ninguém novo, o sorteio acaba. */
 const TURNO_MAX=30,REP_MAX=20;
 function lastSeenMs(m){return m&&m.lastSeenAt?(Date.parse(m.lastSeenAt)||0):0;}
 function byLastSeen(list){return shuffle(list).sort((a,b)=>lastSeenMs(a)-lastSeenMs(b));}   // embaralha antes: empate fica aleatório
@@ -1471,15 +1465,12 @@ function montaTurno(){
   const repIds=new Set(rep.map(m=>m.id));
   const banidas=venc.filter(m=>!repIds.has(m.id));          // venceram mas não couberam
   banidas.forEach(m=>{phase.bench[m.id]=true;});
-  const saiu=phase.saiu||{};
-  const livre=pool.filter(m=>!repIds.has(m.id)&&!banidas.includes(m)&&!saiu[m.id]);
+  /* perdeu (dispensada) em qualquer turno = fora pelo resto do dia */
+  const livre=pool.filter(m=>!repIds.has(m.id)&&!banidas.includes(m)&&!(phase.perdeu||{})[m.id]);
   const ja=new Set(),pega=l=>byLastSeen(l.filter(m=>!ja.has(m.id))).map(m=>{ja.add(m.id);return m;});
   const novas=pega(livre.filter(m=>!phase.app[m.id]));
-  const perdDesc=pega(livre.filter(m=>!phase.won[m.id]&&!ant.includes(m.id)));
   const banco=pega(livre.filter(m=>phase.bench[m.id]));
-  const perdRec=pega(livre.filter(m=>!phase.won[m.id]));
-  const resto=pega(livre);
-  const fill=[...novas,...perdDesc,...banco,...perdRec,...resto].slice(0,Math.max(0,TURNO_MAX-rep.length));
+  const fill=[...novas,...banco].slice(0,Math.max(0,TURNO_MAX-rep.length));
   return{rep:rep.map(m=>m.id),fill:fill.map(m=>m.id),novas:fill.filter(m=>!phase.app[m.id]).length,banco:banidas.length};
 }
 function novoTurno(){
@@ -1530,7 +1521,7 @@ function startSorteio(){
     else showRoundEnd();
     return;
   }
-  phase=newPhase('sorteio',[],{v:2,liga,turno:0,roster:[],nRep:0,app:{},won:{},bench:{}});
+  phase=newPhase('sorteio',[],{v:2,liga,turno:0,roster:[],nRep:0,app:{},won:{},bench:{},perdeu:{}});
   phase.ref=avgElo(pool);   // sem itens na criação, a média precisa vir do bolo
   nextSorteio();
 }
@@ -1735,7 +1726,6 @@ function phaseMeta(){
   $('#fpSkip .lb').textContent=c2?'Recusar':'Dispensar';
   if(c2){
     const def=phase.def===m.id;
-    $('#fpScore2').classList.add('hide');
     $('#fpScore .lb').textContent=def?'Próxima':`Pontuar +${fmtNum(mediaPts(m))}`;
     $('#fpScore').disabled=ds;
     $('#fpDef .lb').textContent=def?'Definida':`Definir ×3 · +${fmtNum(mediaPts(m)*3)}`;
@@ -1743,35 +1733,29 @@ function phaseMeta(){
     $('#fpSkip').disabled=ds||def;
     return;
   }
-  /* vídeo ganha dois botões: ×1 sai do bolo, ×2 volta no próximo turno e dobra o ELO */
-  $('#fpScore2').classList.toggle('hide',!isV);
-  $('#fpScore .lb').textContent=ds?'Dispensada':!pode?'Já resolvida':isV?`Pontuar ×1 +${fmtNum(mediaPts(m))}`:`Pontuar +${fmtNum(mediaPts(m))}`;
-  $('#fpScore2 .lb').textContent=`Pontuar ×2 · volta`;
+  $('#fpScore .lb').textContent=ds?'Dispensada':!pode?'Já resolvida':`Pontuar +${fmtNum(mediaPts(m))}`;
   $('#fpScore').disabled=!pode;
-  $('#fpScore2').disabled=!pode;
   $('#fpSkip').disabled=ds;
 }
 $('#phaseFilters').onclick=e=>{const b=e.target.closest('[data-pf]');if(!b||!phase)return;phase.filter=b.dataset.pf;renderPhase();};
 function phaseGoTo(id){if(!phase||id===phase.cur)return;phase.cur=id;renderPhase();}
 function phaseGo(d){if(!phase||isSolo())return;const list=phaseList(),i=list.indexOf(phase.cur),j=clamp(i+d,0,list.length-1);if(j!==i)phaseGoTo(list[j]);}
-/* nivel vale só pra vídeo: ×1 pontua e sai · ×2 pontua, volta no 2º turno e
-   bate duas vezes no ELO. Foto pontua normal e sempre volta. */
+/* pontuar: foto e vídeo valem uma vitória e voltam no próximo turno */
 function phaseScoreId(id,nivel=1){
   if(!phase||phaseBusy)return false;normPhase();
   const m=GAME.media[id];if(!m)return false;
   if(phase.dismissed[id]){toast('—','Essa mídia foi dispensada');return false;}
   if(!faseAtiva(id)){toast('—','Essa mídia já saiu do bolo');return false;}
   phaseBusy=true;setTimeout(()=>phaseBusy=false,220);
-  const isV=m.type==='video',n=isV?(nivel===2?2:1):1;
+  const n=1;   // vídeo e foto pontuam igual: uma vitória, e voltam
   for(let k=0;k<n;k++)eloFocus(m,1,phase.ref||1500);
   m.wins=(m.wins||0)+n;somaHoje(m);
   phase.scored[id]=(phase.scored[id]||0)+1;
   const pts=mediaPts(m);phase.pts+=pts;      // ponto é um só; o nível dobra o ELO
   if(m.actorId)creditPonto(actorName(m.actorId),pts);else toast('+'+fmtNum(pts),m.name);
-  const volta=isV?(nivel===2):true;
+  const volta=true;
   phase.keep[id]=volta;
   if(phase.won)phase.won[id]=true;
-  if(phase.type==='sorteio'&&phase.v===2&&!volta){phase.saiu=phase.saiu||{};phase.saiu[id]=true;}   // vídeo ×1 sai do sorteio
   /* sorteio por turnos e C2BB guardam o próprio estado: só o vencedor de duelo consome na hora */
   if(!volta&&phase.type==='winner')markUsed([id]);
   saveGameSoon();savePhase();
@@ -1785,6 +1769,7 @@ function phaseDismissId(id){
      Dispensar sem ter pontuado continua sendo rejeição de verdade. */
   if(!phase.scored[id]){eloFocus(m,0,phase.ref||1500);m.losses=(m.losses||0)+1;}
   phase.dismissed[id]=true;phase.keep[id]=false;
+  if(phase.type==='sorteio'&&phase.v===2){phase.perdeu=phase.perdeu||{};phase.perdeu[id]=true;}
   if(phase.type==='winner')markUsed([id]);
   saveGameSoon();saveSessionNow();savePhase();
   return true;
@@ -1854,7 +1839,6 @@ function viewerSwapTo(m){
   setTrack(false);vmeta();paintViewerSlides();bumpIdle();
 }
 $('#fpScore').onclick=()=>phaseScore(1);
-$('#fpScore2').onclick=()=>phaseScore(2);
 $('#fpDef').onclick=()=>phaseDefine();
 $('#fpSkip').onclick=phaseDismiss;
 $('#fpEnd').onclick=endPhaseManual;
@@ -1991,6 +1975,7 @@ function vmeta(){
   viewer.classList.toggle('isvideo',isV);
   $('#vName').textContent=m.name;
   $('#vSub').textContent=`${actorLabel(m.actorId)} · ${mediaLabel(m).toLowerCase()} · #${mediaPos(m)||'—'} · Tier ${mediaTier(m)} · ELO ${fmtInt(m.elo||1500)}`;
+  const hj=hojeN(m);$('#vHoje').textContent=hj?`pontuada ${hj}× hoje`:'';$('#vHoje').classList.toggle('hide',!hj);
   $('#vCount').innerHTML=`${vIdx+1} <span>/ ${viewerItems.length}</span>`;
   $('#vCount').classList.toggle('hide',viewerItems.length<2);
   $('#vPrev').disabled=vIdx<=0;$('#vNext').disabled=vIdx>=viewerItems.length-1;
@@ -2027,8 +2012,8 @@ function vmeta(){
     act.classList.remove('hide');
   }else if(ph){
     phase.cur=m.id;phase.seen[m.id]=true;savePhase();
-    const sc=phase.scored[m.id]||0,ds=!!phase.dismissed[m.id],dis=ds||(isV&&sc>0);
-    act.innerHTML=`${sc?`<span class="chip ok">${ICON.check} pontuada${sc>1?' '+sc+'×':''}</span>`:''}${ds?'<span class="chip clay">dispensada</span>':''}<button class="btn" id="vDis" ${ds?'disabled':''}>Dispensar <span class="kbd">↓</span></button><button class="btn primary" id="vScore" ${dis?'disabled':''}>${ICON.check}${ds?'Dispensada':(isV&&sc)?'Já pontuado':'Pontuar +'+fmtNum(mediaPts(m))} <span class="kbd">↑</span></button>`;
+    const sc=phase.scored[m.id]||0,ds=!!phase.dismissed[m.id],dis=ds||!faseAtiva(m.id);
+    act.innerHTML=`${sc?`<span class="chip ok">${ICON.check} pontuada${sc>1?' '+sc+'×':''}</span>`:''}${ds?'<span class="chip clay">dispensada</span>':''}<button class="btn" id="vDis" ${ds?'disabled':''}>Dispensar <span class="kbd">↓</span></button><button class="btn primary" id="vScore" ${dis?'disabled':''}>${ICON.check}${ds?'Dispensada':dis?'Já pontuada':'Pontuar +'+fmtNum(mediaPts(m))} <span class="kbd">↑</span></button>`;
     $('#vScore').onclick=viewerScore;$('#vDis').onclick=viewerDismiss;
     act.classList.remove('hide');
   }else if(vCtx.kind==='duel'&&!phase&&duel[vCtx.side]===vCtx.actorId){
@@ -3226,8 +3211,6 @@ addEventListener('keydown',e=>{
   if(vOpen){viewerKey(e);return;}
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   if(e.target.closest?.('input,textarea,select'))return;
-  /* no jogo, com vídeo na tela, o 2 é "pontuar ×2" e não a troca de aba */
-  if(e.key==='2'&&phase&&phase.type!=='c2bb'&&$('#jogo').classList.contains('on')&&GAME.media[phase.cur]?.type==='video'){phaseScore(2);return;}
   if(['1','2','3','4'].includes(e.key)){switchView(VIEWS[+e.key-1]);return;}
   if(e.key==='?'){$('#keysDlg').showModal();return;}
   if(e.key==='/'&&$('#ranking').classList.contains('on')){e.preventDefault();$('#rankSearch').focus();return;}
