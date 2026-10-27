@@ -109,8 +109,8 @@ main{min-width:0}
 .gpts .l{font-size:11px;color:var(--ink-2)}
 .empty .big{font-size:20px;line-height:1.3}
 .empty .rl{display:inline-block;margin:8px 0;font-size:12px;color:var(--ink-2)}
-.fphase.solo .car-nav,.fphase.solo .car-strip,.fphase.solo #carStrip{display:none}
-.fphase.solo .car-stage{padding:14px 0}
+#fphase.solo .car-nav,#fphase.solo .car-strip,#fphase.solo #carStrip{display:none}
+#fphase.solo .car-stage{padding:14px 0}
 .jogo-empty{flex:1;display:grid;place-items:center;padding:24px}
 .jogo-empty .empty{max-width:520px;display:flex;flex-direction:column;align-items:center;gap:16px}
 .stage{flex:1 1 auto;min-height:0;position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:88px;padding:24px 36px 18px}
@@ -172,6 +172,14 @@ main{min-width:0}
 #fpScore2{height:60px;min-width:200px;font-size:15px;border-radius:12px;background:var(--clay);border-color:var(--clay)}
 #fpScore2:hover{filter:brightness(.94)}
 #fpSkip{height:52px;color:var(--ink-2);border-radius:12px}
+#fpDef{height:60px;min-width:200px;font-size:15px;border-radius:12px;background:var(--gold);border-color:var(--gold)}
+#fpDef:hover{filter:brightness(.94)}
+#fpDef.done{background:var(--ok);border-color:var(--ok);opacity:1}
+.seg.liga button.on{background:var(--ink);color:var(--paper)}
+.seg button .n{font-weight:400;opacity:.7}
+.seg:empty{display:none}
+.v-info select{height:34px;width:auto;min-width:120px;font-size:13px;padding:0 8px}
+.v-info .acts.col{flex-direction:column}
 .car-foot{display:flex;align-items:center;gap:20px;padding:14px 36px 16px;border-top:1px solid var(--line);margin-top:14px}
 .car-prog{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;font-size:12px;color:var(--ink-2)}
 .car-prog b{color:var(--ink);font-weight:600}
@@ -392,7 +400,7 @@ main{min-width:0}
 .imp-prev tr.err td{background:var(--clay-bg);color:var(--clay)}
 .imp-prev .fl{color:var(--gold);white-space:normal;min-width:140px}
 .log{margin-top:14px;font:500 11px/1.6 ui-monospace,monospace;color:var(--ink-2);background:var(--paper);border:1px solid var(--line);border-radius:var(--r);padding:12px;max-height:150px;overflow:auto;white-space:pre-wrap}
-.upl{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:end}
+.upl{display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:end}
 .filebtn{position:relative}
 .filebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
 
@@ -494,7 +502,9 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
   .cc.o1{height:min(70cqh,calc(14cqw / var(--ar)))}
   .cc.o0{height:min(100cqh,calc(72cqw / var(--ar)))}
   .car-nav{display:none}
-  #fpScore,#fpScore2{min-width:0;flex:1}
+  #fpScore,#fpScore2,#fpDef{min-width:0;flex:1}
+  .car-acts{flex-wrap:wrap;padding:0 12px}
+  #fpSkip{flex:1 0 100%;height:44px;order:3}
   .car-foot{padding:10px 12px}
   .car-prog{display:none}
   .prof-hero{grid-template-columns:1fr}
@@ -544,6 +554,7 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
     <header class="gbar">
       <div class="ttl"><span class="lbl" id="gKick">Jogo</span><span class="t" id="gTitle">Duelo de atores</span></div>
       <div class="seg hide" id="phaseFilters"></div>
+      <div class="seg liga" id="ligaFilters"><button data-liga="main">Principal</button><button data-liga="kpop">K-pop</button><button data-liga="c2bb">C2BB</button></div>
       <div class="seg" id="gameModeFilters"><button class="on" data-game="duelo">Duelo <span id="dueloN"></span></button><button data-game="sorteio">Sorteio <span id="sorteioN"></span></button></div>
       <div class="gpts hide" id="phasePts"><span class="v" id="phasePtsV">+0 pts</span><span class="l">nesta fase</span></div>
       <button class="btn hide" id="fpEnd">Encerrar ator <span class="kbd">Esc</span></button>
@@ -570,9 +581,10 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
       </div>
       <div class="car-meta" id="fpMeta"></div>
       <div class="car-acts">
-        <button class="btn" id="fpSkip">Dispensar <span class="kbd">↓</span></button>
+        <button class="btn" id="fpSkip"><span class="lb">Dispensar</span> <span class="kbd">↓</span></button>
         <button class="btn primary" id="fpScore"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="lb">Pontuar +1</span><span class="kbd">↑ ou espaço</span></button>
         <button class="btn primary hide" id="fpScore2"><svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg><span class="lb">Pontuar ×2</span><span class="kbd">2</span></button>
+        <button class="btn primary hide" id="fpDef"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/></svg><span class="lb">Definir ×3</span><span class="kbd">D</span></button>
       </div>
       <div class="car-foot">
         <div class="strip" id="carStrip"></div>
@@ -631,6 +643,7 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
     </div>
     <div class="card hide" id="libUploadInner">
       <div class="upl">
+        <div class="fld" style="margin:0"><span class="lbl">Liga</span><select id="upCat"><option value="main">Principal</option><option value="kpop">K-pop</option><option value="c2bb">C2BB</option></select></div>
         <div class="fld" style="margin:0"><span class="lbl">Ator</span><select id="upActor"></select></div>
         <div class="fld" style="margin:0" id="upNewWrap"><span class="lbl">Nome do novo ator</span><input id="upNewActor" placeholder="Nome"></div>
         <label class="btn filebtn"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg>Escolher arquivos<input id="upGallery" type="file" accept="image/*,video/*" multiple></label>
@@ -638,6 +651,7 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
       <div style="display:flex;align-items:center;gap:14px;margin-top:14px"><button class="btn primary" id="upSend" disabled>Enviar</button><span class="status" id="upStatus"></span></div>
     </div>
     <div class="toolbar" id="libFilters">
+      <div class="seg liga"><button data-libliga="main">Principal</button><button data-libliga="kpop">K-pop</button><button data-libliga="c2bb">C2BB</button></div>
       <div class="seg"><button class="on" data-libtype="photo">Fotos</button><button data-libtype="video">Vídeos</button></div>
       <select id="libActorFilter" aria-label="Filtrar ator"><option value="">Todos os atores</option></select>
       <div class="seg"><button class="on" data-libsort="elo">ELO</button><button data-libsort="recent">Recentes</button><button data-libsort="name">A–Z</button></div>
@@ -810,8 +824,10 @@ dialog::backdrop{background:rgba(29,27,23,.25)}
     <dt><span class="kbd">←</span> <span class="kbd">→</span></dt><dd>Passar as mídias</dd>
     <dt><span class="kbd">↑</span> <span class="kbd">espaço</span></dt><dd>Pontuar</dd>
     <dt><span class="kbd">↓</span></dt><dd>Dispensar</dd>
+    <dt><span class="kbd">2</span></dt><dd>Vídeo ×2 (volta no próximo turno)</dd>
+    <dt><span class="kbd">D</span></dt><dd>C2BB: definir (vale ×3)</dd>
     <dt><span class="kbd">F</span></dt><dd>Tela cheia</dd>
-    <dt><span class="kbd">Esc</span></dt><dd>Encerrar ator</dd>
+    <dt><span class="kbd">Esc</span></dt><dd>Encerrar ator · sorteio · sessão</dd>
     <h4>Tela cheia</h4>
     <dt><span class="kbd">+</span> <span class="kbd">−</span> <span class="kbd">0</span></dt><dd>Zoom · ajustar</dd>
     <dt><span class="kbd">I</span></dt><dd>Painel de informações</dd>
@@ -1087,14 +1103,28 @@ function creditPonto(actorName,pts){
 let duel={a:null,b:null},count=0,deciding=false,gameMode='duelo';
 const actorSeen={};
 const BAL={sup:0.70};
-function photoPool(){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&!m.skipped&&m.type!=='video');}
+/* ---------- ligas ----------
+   Cada mídia pertence a uma liga (m.cat). Sem campo = Principal, então o que já
+   estava salvo continua igual. As mídias só competem dentro da própria liga; os
+   pontos dos atores vão pro mesmo ledger, então o ranking de pontos é um só.
+   C2BB é a única liga em que a mídia pode não ter ator. */
+const LIGAS={main:'Principal',kpop:'K-pop',c2bb:'C2BB'};
+let liga=(()=>{try{const v=localStorage.getItem('pm3Liga');return LIGAS[v]?v:'main';}catch(e){return 'main';}})();
+function catOf(m){return m&&LIGAS[m.cat]?m.cat:'main';}
+function inLiga(m,lg=liga){return catOf(m)===lg;}
+function setCat(m,cat){if(!m)return;if(cat==='main'||!LIGAS[cat])delete m.cat;else m.cat=cat;}
+function stashKey(){return liga+':'+(liga==='c2bb'?'c2bb':gameMode);}
 function mediaKind(m){return m?.type==='video'?'video':'photo';}
-function mediaPool(kind){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&(kind==='video'?m.type==='video':m.type!=='video'));}
-function mediaRanked(kind){return mediaPool(kind).sort((x,y)=>(y.elo||1500)-(x.elo||1500));}
-function mediaPos(m){const arr=mediaRanked(mediaKind(m));return arr.findIndex(x=>x.id===m.id)+1;}
-function mediaTier(m){const tot=mediaPool(mediaKind(m)).length||1;const p=(mediaPos(m)||tot)/tot;return p<=.06?'S':p<=.2?'A':p<=.45?'B':p<=.75?'C':'D';}
+function mediaPool(kind,cat=null){return Object.values(GAME.media).filter(m=>!m.deleted&&(m.actorId||catOf(m)==='c2bb')&&(kind==='video'?m.type==='video':m.type!=='video')&&(!cat||catOf(m)===cat));}
+function mediaRanked(kind,cat=null){return mediaPool(kind,cat).sort((x,y)=>(y.elo||1500)-(x.elo||1500));}
+/* posição e tier contam só dentro da liga da mídia */
+function mediaPos(m){const arr=mediaRanked(mediaKind(m),catOf(m));return arr.findIndex(x=>x.id===m.id)+1;}
+function mediaTier(m){const tot=mediaPool(mediaKind(m),catOf(m)).length||1;const p=(mediaPos(m)||tot)/tot;return p<=.06?'S':p<=.2?'A':p<=.45?'B':p<=.75?'C':'D';}
 function mediaLabel(m){return mediaKind(m)==='video'?'Vídeo':'Foto';}
 function actorName(id){return GAME.actors[id]?.name||'—';}
+function actorLabel(id){return id&&GAME.actors[id]?GAME.actors[id].name:'sem ator';}
+/* liga mais comum no acervo do ator: é a que um envio novo dele recebe */
+function actorCat(aid){const c={};Object.values(GAME.media).forEach(m=>{if(!m.deleted&&m.actorId===aid){const k=catOf(m);c[k]=(c[k]||0)+1;}});return Object.entries(c).sort((a,b)=>b[1]-a[1])[0]?.[0]||'main';}
 /* ---------- catálogo de obras ----------
    Uma obra é um vídeo. O código é a chave: vem da coluna Código quando o usuário digita,
    ou é gerado no import. Só vira obra o grupo que passa de OBRA_MIN_SEG, salvo código
@@ -1237,10 +1267,11 @@ let phase=null,phaseBusy=false,phaseTok=0;
 const phaseStash={};   // guarda a fase de cada modo pra ir e voltar sem perder o fluxo
 function usedSet(){return new Set(GAME.sessions.current.usedMediaIds||[]);}
 function markUsed(ids){GAME.sessions.current.usedMediaIds=[...new Set([...(GAME.sessions.current.usedMediaIds||[]),...ids])];lsSaveUsed();}
-function availMedia(actorId=null){const used=usedSet();return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&!m.skipped&&!used.has(m.id)&&(actorId==null||m.actorId===actorId));}
+/* tudo daqui pra baixo no jogo enxerga só a liga ativa */
+function availMedia(actorId=null){const used=usedSet();return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId&&inLiga(m)&&!m.skipped&&!used.has(m.id)&&(actorId==null||m.actorId===actorId));}
 function topMosaic(aid){return availMedia(aid).sort((x,y)=>(y.elo||1500)-(x.elo||1500)).slice(0,MOSAIC_N);}
-function allOfActor(aid){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId===aid).sort((x,y)=>(y.elo||1500)-(x.elo||1500));}
-function actorSize(aid){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId===aid).length;}
+function allOfActor(aid){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId===aid&&inLiga(m)).sort((x,y)=>(y.elo||1500)-(x.elo||1500));}
+function actorSize(aid){return Object.values(GAME.media).filter(m=>!m.deleted&&m.actorId===aid&&inLiga(m)).length;}
 function isBig(aid){return actorSize(aid)>=DUEL_MIN;}
 function duelActors(){const s=new Set();availMedia().forEach(m=>s.add(m.actorId));return[...s].filter(id=>GAME.actors[id]&&isBig(id));}
 function sorteioPool(){return availMedia().filter(m=>!isBig(m.actorId));}
@@ -1268,29 +1299,39 @@ function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor
 /* =====================================================================
    JOGO — tela
    ===================================================================== */
-function setGameChrome(mode){ // 'duel' | 'winner' | 'sorteio' | 'empty'
-  const inPhase=mode==='winner'||mode==='sorteio';
+function setGameChrome(mode){ // 'duel' | 'winner' | 'sorteio' | 'c2bb' | 'empty'
+  const inPhase=mode==='winner'||mode==='sorteio'||mode==='c2bb';
   $('#stage').classList.toggle('hide',mode!=='duel');
   $('#fphase').classList.toggle('hide',!inPhase);
   $('#jogoEmpty').classList.toggle('hide',mode!=='empty');
   $('#phaseFilters').classList.toggle('hide',!inPhase);
   $('#phasePts').classList.toggle('hide',!inPhase);
-  $('#fpEnd').classList.toggle('hide',mode!=='winner');
+  $('#fpEnd').classList.toggle('hide',!inPhase);
+  $('#fpEnd').firstChild.textContent=mode==='winner'?'Encerrar ator ':mode==='sorteio'?'Encerrar sorteio ':'Encerrar sessão ';
   $('#newRound').classList.toggle('hide',mode==='winner');
-  $('#gameModeFilters').classList.toggle('hide',mode==='winner');
+  $('#newRound').lastChild.textContent=liga==='c2bb'?'Nova sessão':'Nova rodada';
+  $('#gameModeFilters').classList.toggle('hide',mode==='winner'||liga==='c2bb');
+  $('#ligaFilters').classList.toggle('hide',mode==='winner');
   $('#gHint').classList.toggle('hide',mode!=='duel');
   setModeButtons();updateModeCounts();
 }
-function setModeButtons(){$$('#gameModeFilters [data-game]').forEach(x=>x.classList.toggle('on',x.dataset.game===gameMode));}
+function setModeButtons(){
+  $$('#gameModeFilters [data-game]').forEach(x=>x.classList.toggle('on',x.dataset.game===gameMode));
+  $$('#ligaFilters [data-liga]').forEach(x=>x.classList.toggle('on',x.dataset.liga===liga));
+}
 function updateModeCounts(){
   const n=sorteioPool().length,a=duelActors().length;
   $('#sorteioN').textContent=n?'· '+n:'';
   const dn=$('#dueloN');if(dn)dn.textContent=a>=2?'· '+a:'';
+  const tot={main:0,kpop:0,c2bb:0};Object.values(GAME.media).forEach(m=>{if(!m.deleted)tot[catOf(m)]++;});
+  $$('#ligaFilters [data-liga]').forEach(b=>{const k=b.dataset.liga;b.innerHTML=`${LIGAS[k]}${tot[k]?` <span class="n">${tot[k]}</span>`:''}`;});
 }
 function showEmpty(msg,withConnect=false){
   setGameChrome('empty');
   $('#jogoEmptyTxt').innerHTML=msg;$('#emptyConn').classList.toggle('hide',!withConnect);
-  $('#gKick').textContent=gameMode==='sorteio'?'Sorteio':'Jogo';$('#gTitle').textContent=gameMode==='sorteio'?'Sorteio':'Duelo de atores';
+  const lg=liga==='main'?'':LIGAS[liga]+' · ';
+  if(liga==='c2bb'){$('#gKick').textContent='C2BB';$('#gTitle').textContent='Sessão C2BB';return;}
+  $('#gKick').textContent=lg+(gameMode==='sorteio'?'Sorteio':'Jogo');$('#gTitle').textContent=gameMode==='sorteio'?'Sorteio':'Duelo de atores';
 }
 function roundLine(){const s=roundStats();return s.total?`<span class="rl">Nesta rodada: ${s.atores} ator(es), ${s.fotos} foto(s) e ${s.videos} vídeo(s).</span>`:'';}
 function showRoundEnd(){
@@ -1300,7 +1341,7 @@ function showRoundEnd(){
     +`Toque em <b>Nova rodada</b> pra recomeçar com o acervo inteiro.`);
 }
 function ptsHoje(){const t=todayBR();return LEDGER.events.filter(e=>e.plataforma==='PornMedia'&&e.dataBR===t).reduce((a,b)=>a+b.ponto,0);}
-function savePhase(){try{localStorage.setItem(LS_PHASE,JSON.stringify({day:localDay(),mode:gameMode,phase}));}catch(e){}}
+function savePhase(){try{localStorage.setItem(LS_PHASE,JSON.stringify({day:localDay(),mode:gameMode,liga,phase}));}catch(e){}}
 
 function actorStats(aid){
   const a=GAME.actors[aid]||{},full=allOfActor(aid),nv=full.filter(m=>m.type==='video').length,nf=full.length-nv;
@@ -1325,6 +1366,7 @@ function duelHint(){
   $('#gHint').innerHTML=`<span><b>←</b> A vence</span><span><b>→</b> B vence</span><span><b>↓</b> dispensa os dois</span><span>clique numa mídia: tela cheia com o acervo inteiro</span><span class="r">duelo ${String(count).padStart(3,'0')} · ${fmtInt(GAME.duels||0)} no total</span>`;
 }
 async function nextDuel(){
+  if(liga==='c2bb')return startC2();
   if(gameMode==='sorteio')return startSorteio();
   phase=null;savePhase();
   if(!accessToken&&!Object.keys(GAME.media).length){showEmpty('Conecte o Drive e cadastre mídias pra começar.<br>O ranking do Ponto sobe a cada mídia pontuada.',true);return;}
@@ -1341,7 +1383,7 @@ async function nextDuel(){
   const near=Math.random()<.7?rest.slice(0,Math.max(3,Math.ceil(rest.length*.25))):rest;
   duel={a,b:wpickBy(near,actorCool)};count++;actorSeen[duel.a]=actorSeen[duel.b]=count;
   setGameChrome('duel');
-  $('#gKick').textContent=`Rodada · ${ids.length} ator(es) ainda sem duelar`;
+  $('#gKick').textContent=`${liga==='main'?'':LIGAS[liga]+' · '}Rodada · ${ids.length} ator(es) ainda sem duelar`;
   $('#gTitle').textContent='Duelo de atores';
   duelHint();
   setStageActor('a',duel.a);setStageActor('b',duel.b);
@@ -1368,6 +1410,9 @@ function normPhase(){if(!phase)return;if(!phase.keep)phase.keep={};if(!phase.rou
    2º turno só o que foi escolhido pra voltar (foto pontuada e vídeo ×2) */
 function faseAtiva(id){
   if(!phase)return false;
+  if(phase.type==='c2bb')return !(phase.dismissed||{})[id];
+  /* sorteio por turnos: ativa = está na mesa deste turno e ainda não teve resposta */
+  if(phase.type==='sorteio'&&phase.v===2)return (phase.roster||[]).includes(id)&&!phase.scored[id]&&!phase.dismissed[id];
   /* tolerante de propósito: fase salva por uma versão anterior não tem keep/round,
      e isso é lido na volta do F5 antes de qualquer normalização */
   if((phase.dismissed||{})[id])return false;
@@ -1388,7 +1433,8 @@ function abreSegundoTurno(){
 function startWinnerPhase(aid,info={}){
   /* avail, não all: mídia já dispensada ou já consumida nesta rodada não volta
      pro carrossel — ele precisa ver só o que ainda dá pra pontuar */
-  const mine=availMedia(aid).sort((x,y)=>(y.elo||1500)-(x.elo||1500));
+  /* do menor ELO pro maior: as mais fracas aparecem primeiro */
+  const mine=availMedia(aid).sort((x,y)=>(x.elo||1500)-(y.elo||1500));
   if(!mine.length){nextDuel();return;}
   phase=newPhase('winner',mine.map(m=>m.id),{actorId:aid,loser:info.loser||'',gain:info.gain||0});
   savePhase();renderPhase();
@@ -1399,16 +1445,55 @@ function startWinnerPhase(aid,info={}){
    dispensada sai de vez, e vídeo pontuado também (vídeo aparece uma vez só).
    Sem isso, o sorteio podia cair numa dispensada e o Pontuar virava um beco sem saída. */
 function resolvidaNaFase(id){return phase?!faseAtiva(id):false;}
+/* ---------- sorteio por turnos ----------
+   Cada turno tem no máximo TURNO_MAX mídias na mesa.
+   · Vencedoras do turno anterior voltam (foto pontuada, vídeo ×2), até REP_MAX.
+     Se passarem disso, ficam as de MENOR ELO, pra ter variedade; as outras vão
+     pro banco e voltam quando sobrar cadeira.
+   · As cadeiras livres vão primeiro pra quem ainda não apareceu neste sorteio,
+     depois pra quem perdeu em todas as vezes que apareceu, depois pro banco.
+     Em cada grupo, quem está há mais tempo sem aparecer no jogo vem antes.
+   · Quem só perdeu volta no máximo PERD_VOLTAS vez, e nunca no turno seguinte
+     ao que perdeu. Sem vencedoras e sem ninguém pra entrar, o sorteio acaba. */
+const TURNO_MAX=30,REP_MAX=20,PERD_VOLTAS=1;
+function lastSeenMs(m){return m&&m.lastSeenAt?(Date.parse(m.lastSeenAt)||0):0;}
+function byLastSeen(list){return shuffle(list).sort((a,b)=>lastSeenMs(a)-lastSeenMs(b));}   // embaralha antes: empate fica aleatório
+function montaTurno(){
+  const pool=sorteioPool(),noBolo=new Set(pool.map(m=>m.id)),ant=phase.roster||[];
+  const venc=ant.filter(id=>phase.keep[id]&&noBolo.has(id)).map(id=>GAME.media[id]);
+  const rep=venc.slice().sort((a,b)=>(a.elo||1500)-(b.elo||1500)).slice(0,REP_MAX);
+  const repIds=new Set(rep.map(m=>m.id));
+  const banidas=venc.filter(m=>!repIds.has(m.id));          // venceram mas não couberam
+  banidas.forEach(m=>{phase.bench[m.id]=true;});
+  const livre=pool.filter(m=>!repIds.has(m.id)&&!banidas.includes(m));
+  const novas=byLastSeen(livre.filter(m=>!phase.app[m.id]));
+  const perd=byLastSeen(livre.filter(m=>phase.app[m.id]&&!phase.won[m.id]&&phase.app[m.id]<=PERD_VOLTAS&&!ant.includes(m.id)));
+  const banco=byLastSeen(livre.filter(m=>phase.bench[m.id]));
+  const fill=[...novas,...perd,...banco].slice(0,Math.max(0,TURNO_MAX-rep.length));
+  return{rep:rep.map(m=>m.id),fill:fill.map(m=>m.id),novas:fill.filter(m=>!phase.app[m.id]).length,banco:banidas.length};
+}
+function novoTurno(){
+  const t=montaTurno(),roster=[...t.rep,...t.fill];
+  if(!roster.length)return false;
+  phase.turno=(phase.turno||0)+1;
+  phase.roster=roster;phase.nRep=t.rep.length;
+  phase.scored={};phase.dismissed={};phase.keep={};
+  roster.forEach(id=>{phase.app[id]=(phase.app[id]||0)+1;phase.bench[id]=false;});
+  if(phase.turno>1)toast(`${phase.turno}º turno`,`${t.rep.length} repete${t.rep.length===1?'':'m'} · ${t.novas} nova${t.novas===1?'':'s'}${t.fill.length-t.novas?` · ${t.fill.length-t.novas} de volta`:''}${t.banco?` · ${t.banco} no banco`:''}`);
+  return true;
+}
 function drawSorteio(){
-  normPhase();
-  let pool=sorteioPool().filter(m=>faseAtiva(m.id));
-  if(!pool.length&&abreSegundoTurno())pool=sorteioPool().filter(m=>faseAtiva(m.id));
+  if(!phase||phase.v!==2)return null;
+  const usados=usedSet();
+  const ativos=()=>phase.roster.filter(id=>phaseValid(id)&&!usados.has(id)&&faseAtiva(id));
+  let pool=ativos();
+  if(!pool.length){if(!novoTurno())return null;pool=ativos();}
   if(!pool.length)return null;
-  const ult=phase?.cur,recentes=(phase?.items||[]).slice(-2);
-  let livres=pool.length>2?pool.filter(m=>!recentes.includes(m.id)):[];
-  if(!livres.length&&pool.length>1)livres=pool.filter(m=>m.id!==ult);
-  const esc=(livres.length?livres:pool);
-  return esc[Math.floor(Math.random()*esc.length)].id;
+  const ult=phase.cur,recentes=phase.items.slice(-2);
+  let livres=pool.length>2?pool.filter(id=>!recentes.includes(id)):[];
+  if(!livres.length&&pool.length>1)livres=pool.filter(id=>id!==ult);
+  const esc=livres.length?livres:pool;
+  return esc[Math.floor(Math.random()*esc.length)];
 }
 function nextSorteio(){
   const id=drawSorteio();
@@ -1417,25 +1502,95 @@ function nextSorteio(){
   savePhase();renderPhase();
 }
 function endSorteio(){
-  if(phase)markUsed(Object.keys(phase.keep).filter(id=>phase.keep[id]));
-  phase=null;phaseStash.sorteio=null;savePhase();saveSessionNow();
-  if(duelActors().length>=2)showEmpty(`Sorteio esgotado nesta rodada.<br>Ainda há <b>${duelActors().length}</b> atores no Duelo.`+roundLine());
+  /* só aqui o sorteio consome a rodada: tudo que apareceu fica usado até a Nova rodada */
+  if(phase?.type==='sorteio')markUsed(Object.keys(phase.app||phase.keep||{}));
+  const turnos=phase?.turno||0,pts=phase?.pts||0;
+  phase=null;phaseStash[liga+':sorteio']=null;savePhase();saveSessionNow();
+  const fim=`<b class="big">Sorteio encerrado.</b><br>${turnos} turno${turnos===1?'':'s'} · +${fmtNum(pts)} pts.<br>`;
+  if(duelActors().length>=2)showEmpty(fim+`Ainda há <b>${duelActors().length}</b> atores no Duelo.`+roundLine());
   else showRoundEnd();
 }
 function startSorteio(){
   const pool=sorteioPool();
   if(!pool.length){
     phase=null;savePhase();
-    const existe=Object.values(GAME.media).some(m=>!m.deleted&&m.actorId&&!isBig(m.actorId));
-    if(!existe)showEmpty(`O sorteio é dos atores com menos de ${DUEL_MIN} mídias, e no momento não há nenhum.`);
+    const existe=Object.values(GAME.media).some(m=>!m.deleted&&m.actorId&&inLiga(m)&&!isBig(m.actorId));
+    if(!existe)showEmpty(`O sorteio é dos atores com menos de ${DUEL_MIN} mídias${liga==='main'?'':' na liga '+LIGAS[liga]}, e no momento não há nenhum.`);
     else if(duelActors().length>=2)showEmpty(`Sorteio esgotado nesta rodada.<br>Ainda há <b>${duelActors().length}</b> atores no Duelo.`+roundLine());
     else showRoundEnd();
     return;
   }
-  phase=newPhase('sorteio',[]);
+  phase=newPhase('sorteio',[],{v:2,liga,turno:0,roster:[],nRep:0,app:{},won:{},bench:{}});
   phase.ref=avgElo(pool);   // sem itens na criação, a média precisa vir do bolo
   nextSorteio();
 }
+
+/* ---------- C2BB: assistir até gozar ----------
+   Uma mídia por vez, sem rodada. Pontuar = vitória, recusar = derrota (mesmo ELO
+   do sorteio). Definir vale três vitórias e três vezes os pontos, e a mídia fica
+   na tela. O sorteio favorece o topo: 75% das puxadas são ponderadas pela posição;
+   25% saem sem peso entre as novatas e a metade de baixo. Recusada não volta na
+   mesma sessão; pontuada e definida podem voltar. */
+const C2_EXPLORA=.25,C2_NOVATA=5;
+function c2Pool(){return Object.values(GAME.media).filter(m=>!m.deleted&&catOf(m)==='c2bb');}
+function drawC2(){
+  let pool=c2Pool().filter(m=>!phase.dismissed[m.id]);
+  if(!pool.length)return null;
+  const rec=phase.items.slice(-3);
+  if(pool.length>4)pool=pool.filter(m=>!rec.includes(m.id));
+  else if(pool.length>1)pool=pool.filter(m=>m.id!==phase.cur);
+  const rank=pool.slice().sort((a,b)=>(b.elo||1500)-(a.elo||1500)),n=rank.length;
+  const explora=rank.filter((m,i)=>((m.wins||0)+(m.losses||0))<C2_NOVATA||i>=Math.ceil(n/2));
+  if(explora.length&&Math.random()<C2_EXPLORA)return explora[Math.floor(Math.random()*explora.length)].id;
+  const peso=new Map(rank.map((m,i)=>[m.id,Math.pow(n-i,2)]));
+  return wpickBy(rank,m=>peso.get(m.id)).id;
+}
+function nextC2(){
+  if(!phase||phase.type!=='c2bb')return startC2();
+  const id=drawC2();
+  if(!id){endC2('Você recusou todas as mídias desta sessão.');return;}
+  phase.items.push(id);phase.cur=id;phase.def=null;
+  savePhase();renderPhase();
+}
+function startC2(){
+  const pool=c2Pool();
+  phase=null;
+  if(!pool.length){savePhase();showEmpty('Nenhuma mídia na liga C2BB ainda.<br>Envie pela Biblioteca escolhendo a liga <b>C2BB</b> (o ator é opcional), ou mude a liga de uma mídia no painel de informações da tela cheia.');return;}
+  phase=newPhase('c2bb',[],{liga:'c2bb',def:null,defs:0});
+  phase.ref=avgElo(pool);
+  nextC2();
+}
+function endC2(msg=''){
+  const n=phase?.items?.length||0,pts=phase?.pts||0,defs=phase?.defs||0;
+  stopVideos($('#carStage'));
+  phase=null;phaseStash['c2bb:c2bb']=null;savePhase();
+  showEmpty(`<b class="big">Sessão encerrada.</b><br>${msg?msg+'<br>':''}<span class="rl">${n} mídia${n===1?'':'s'} · ${defs} definida${defs===1?'':'s'} · +${fmtNum(pts)} pts</span><br>Toque em <b>Nova sessão</b> pra começar outra.`);
+}
+function phaseDefine(){
+  if(!phase||phase.type!=='c2bb'||phaseBusy)return false;
+  const m=GAME.media[phase.cur];if(!m||phase.def===m.id||phase.dismissed[m.id])return false;
+  phaseBusy=true;setTimeout(()=>phaseBusy=false,220);
+  for(let k=0;k<3;k++)eloFocus(m,1,phase.ref||1500);
+  m.wins=(m.wins||0)+3;m.defs=(m.defs||0)+1;
+  phase.scored[m.id]=(phase.scored[m.id]||0)+1;phase.def=m.id;phase.defs=(phase.defs||0)+1;
+  const pts=mediaPts(m)*3;phase.pts+=pts;
+  if(m.actorId)creditPonto(actorName(m.actorId),pts);else toast('+'+fmtNum(pts),'Definida');
+  saveGameSoon();savePhase();
+  /* não redesenha o carrossel: isso reiniciaria o vídeo que está passando */
+  phaseMeta();$('#phasePtsV').textContent='+'+fmtNum(phase.pts)+' pts';
+  const card=$('#carStage .cc.o0');
+  if(card){card.querySelector('.b-tl')?.remove();card.insertAdjacentHTML('beforeend',`<span class="b-tl chip ink">★ definida</span>`);}
+  if(vOpen)vmeta();
+  return true;
+}
+function endPhaseManual(){
+  if(!phase)return;
+  if(phase.type==='winner')return endWinnerPhase();
+  if(phase.type==='sorteio')return endSorteio();
+  if(phase.type==='c2bb')return endC2();
+}
+const isSolo=()=>!!phase&&(phase.type==='sorteio'||phase.type==='c2bb');
+function nextSolo(){if(phase?.type==='c2bb')nextC2();else nextSorteio();}
 function phaseValid(id){const m=GAME.media[id];return !!(m&&!m.deleted);}
 function phaseList(){
   if(!phase)return[];
@@ -1458,7 +1613,7 @@ function cardHTML(id,o){
   const ar=aspectCache.get(id);
   return `<div class="cc o${ao}${ds?' dis':''}${isV&&cur?' isv':''}" data-id="${id}" data-o="${o}" style="${ar?`--ar:${ar};`:''}--dx:${o*40}px">
     ${isV&&cur?'<video playsinline controls autoplay></video>':'<img alt="">'}
-    ${sc?`<span class="b-tl chip ok">${ICON.check} pontuada${sc>1?' '+sc+'×':''}${phase.keep[id]?' · volta':''}</span>`:''}${ds?'<span class="b-tl chip clay">dispensada</span>':''}
+    ${phase.def===id?'<span class="b-tl chip ink">★ definida</span>':sc?`<span class="b-tl chip ok">${ICON.check} pontuada${sc>1?' '+sc+'×':''}${phase.keep[id]?' · volta':''}</span>`:''}${ds?`<span class="b-tl chip clay">${phase.type==='c2bb'?'recusada':'dispensada'}</span>`:''}
     ${isV?`<span class="b-tr pill vid">▶ ${m.durationSec?fmtSec(m.durationSec)+' · +'+fmtNum(videoPts(m.durationSec)):'vídeo'}</span>`:''}
     ${cur?`<button type="button" class="b-br btn sm fsbtn">${ICON.expand}Tela cheia <span class="kbd">F</span></button>`:''}
   </div>`;
@@ -1481,8 +1636,11 @@ function renderPhase(){
   if(phase.type==='sorteio'){
     if(!phaseValid(phase.cur)||usedSet().has(phase.cur)||resolvidaNaFase(phase.cur))return nextSorteio();
   }
+  if(phase.type==='c2bb'){
+    if(!phaseValid(phase.cur)||phase.dismissed[phase.cur])return nextC2();
+  }
   if(phase.type==='winner'&&!phase.items.some(id=>phaseValid(id)&&faseAtiva(id))&&!abreSegundoTurno())return endWinnerPhase();
-  const sorteio=phase.type==='sorteio';
+  const sorteio=isSolo();
   const list=sorteio?[phase.cur]:phaseList();
   if(!list.length){
     if(phase.filter!=='all'){phase.filter='all';return renderPhase();}
@@ -1492,13 +1650,19 @@ function renderPhase(){
   if(!list.includes(phase.cur))phase.cur=list[0];
   const i=list.indexOf(phase.cur),m=GAME.media[phase.cur];
   $('#fphase').classList.toggle('solo',sorteio);
+  /* última aparição no jogo: é o que decide quem entra primeiro nas cadeiras livres */
+  if(!phase.seen[phase.cur]){m.lastSeenAt=new Date().toISOString();saveGameSoon();}
   phase.seen[phase.cur]=true;
   setGameChrome(phase.type);
+  const lgK=liga==='main'?'':LIGAS[liga]+' · ';
   if(phase.type==='winner'){
-    $('#gKick').innerHTML=`Vencedor${phase.loser?` · venceu ${escapeHtml(phase.loser)}`:''}${phase.gain?`, ELO <span class="up">+${phase.gain}</span>`:''}`;
+    $('#gKick').innerHTML=`${lgK}Vencedor${phase.loser?` · venceu ${escapeHtml(phase.loser)}`:''}${phase.gain?`, ELO <span class="up">+${phase.gain}</span>`:''} · do menor ELO pro maior`;
     $('#gTitle').textContent=actorName(phase.actorId);
+  }else if(phase.type==='c2bb'){
+    $('#gKick').textContent=`C2BB · ${actorLabel(m.actorId)}${m.defs?` · definida ${m.defs}×`:''}`;
+    $('#gTitle').textContent='Sessão C2BB';
   }else{
-    $('#gKick').textContent=`Sorteio · atores com menos de ${DUEL_MIN} mídias · ${actorName(m.actorId)}`;
+    $('#gKick').textContent=`${lgK}${phase.turno||1}º turno · ${actorName(m.actorId)}`;
     $('#gTitle').textContent='Sorteio';
   }
   if(!sorteio){
@@ -1528,12 +1692,16 @@ function renderPhase(){
   });
   const fs=st.querySelector('.fsbtn');if(fs)fs.onclick=e=>{e.stopPropagation();openPhaseViewer();};
   phaseMeta();
-  if(sorteio){
-    const pool=sorteioPool().filter(x=>faseAtiva(x.id)),pf=pool.filter(x=>x.type!=='video').length,pv=pool.length-pf;
+  if(phase.type==='c2bb'){
+    $('#carStrip').innerHTML='';$('#carStrip')._key='';
+    const sc=Object.keys(phase.scored).length,ds=Object.keys(phase.dismissed).length,tot=c2Pool().length;
+    $('#carProg').innerHTML=`<b>${phase.items.length}</b> vista${phase.items.length===1?'':'s'} · <b class="okc">${sc}</b> pontuada${sc===1?'':'s'} · ${ds} recusada${ds===1?'':'s'} · ${tot-ds} no bolo`;
+  }else if(sorteio){
+    const ros=(phase.roster||[]).filter(phaseValid),falta=ros.filter(id=>faseAtiva(id)).length;
     const volta=Object.keys(phase.keep).filter(id=>phase.keep[id]&&!phase.dismissed[id]).length;
     $('#carStrip').innerHTML='';$('#carStrip')._key='';
-    $('#carProg').innerHTML=`<b>${phase.round===1?'1º':'2º'} turno</b> · restam <b>${pf}</b> foto${pf===1?'':'s'}${pv?` e <b>${pv}</b> vídeo${pv===1?'':'s'}`:''}`
-      +(phase.round===1&&volta?` · <b class="okc">${volta}</b> pra voltar`:'');
+    $('#carProg').innerHTML=`<b>${phase.turno||1}º turno</b> · faltam <b>${falta}</b> de ${ros.length}${phase.nRep?` · ${phase.nRep} repetente${phase.nRep===1?'':'s'}`:''}`
+      +(volta?` · <b class="okc">${volta}</b> pra voltar`:'');
   }else{
     $('#carPrev').disabled=i<=0;$('#carNext').disabled=i>=list.length-1;
     renderStrip($('#carStrip'),list,phase.cur,{go:phaseGoTo,sc:phase.scored,ds:phase.dismissed,seen:phase.seen});
@@ -1551,8 +1719,21 @@ function phaseMeta(){
   normPhase();
   const sc=phase.scored[m.id]||0,ds=!!phase.dismissed[m.id],isV=m.type==='video';
   const pode=faseAtiva(m.id);
-  $('#fpMeta').textContent=`${m.name} · #${mediaPos(m)||'—'} geral · Tier ${mediaTier(m)} · ELO ${fmtInt(m.elo||1500)}${isV&&m.durationSec?' · '+fmtSec(m.durationSec):''}${sc?` · já pontuada ${sc}×`:''}`;
-  /* vídeo ganha dois botões: ×1 sai do bolo, ×2 volta no 2º turno e dobra o ELO */
+  $('#fpMeta').textContent=`${m.name} · #${mediaPos(m)||'—'} ${liga==='main'?'geral':'em '+LIGAS[catOf(m)]} · Tier ${mediaTier(m)} · ELO ${fmtInt(m.elo||1500)}${isV&&m.durationSec?' · '+fmtSec(m.durationSec):''}${sc?` · já pontuada ${sc}×`:''}`;
+  const c2=phase.type==='c2bb';
+  $('#fpDef').classList.toggle('hide',!c2);
+  $('#fpSkip .lb').textContent=c2?'Recusar':'Dispensar';
+  if(c2){
+    const def=phase.def===m.id;
+    $('#fpScore2').classList.add('hide');
+    $('#fpScore .lb').textContent=def?'Próxima':`Pontuar +${fmtNum(mediaPts(m))}`;
+    $('#fpScore').disabled=ds;
+    $('#fpDef .lb').textContent=def?'Definida':`Definir ×3 · +${fmtNum(mediaPts(m)*3)}`;
+    $('#fpDef').disabled=def||ds;$('#fpDef').classList.toggle('done',def);
+    $('#fpSkip').disabled=ds||def;
+    return;
+  }
+  /* vídeo ganha dois botões: ×1 sai do bolo, ×2 volta no próximo turno e dobra o ELO */
   $('#fpScore2').classList.toggle('hide',!isV);
   $('#fpScore .lb').textContent=ds?'Dispensada':!pode?'Já resolvida':isV?`Pontuar ×1 +${fmtNum(mediaPts(m))}`:`Pontuar +${fmtNum(mediaPts(m))}`;
   $('#fpScore2 .lb').textContent=`Pontuar ×2 · volta`;
@@ -1562,7 +1743,7 @@ function phaseMeta(){
 }
 $('#phaseFilters').onclick=e=>{const b=e.target.closest('[data-pf]');if(!b||!phase)return;phase.filter=b.dataset.pf;renderPhase();};
 function phaseGoTo(id){if(!phase||id===phase.cur)return;phase.cur=id;renderPhase();}
-function phaseGo(d){if(!phase||phase.type==='sorteio')return;const list=phaseList(),i=list.indexOf(phase.cur),j=clamp(i+d,0,list.length-1);if(j!==i)phaseGoTo(list[j]);}
+function phaseGo(d){if(!phase||isSolo())return;const list=phaseList(),i=list.indexOf(phase.cur),j=clamp(i+d,0,list.length-1);if(j!==i)phaseGoTo(list[j]);}
 /* nivel vale só pra vídeo: ×1 pontua e sai · ×2 pontua, volta no 2º turno e
    bate duas vezes no ELO. Foto pontua normal e sempre volta. */
 function phaseScoreId(id,nivel=1){
@@ -1576,10 +1757,12 @@ function phaseScoreId(id,nivel=1){
   m.wins=(m.wins||0)+n;
   phase.scored[id]=(phase.scored[id]||0)+1;
   const pts=mediaPts(m);phase.pts+=pts;      // ponto é um só; o nível dobra o ELO
-  creditPonto(actorName(m.actorId),pts);
+  if(m.actorId)creditPonto(actorName(m.actorId),pts);else toast('+'+fmtNum(pts),m.name);
   const volta=isV?(nivel===2):true;
   phase.keep[id]=volta;
-  if(!volta)markUsed([id]);
+  if(phase.won)phase.won[id]=true;
+  /* sorteio por turnos e C2BB guardam o próprio estado: só o vencedor de duelo consome na hora */
+  if(!volta&&phase.type==='winner')markUsed([id]);
   saveGameSoon();savePhase();
   return true;
 }
@@ -1590,18 +1773,21 @@ function phaseDismissId(id){
      não "essa é ruim". Então só tira de circulação, sem mexer no ELO nem contar derrota.
      Dispensar sem ter pontuado continua sendo rejeição de verdade. */
   if(!phase.scored[id]){eloFocus(m,0,phase.ref||1500);m.losses=(m.losses||0)+1;}
-  phase.dismissed[id]=true;phase.keep[id]=false;markUsed([id]);
+  phase.dismissed[id]=true;phase.keep[id]=false;
+  if(phase.type==='winner')markUsed([id]);
   saveGameSoon();saveSessionNow();savePhase();
   return true;
 }
 function phaseScore(nivel=1){
   if(!phase)return;
   const atual=phase.cur;
+  if(phase.type==='c2bb'&&phase.def===atual){if(!phaseBusy)nextC2();return;}   // definida: o botão vira "próxima"
+  if(phase.type==='c2bb')nivel=1;
   if(!phaseScoreId(atual,nivel)){
-    if(phase.type==='sorteio'&&!phaseBusy&&resolvidaNaFase(atual))nextSorteio();   // nunca fica preso
+    if(isSolo()&&!phaseBusy&&resolvidaNaFase(atual))nextSolo();   // nunca fica preso
     return;
   }
-  if(phase.type==='sorteio')return nextSorteio();   // pontuou, sorteia outra
+  if(isSolo())return nextSolo();   // pontuou, sorteia outra
   phase.cur=proximaNaFase(atual);                   // pontuou, passa pra próxima
   renderPhase();
 }
@@ -1623,25 +1809,25 @@ function proximaNaFase(id){
 }
 function phaseDismiss(){
   if(!phase)return;
-  const list=phaseList(),i=list.indexOf(phase.cur);
+  if(phase.type==='c2bb'&&phase.def===phase.cur)return;   // definida não se recusa
   if(!phaseDismissId(phase.cur)){
-    if(phase.type==='sorteio'&&!phaseBusy)nextSorteio();
+    if(isSolo()&&!phaseBusy)nextSolo();
     return;
   }
-  if(phase.type==='sorteio')return nextSorteio();
+  if(isSolo())return nextSolo();
   phase.cur=proximaNaFase(phase.cur);renderPhase();
 }
 function endWinnerPhase(){
   if(phase?.type==='winner'){markUsed(allOfActor(phase.actorId).map(m=>m.id));saveSessionNow();}
   stopVideos($('#carStage'));
-  phase=null;phaseStash.duelo=null;savePhase();
+  phase=null;phaseStash[liga+':duelo']=null;savePhase();
   if(roundOver())return showRoundEnd();
   nextDuel();
 }
 function openPhaseViewer(){
   if(!phase)return;
   stopVideos($('#carStage'));
-  if(phase.type==='sorteio'){   // sorteio é uma de cada vez: nada de tira nem de navegar
+  if(isSolo()){   // sorteio e C2BB são uma de cada vez: nada de tira nem de navegar
     const m=GAME.media[phase.cur];if(!m)return;
     openMediaViewer([m],0,{kind:'phase'});
     return;
@@ -1658,10 +1844,11 @@ function viewerSwapTo(m){
 }
 $('#fpScore').onclick=()=>phaseScore(1);
 $('#fpScore2').onclick=()=>phaseScore(2);
+$('#fpDef').onclick=()=>phaseDefine();
 $('#fpSkip').onclick=phaseDismiss;
-$('#fpEnd').onclick=endWinnerPhase;
-$('#carPrev').onclick=()=>{if(phase?.type!=='sorteio')phaseGo(-1);};
-$('#carNext').onclick=()=>{if(phase?.type!=='sorteio')phaseGo(1);};
+$('#fpEnd').onclick=endPhaseManual;
+$('#carPrev').onclick=()=>{if(!isSolo())phaseGo(-1);};
+$('#carNext').onclick=()=>{if(!isSolo())phaseGo(1);};
 $('[data-pick="a"]').onclick=e=>{e.stopPropagation();decide('a');};
 $('[data-pick="b"]').onclick=e=>{e.stopPropagation();decide('b');};
 $('#skip').onclick=()=>{
@@ -1671,23 +1858,41 @@ $('#skip').onclick=()=>{
   toast('—',`${a} e ${b} fora da rodada`);
   nextDuel();
 };
-$('#newRound').onclick=()=>{GAME.sessions.current.usedMediaIds=[];lsSaveUsed();phase=null;phaseStash.duelo=phaseStash.sorteio=null;savePhase();saveSessionNow();nextDuel();};
+$('#newRound').onclick=()=>{
+  stopVideos($('#carStage'));
+  if(liga==='c2bb'){phase=null;phaseStash['c2bb:c2bb']=null;savePhase();startC2();return;}   // C2BB não tem rodada: só começa outra sessão
+  if(phase?.type==='sorteio')endSorteio();
+  GAME.sessions.current.usedMediaIds=[];lsSaveUsed();phase=null;
+  Object.keys(phaseStash).forEach(k=>{if(!k.startsWith('c2bb:'))phaseStash[k]=null;});
+  savePhase();saveSessionNow();nextDuel();
+};
+/* fase salva por versão antiga do sorteio (sem turnos) não continua: recomeça no formato novo */
+function phaseUsavel(p){return !!(p&&Array.isArray(p.items)&&p.items.some(id=>phaseValid(id))&&!(p.type==='sorteio'&&p.v!==2));}
+function trocaContexto(fn){
+  phaseStash[stashKey()]=phase;          // guarda o que estava rolando
+  fn();setModeButtons();stopVideos($('#carStage'));
+  const salva=phaseStash[stashKey()];
+  if(phaseUsavel(salva)){phase=salva;normPhase();savePhase();renderPhase();return;}
+  phase=null;duel={a:null,b:null};savePhase();nextDuel();
+}
 $$('#gameModeFilters [data-game]').forEach(b=>b.onclick=()=>{
   const novo=b.dataset.game;
   if(novo===gameMode)return;
-  phaseStash[gameMode]=phase;            // guarda o que estava rolando
-  gameMode=novo;setModeButtons();stopVideos($('#carStage'));
-  const salva=phaseStash[novo];
-  if(salva&&salva.items?.some(id=>phaseValid(id))){phase=salva;normPhase();savePhase();renderPhase();return;}
-  phase=null;savePhase();nextDuel();
+  trocaContexto(()=>{gameMode=novo;});
+});
+$$('#ligaFilters [data-liga]').forEach(b=>b.onclick=()=>{
+  const novo=b.dataset.liga;
+  if(novo===liga||!LIGAS[novo])return;
+  if(vOpen)closeViewer();
+  trocaContexto(()=>{liga=novo;try{localStorage.setItem('pm3Liga',liga);}catch(e){}});
 });
 async function startGameIfReady(){
   try{
     const s=JSON.parse(localStorage.getItem(LS_PHASE)||'null');
-    if(s&&s.day===localDay()&&s.phase&&Array.isArray(s.phase.items)){
+    if(s&&s.day===localDay()&&s.phase&&Array.isArray(s.phase.items)&&(s.liga||'main')===liga){
       gameMode=s.mode==='sorteio'?'sorteio':'duelo';
-      phase=s.phase;normPhase();phase.items=phase.items.filter(phaseValid);
-      if(phase.items.length){renderPhase();return;}
+      s.phase.items=s.phase.items.filter(phaseValid);
+      if(phaseUsavel(s.phase)){phase=s.phase;normPhase();renderPhase();return;}
     }
   }catch(e){}
   phase=null;await nextDuel();
@@ -1774,29 +1979,44 @@ function vmeta(){
   const isV=m.type==='video';
   viewer.classList.toggle('isvideo',isV);
   $('#vName').textContent=m.name;
-  $('#vSub').textContent=`${actorName(m.actorId)} · ${mediaLabel(m).toLowerCase()} · #${mediaPos(m)||'—'} · Tier ${mediaTier(m)} · ELO ${fmtInt(m.elo||1500)}`;
+  $('#vSub').textContent=`${actorLabel(m.actorId)} · ${mediaLabel(m).toLowerCase()} · #${mediaPos(m)||'—'} · Tier ${mediaTier(m)} · ELO ${fmtInt(m.elo||1500)}`;
   $('#vCount').innerHTML=`${vIdx+1} <span>/ ${viewerItems.length}</span>`;
   $('#vCount').classList.toggle('hide',viewerItems.length<2);
   $('#vPrev').disabled=vIdx<=0;$('#vNext').disabled=vIdx>=viewerItems.length-1;
   $('#vZoomIn').disabled=$('#vZoomOut').disabled=isV;
   // painel
-  const tot=mediaPool(mediaKind(m)).length;
+  const tot=mediaPool(mediaKind(m),catOf(m)).length;
   const rows=[['Posição',`#${mediaPos(m)||'—'} de ${tot}`],['Tier',mediaTier(m)],['ELO',fmtInt(m.elo||1500)],['Pontuar / dispensar',`${m.wins||0} / ${m.losses||0}`]];
-  if(isV&&m.durationSec)rows.push(['Duração',fmtSec(m.durationSec)+' · +'+videoPts(m.durationSec)+' pts']);
+  if(m.defs)rows.push(['Definida',m.defs+'×']);
+  if(isV&&m.durationSec)rows.push(['Duração',fmtSec(m.durationSec)+' · +'+fmtNum(videoPts(m.durationSec))+' pts']);
   if(m.createdAt)rows.push(['Enviada',new Date(m.createdAt).toLocaleDateString('pt-BR')]);
-  $('#vInfo').innerHTML=`<span class="lbl">Sobre esta mídia</span><div style="margin-top:8px">${rows.map(([l,v])=>`<div class="row"><span>${l}</span><b>${escapeHtml(v)}</b></div>`).join('')}</div><div class="acts"><button class="btn sm" id="vActor" style="flex:1">Página do ator</button><button class="btn sm danger" id="vDel">Excluir</button></div>`;
-  $('#vActor').onclick=()=>{const n=actorName(m.actorId);closeViewer();showActorProfile(n);};
+  if(m.lastSeenAt)rows.push(['Última aparição',new Date(m.lastSeenAt).toLocaleDateString('pt-BR')]);
+  const temAtor=!!(m.actorId&&GAME.actors[m.actorId]);
+  const nAtor=temAtor?Object.values(GAME.media).filter(x=>!x.deleted&&x.actorId===m.actorId).length:0;
+  $('#vInfo').innerHTML=`<span class="lbl">Sobre esta mídia</span><div style="margin-top:8px">${rows.map(([l,v])=>`<div class="row"><span>${l}</span><b>${escapeHtml(v)}</b></div>`).join('')}
+    <div class="row" style="align-items:center"><span>Liga</span><select id="vLiga">${Object.entries(LIGAS).map(([k,l])=>`<option value="${k}" ${catOf(m)===k?'selected':''} ${k!=='c2bb'&&!temAtor?'disabled':''}>${l}</option>`).join('')}</select></div></div>
+    <div class="acts">${temAtor?'<button class="btn sm" id="vActor" style="flex:1">Página do ator</button>':''}<button class="btn sm danger" id="vDel">Excluir</button></div>
+    ${temAtor&&nAtor>1?`<div class="acts"><button class="btn sm ghost" id="vLigaAll" style="flex:1">Levar as ${nAtor} de ${escapeHtml(actorName(m.actorId))} pra esta liga</button></div>`:''}`;
+  $('#vActor')?.addEventListener('click',()=>{const n=actorName(m.actorId);closeViewer();showActorProfile(n);});
   $('#vDel').onclick=()=>viewerDelete(m.id);
+  $('#vLiga').onchange=e=>{setCat(m,e.target.value);saveGameSoon();toast(LIGAS[catOf(m)],m.name+' mudou de liga');updateModeCounts();vmeta();};
+  $('#vLigaAll')?.addEventListener('click',()=>{const c=catOf(m);let n=0;Object.values(GAME.media).forEach(x=>{if(!x.deleted&&x.actorId===m.actorId&&catOf(x)!==c){setCat(x,c);n++;}});saveGameSoon();toast(LIGAS[c],`${n} mídia(s) de ${actorName(m.actorId)} movida(s)`);updateModeCounts();vmeta();});
   // tira
   const ph=vCtx.kind==='phase'&&phase;
-  if(!(ph&&phase.type==='sorteio'))renderStrip($('#vStrip'),viewerItems.map(x=>x.id),m.id,{go:id=>goSlide(viewerItems.findIndex(x=>x.id===id)),sc:ph?phase.scored:null,ds:ph?phase.dismissed:null});
-  $('#vStrip').classList.toggle('hide',viewerItems.length<2||(ph&&phase.type==='sorteio'));
+  if(!(ph&&isSolo()))renderStrip($('#vStrip'),viewerItems.map(x=>x.id),m.id,{go:id=>goSlide(viewerItems.findIndex(x=>x.id===id)),sc:ph?phase.scored:null,ds:ph?phase.dismissed:null});
+  $('#vStrip').classList.toggle('hide',viewerItems.length<2||(ph&&isSolo()));
   // ação
   const act=$('#vAct');
-  if(ph){
+  if(ph&&phase.type==='c2bb'){
+    phase.cur=m.id;phase.seen[m.id]=true;savePhase();
+    const def=phase.def===m.id,ds=!!phase.dismissed[m.id];
+    act.innerHTML=`${def?'<span class="chip ink">★ definida</span>':''}<button class="btn" id="vDis" ${ds||def?'disabled':''}>Recusar <span class="kbd">↓</span></button><button class="btn primary" id="vScore" ${ds?'disabled':''}>${ICON.check}${def?'Próxima':'Pontuar +'+fmtNum(mediaPts(m))} <span class="kbd">↑</span></button><button class="btn primary" id="vDef" style="background:var(--gold);border-color:var(--gold)" ${def||ds?'disabled':''}>${def?'Definida':'Definir ×3'} <span class="kbd">D</span></button>`;
+    $('#vScore').onclick=viewerScore;$('#vDis').onclick=viewerDismiss;$('#vDef').onclick=()=>phaseDefine();
+    act.classList.remove('hide');
+  }else if(ph){
     phase.cur=m.id;phase.seen[m.id]=true;savePhase();
     const sc=phase.scored[m.id]||0,ds=!!phase.dismissed[m.id],dis=ds||(isV&&sc>0);
-    act.innerHTML=`${sc?`<span class="chip ok">${ICON.check} pontuada${sc>1?' '+sc+'×':''}</span>`:''}${ds?'<span class="chip clay">dispensada</span>':''}<button class="btn" id="vDis" ${ds?'disabled':''}>Dispensar <span class="kbd">↓</span></button><button class="btn primary" id="vScore" ${dis?'disabled':''}>${ICON.check}${ds?'Dispensada':(isV&&sc)?'Já pontuado':'Pontuar +'+mediaPts(m)} <span class="kbd">↑</span></button>`;
+    act.innerHTML=`${sc?`<span class="chip ok">${ICON.check} pontuada${sc>1?' '+sc+'×':''}</span>`:''}${ds?'<span class="chip clay">dispensada</span>':''}<button class="btn" id="vDis" ${ds?'disabled':''}>Dispensar <span class="kbd">↓</span></button><button class="btn primary" id="vScore" ${dis?'disabled':''}>${ICON.check}${ds?'Dispensada':(isV&&sc)?'Já pontuado':'Pontuar +'+fmtNum(mediaPts(m))} <span class="kbd">↑</span></button>`;
     $('#vScore').onclick=viewerScore;$('#vDis').onclick=viewerDismiss;
     act.classList.remove('hide');
   }else if(vCtx.kind==='duel'&&!phase&&duel[vCtx.side]===vCtx.actorId){
@@ -1808,21 +2028,23 @@ function vmeta(){
 }
 function viewerScore(){
   const m=activeMedia();if(!m||vCtx.kind!=='phase'||!phase)return;
-  const sorteio=phase.type==='sorteio';
+  const sorteio=isSolo();
+  if(phase.type==='c2bb'&&phase.def===m.id){if(!phaseBusy)viewerAvancaSorteio();return;}
   if(!phaseScoreId(m.id)){if(sorteio&&!phaseBusy&&resolvidaNaFase(m.id))viewerAvancaSorteio();return;}
   if(sorteio)return viewerAvancaSorteio();
   vmeta();
 }
 function viewerDismiss(){
   const m=activeMedia();if(!m||vCtx.kind!=='phase'||!phase)return;
-  const sorteio=phase.type==='sorteio';
+  const sorteio=isSolo();
+  if(phase.type==='c2bb'&&phase.def===m.id)return;
   if(!phaseDismissId(m.id)){if(sorteio&&!phaseBusy)viewerAvancaSorteio();return;}
   if(sorteio)return viewerAvancaSorteio();
   vmeta();if(vIdx<viewerItems.length-1)setTimeout(()=>goSlide(vIdx+1,true),180);
 }
 /* sorteia a próxima mantendo a tela cheia; se o bolo acabou, fecha e mostra o fim */
 function viewerAvancaSorteio(){
-  nextSorteio();
+  nextSolo();
   if(!phase){closeViewer();return;}
   viewerSwapTo(GAME.media[phase.cur]);
 }
@@ -1939,7 +2161,7 @@ addEventListener('popstate',()=>{if(vOpen)closeViewer(true);});
 function viewerKey(e){
   const k=e.key;bumpIdle();
   if(k==='Escape'){e.preventDefault();closeViewer();return;}
-  const soloFase=vCtx.kind==='phase'&&phase&&phase.type==='sorteio';
+  const soloFase=vCtx.kind==='phase'&&isSolo();
   if(k==='ArrowLeft'){e.preventDefault();if(!soloFase)goSlide(vIdx-1);return;}
   if(k==='ArrowRight'){e.preventDefault();if(!soloFase)goSlide(vIdx+1);return;}
   if(k==='+'||k==='='){zoomAt(Math.max(1.5,scale*1.4));return;}
@@ -1950,6 +2172,7 @@ function viewerKey(e){
   if(vCtx.kind==='phase'){
     if(k==='ArrowUp'||k===' '){e.preventDefault();viewerScore();return;}
     if(k==='ArrowDown'){e.preventDefault();viewerDismiss();return;}
+    if((k==='d'||k==='D')&&phase?.type==='c2bb'){e.preventDefault();phaseDefine();return;}
   }
   if(vCtx.kind==='duel'&&k==='Enter'&&$('#vPick')){e.preventDefault();decide(vCtx.side);}
 }
@@ -2176,7 +2399,7 @@ function renderMoves(vk){
 }
 const AR_MIN=5;
 function artistRows(){
-  const posOf=new Map(mediaRanked('photo').map((m,i)=>[m.id,i+1]));
+  const posOf=new Map(Object.keys(LIGAS).flatMap(c=>mediaRanked('photo',c).map((m,i)=>[m.id,i+1])));
   return Object.values(GAME.actors).map(a=>{
     const med=Object.values(GAME.media).filter(m=>m.actorId===a.id&&!m.deleted);
     const ph=med.filter(m=>m.type!=='video'),vi=med.filter(m=>m.type==='video');
@@ -2562,41 +2785,48 @@ function addActor(name){name=cleanCell(name);if(!name)return null;const ex=Objec
 function actorNextNumber(aid){const nums=Object.values(GAME.media).filter(m=>m.actorId===aid).map(m=>{const t=String(m.name||'').match(/(\d{1,5})\s*$/);return t?+t[1]:0;});return(nums.length?Math.max(...nums):0)+1;}
 function fillUpActors(){
   const sel=$('#upActor');const cur=sel.value;
-  sel.innerHTML=`<option value="__new__">+ Novo ator</option>`+Object.values(GAME.actors).sort((a,b)=>a.name.localeCompare(b.name)).map(a=>`<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
+  const c2=$('#upCat').value==='c2bb';
+  sel.innerHTML=(c2?`<option value="__none__">Sem ator</option>`:'')+`<option value="__new__">+ Novo ator</option>`+Object.values(GAME.actors).sort((a,b)=>a.name.localeCompare(b.name)).map(a=>`<option value="${a.id}">${escapeHtml(a.name)}</option>`).join('');
   if(cur&&[...sel.options].some(o=>o.value===cur))sel.value=cur;
+  else if(c2)sel.value='__none__';
   upActorUI();
 }
 function upActorUI(){$('#upNewWrap').classList.toggle('hide',$('#upActor').value!=='__new__');}
 let upQueue=[];
 $('#upActor').addEventListener('change',upActorUI);
+$('#upCat').addEventListener('change',fillUpActors);
 $('#upGallery').onchange=e=>{upQueue=upQueue.concat([...e.target.files]);e.target.value='';$('#upSend').disabled=!upQueue.length||!accessToken;$('#upStatus').textContent=accessToken?`${upQueue.length} arquivo(s) na fila.`:'Conecte o Drive primeiro.';};
 $('#upSend').onclick=async()=>{
   if(!accessToken){$('#upStatus').textContent='Conecte o Drive primeiro.';return;}
-  let aid=$('#upActor').value;
-  if(aid==='__new__'){const a=addActor($('#upNewActor').value);if(!a){$('#upStatus').textContent='Digite o nome do novo ator.';return;}aid=a.id;}
-  if(!aid||!GAME.actors[aid]){$('#upStatus').textContent='Selecione um ator.';return;}
+  let aid=$('#upActor').value;const cat=$('#upCat').value;
+  if(aid==='__none__'){if(cat!=='c2bb'){$('#upStatus').textContent='Sem ator só na liga C2BB.';return;}aid=null;}
+  else if(aid==='__new__'){const a=addActor($('#upNewActor').value);if(!a){$('#upStatus').textContent='Digite o nome do novo ator.';return;}aid=a.id;}
+  if(aid!==null&&(!aid||!GAME.actors[aid])){$('#upStatus').textContent='Selecione um ator.';return;}
   $('#upSend').disabled=true;
-  const n=await uploadFilesForActor(aid,upQueue,t=>$('#upStatus').textContent=t);
+  const n=await uploadFilesForActor(aid,upQueue,t=>$('#upStatus').textContent=t,cat);
   upQueue=[];$('#upNewActor').value='';saveGameSoon();$('#upStatus').textContent=`✓ ${n} mídia(s) enviada(s).`;refreshAll();kickGameIfIdle();
 };
-async function uploadFilesForActor(aid,files,onStatus=()=>{}){
+/* aid null = mídia sem ator (só C2BB). cat vazio = liga mais comum do ator */
+async function uploadFilesForActor(aid,files,onStatus=()=>{},cat=null){
   let n=0;const list=[...files];
+  if(!cat)cat=aid?actorCat(aid):'c2bb';
+  if(!aid)cat='c2bb';
   for(let i=0;i<list.length;i++){const f=list[i];
-    try{const num=actorNextNumber(aid);const ext=(f.name.match(/(\.[^.]+)$/)||[''])[0];const base=`${GAME.actors[aid].name} ${String(num).padStart(3,'0')}`;onStatus(`Enviando ${base} (${i+1}/${list.length})…`);const up=await uploadMediaFile(f,base+ext);const mid=uid('m');GAME.media[mid]={id:mid,fileId:up.id,name:base,mimeType:f.type,type:f.type.startsWith('video/')?'video':'photo',actorId:aid,elo:1500,wins:0,losses:0,favorite:false,deleted:false,createdAt:new Date().toISOString()};n++;}
+    try{const num=actorNextNumber(aid);const ext=(f.name.match(/(\.[^.]+)$/)||[''])[0];const base=`${aid?GAME.actors[aid].name:'C2BB'} ${String(num).padStart(3,'0')}`;onStatus(`Enviando ${base} (${i+1}/${list.length})…`);const up=await uploadMediaFile(f,base+ext);const mid=uid('m');GAME.media[mid]={id:mid,fileId:up.id,name:base,mimeType:f.type,type:f.type.startsWith('video/')?'video':'photo',actorId:aid||null,elo:1500,wins:0,losses:0,favorite:false,deleted:false,createdAt:new Date().toISOString()};setCat(GAME.media[mid],cat);n++;}
     catch(e){log('Erro upload: '+e.message);}
   }
   return n;
 }
-let libTypeFilter='photo',libActorFilter='',libSort='elo',libLimit=120;
+let libTypeFilter='photo',libActorFilter='',libSort='elo',libLimit=120,libLiga='main';
 function fillLibActorFilter(){
   const sel=$('#libActorFilter');
-  const names=[...new Set(Object.values(GAME.media).filter(m=>!m.deleted).map(m=>actorName(m.actorId)))].sort();
+  const names=[...new Set(Object.values(GAME.media).filter(m=>!m.deleted&&catOf(m)===libLiga).map(m=>actorLabel(m.actorId)))].sort();
   sel.innerHTML='<option value="">Todos os atores</option>'+names.map(n=>`<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join('');
   sel.value=names.includes(libActorFilter)?libActorFilter:'';
 }
 function libRows(){
   const q=normSearch($('#libSearch').value);
-  let rows=mediaPool(libTypeFilter).filter(m=>(!libActorFilter||actorName(m.actorId)===libActorFilter)&&(!q||normSearch(m.name+' '+actorName(m.actorId)).includes(q)));
+  let rows=mediaPool(libTypeFilter,libLiga).filter(m=>(!libActorFilter||actorLabel(m.actorId)===libActorFilter)&&(!q||normSearch(m.name+' '+actorLabel(m.actorId)).includes(q)));
   if(libSort==='elo')rows.sort((a,b)=>(b.elo||1500)-(a.elo||1500));
   else if(libSort==='recent')rows.sort((a,b)=>new Date(b.createdAt||0)-new Date(a.createdAt||0));
   else rows.sort((a,b)=>a.name.localeCompare(b.name));
@@ -2605,11 +2835,12 @@ function libRows(){
 function renderLibrary(){
   $$('#libFilters [data-libtype]').forEach(b=>b.classList.toggle('on',b.dataset.libtype===libTypeFilter));
   $$('#libFilters [data-libsort]').forEach(b=>b.classList.toggle('on',b.dataset.libsort===libSort));
+  $$('#libFilters [data-libliga]').forEach(b=>b.classList.toggle('on',b.dataset.libliga===libLiga));
   const rows=libRows(),grid=$('#libGrid');
-  $('#libCount').textContent=`${fmtInt(rows.length)} ${libTypeFilter==='video'?'vídeo':'foto'}${rows.length!==1?'s':''}${libActorFilter?' · '+libActorFilter:''}`;
+  $('#libCount').textContent=`${LIGAS[libLiga]} · ${fmtInt(rows.length)} ${libTypeFilter==='video'?'vídeo':'foto'}${rows.length!==1?'s':''}${libActorFilter?' · '+libActorFilter:''}`;
   if(!rows.length){grid.innerHTML=`<div class="empty" style="grid-column:1/-1">Nenhuma mídia encontrada.</div>`;$('#libMore').innerHTML='';return;}
   const show=rows.slice(0,libLimit);
-  grid.innerHTML=show.map((m,i)=>`<div class="atile lib" data-i="${i}"><button type="button" class="open" aria-label="Abrir ${escapeHtml(m.name)}"><img data-mid="${m.id}" data-size="480" alt=""></button><span class="b-tl pill">#${mediaPos(m)||'—'}</span>${m.type==='video'?`<span class="b-br pill vid">▶ ${m.durationSec?fmtSec(m.durationSec)+' · +'+videoPts(m.durationSec):''}</span>`:`<span class="b-br pill">${fmtInt(m.elo||1500)}</span>`}<div class="foot"><span class="n">${escapeHtml(m.name)}</span><span class="a">${escapeHtml(actorName(m.actorId))}</span></div></div>`).join('');
+  grid.innerHTML=show.map((m,i)=>`<div class="atile lib" data-i="${i}"><button type="button" class="open" aria-label="Abrir ${escapeHtml(m.name)}"><img data-mid="${m.id}" data-size="480" alt=""></button><span class="b-tl pill">#${mediaPos(m)||'—'}</span>${m.type==='video'?`<span class="b-br pill vid">▶ ${m.durationSec?fmtSec(m.durationSec)+' · +'+videoPts(m.durationSec):''}</span>`:`<span class="b-br pill">${fmtInt(m.elo||1500)}</span>`}<div class="foot"><span class="n">${escapeHtml(m.name)}</span><span class="a">${escapeHtml(actorLabel(m.actorId))}</span></div></div>`).join('');
   lazyAll(grid);
   grid.querySelectorAll('.atile').forEach(t=>t.querySelector('.open').onclick=()=>openMediaViewer(rows,+t.dataset.i));
   $('#libMore').innerHTML=rows.length>show.length?`<button class="btn" id="libMoreBtn">Mostrar mais (${fmtInt(rows.length-show.length)} restantes)</button>`:'';
@@ -2619,6 +2850,7 @@ let lsT=null;$('#libSearch').oninput=()=>{clearTimeout(lsT);lsT=setTimeout(()=>{
 $('#libActorFilter').addEventListener('change',e=>{libActorFilter=e.target.value;libLimit=120;renderLibrary();});
 $$('#libFilters [data-libtype]').forEach(b=>b.onclick=()=>{libTypeFilter=b.dataset.libtype;libLimit=120;renderLibrary();});
 $$('#libFilters [data-libsort]').forEach(b=>b.onclick=()=>{libSort=b.dataset.libsort;renderLibrary();});
+$$('#libFilters [data-libliga]').forEach(b=>b.onclick=()=>{libLiga=b.dataset.libliga;libActorFilter='';libLimit=120;$('#upCat').value=libLiga;fillUpActors();fillLibActorFilter();renderLibrary();});
 $('#libUploadToggle').onclick=()=>$('#libUploadInner').classList.toggle('hide');
 
 /* =====================================================================
@@ -2982,8 +3214,9 @@ addEventListener('keydown',e=>{
   if(vOpen){viewerKey(e);return;}
   if(e.metaKey||e.ctrlKey||e.altKey)return;
   if(e.target.closest?.('input,textarea,select'))return;
+  /* no jogo, com vídeo na tela, o 2 é "pontuar ×2" e não a troca de aba */
+  if(e.key==='2'&&phase&&phase.type!=='c2bb'&&$('#jogo').classList.contains('on')&&GAME.media[phase.cur]?.type==='video'){phaseScore(2);return;}
   if(['1','2','3','4'].includes(e.key)){switchView(VIEWS[+e.key-1]);return;}
-  if(e.key==='2'&&phase&&GAME.media[phase.cur]?.type==='video'){phaseScore(2);return;}
   if(e.key==='?'){$('#keysDlg').showModal();return;}
   if(e.key==='/'&&$('#ranking').classList.contains('on')){e.preventDefault();$('#rankSearch').focus();return;}
   if(e.key==='Escape'&&$('#atores').classList.contains('on')){switchView('ranking');return;}
@@ -2994,7 +3227,8 @@ addEventListener('keydown',e=>{
     else if(e.key==='ArrowUp'||e.key===' '){e.preventDefault();phaseScore();}
     else if(e.key==='ArrowDown'){e.preventDefault();phaseDismiss();}
     else if(e.key==='f'||e.key==='F'){e.preventDefault();openPhaseViewer();}
-    else if(e.key==='Escape'&&phase.type==='winner'){endWinnerPhase();}
+    else if((e.key==='d'||e.key==='D')&&phase.type==='c2bb'){e.preventDefault();phaseDefine();}
+    else if(e.key==='Escape'){endPhaseManual();}
   }else if(duel.a&&!$('#stage').classList.contains('hide')){
     if(e.key==='ArrowLeft'){e.preventDefault();decide('a');}
     else if(e.key==='ArrowRight'){e.preventDefault();decide('b');}
