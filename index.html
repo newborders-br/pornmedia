@@ -1457,9 +1457,11 @@ function resolvidaNaFase(id){return phase?!faseAtiva(id):false;}
    · As cadeiras livres vão primeiro pra quem ainda não apareceu neste sorteio,
      depois pra quem perdeu em todas as vezes que apareceu, depois pro banco.
      Em cada grupo, quem está há mais tempo sem aparecer no jogo vem antes.
-   · Quem só perdeu volta no máximo PERD_VOLTAS vez, e nunca no turno seguinte
-     ao que perdeu. Sem vencedoras e sem ninguém pra entrar, o sorteio acaba. */
-const TURNO_MAX=30,REP_MAX=20,PERD_VOLTAS=1;
+   · A mesa sempre enche até 30 (ou o bolo inteiro, se for menor). A ordem de quem
+     ocupa as cadeiras livres: nunca apareceu → só perdeu, descansada → banco →
+     só perdeu, no turno anterior → venceu antes e perdeu depois. Vídeo pontuado ×1
+     sai do sorteio. O sorteio acaba pelo botão, ou se o bolo esvaziar. */
+const TURNO_MAX=30,REP_MAX=20;
 function lastSeenMs(m){return m&&m.lastSeenAt?(Date.parse(m.lastSeenAt)||0):0;}
 function byLastSeen(list){return shuffle(list).sort((a,b)=>lastSeenMs(a)-lastSeenMs(b));}   // embaralha antes: empate fica aleatório
 function montaTurno(){
@@ -1469,11 +1471,15 @@ function montaTurno(){
   const repIds=new Set(rep.map(m=>m.id));
   const banidas=venc.filter(m=>!repIds.has(m.id));          // venceram mas não couberam
   banidas.forEach(m=>{phase.bench[m.id]=true;});
-  const livre=pool.filter(m=>!repIds.has(m.id)&&!banidas.includes(m));
-  const novas=byLastSeen(livre.filter(m=>!phase.app[m.id]));
-  const perd=byLastSeen(livre.filter(m=>phase.app[m.id]&&!phase.won[m.id]&&phase.app[m.id]<=PERD_VOLTAS&&!ant.includes(m.id)));
-  const banco=byLastSeen(livre.filter(m=>phase.bench[m.id]));
-  const fill=[...novas,...perd,...banco].slice(0,Math.max(0,TURNO_MAX-rep.length));
+  const saiu=phase.saiu||{};
+  const livre=pool.filter(m=>!repIds.has(m.id)&&!banidas.includes(m)&&!saiu[m.id]);
+  const ja=new Set(),pega=l=>byLastSeen(l.filter(m=>!ja.has(m.id))).map(m=>{ja.add(m.id);return m;});
+  const novas=pega(livre.filter(m=>!phase.app[m.id]));
+  const perdDesc=pega(livre.filter(m=>!phase.won[m.id]&&!ant.includes(m.id)));
+  const banco=pega(livre.filter(m=>phase.bench[m.id]));
+  const perdRec=pega(livre.filter(m=>!phase.won[m.id]));
+  const resto=pega(livre);
+  const fill=[...novas,...perdDesc,...banco,...perdRec,...resto].slice(0,Math.max(0,TURNO_MAX-rep.length));
   return{rep:rep.map(m=>m.id),fill:fill.map(m=>m.id),novas:fill.filter(m=>!phase.app[m.id]).length,banco:banidas.length};
 }
 function novoTurno(){
@@ -1704,8 +1710,8 @@ function renderPhase(){
     const ros=(phase.roster||[]).filter(phaseValid),falta=ros.filter(id=>faseAtiva(id)).length;
     const volta=Object.keys(phase.keep).filter(id=>phase.keep[id]&&!phase.dismissed[id]).length;
     $('#carStrip').innerHTML='';$('#carStrip')._key='';
-    $('#carProg').innerHTML=`<b>${phase.turno||1}º turno</b> · faltam <b>${falta}</b> de ${ros.length}${phase.nRep?` · ${phase.nRep} repetente${phase.nRep===1?'':'s'}`:''}`
-      +(volta?` · <b class="okc">${volta}</b> pra voltar`:'');
+    $('#carProg').innerHTML=`<b>${phase.turno||1}º turno</b> · faltam <b>${falta}</b> de ${ros.length}${phase.nRep?` · ${phase.nRep} vieram do turno anterior`:''}`
+      +(volta?` · <b class="okc">${volta}</b> já garantida${volta===1?'':'s'} no próximo`:'');
   }else{
     $('#carPrev').disabled=i<=0;$('#carNext').disabled=i>=list.length-1;
     renderStrip($('#carStrip'),list,phase.cur,{go:phaseGoTo,sc:phase.scored,ds:phase.dismissed,seen:phase.seen});
@@ -1765,6 +1771,7 @@ function phaseScoreId(id,nivel=1){
   const volta=isV?(nivel===2):true;
   phase.keep[id]=volta;
   if(phase.won)phase.won[id]=true;
+  if(phase.type==='sorteio'&&phase.v===2&&!volta){phase.saiu=phase.saiu||{};phase.saiu[id]=true;}   // vídeo ×1 sai do sorteio
   /* sorteio por turnos e C2BB guardam o próprio estado: só o vencedor de duelo consome na hora */
   if(!volta&&phase.type==='winner')markUsed([id]);
   saveGameSoon();savePhase();
